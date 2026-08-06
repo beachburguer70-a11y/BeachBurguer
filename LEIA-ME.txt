@@ -1,0 +1,26 @@
+BEACH BURGUER — ARQUIVO FINAL PARA UPLOAD
+
+RECURSOS INCLUÍDOS
+- Cardápio por categorias
+- Carrinho
+- Pix, cartão e dinheiro
+- Frete automático por localidade
+- Cadastro automático por telefone
+- Telefone obrigatório com DDD
+- Máscara automática no formato (22) 99784-9915
+- Envio do pedido pelo WhatsApp
+- Painel administrativo
+
+REGRAS DE ENTREGA
+- Atafona:
+  Pix: grátis
+  Dinheiro: grátis
+  Cartão: R$ 2,00
+- São João da Barra: R$ 5,00
+- Chapéu do Sol: R$ 5,00
+- Retirada no local: grátis
+
+UPLOAD
+1. Extraia este ZIP.
+2. Envie todos os arquivos e a pasta assets para public_html, www ou htdocs.
+3. Depois atualize o navegador com Ctrl + F5.

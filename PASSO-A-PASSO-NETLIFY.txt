@@ -1,0 +1,81 @@
+BEACH BURGUER — VERSÃO NETLIFY + SUPABASE
+
+ARQUIVOS IMPORTANTES
+- index.html: site do cliente
+- loja.html: tela de pedidos da loja
+- netlify/functions/orders.js: recebe, lista e atualiza pedidos
+- supabase/schema.sql: cria o banco de dados
+- netlify.toml: configuração do Netlify
+
+PASSO 1 — CRIAR O BANCO NO SUPABASE
+1. Acesse supabase.com e crie uma conta.
+2. Clique em New project.
+3. Defina nome e senha do banco.
+4. Depois que abrir o projeto, entre em SQL Editor.
+5. Clique em New query.
+6. Abra o arquivo supabase/schema.sql deste pacote.
+7. Copie todo o conteúdo, cole no SQL Editor e clique em Run.
+
+PASSO 2 — COPIAR AS CHAVES DO SUPABASE
+1. No Supabase, abra Project Settings.
+2. Entre em API Keys.
+3. Copie:
+   - Project URL
+   - secret/service_role key
+4. Nunca coloque a chave secret/service_role dentro de HTML ou JavaScript público.
+
+PASSO 3 — PUBLICAR NO NETLIFY
+Método recomendado:
+1. Crie uma pasta no GitHub com todos os arquivos deste pacote.
+2. No Netlify, clique em Add new project > Import an existing project.
+3. Conecte o GitHub e selecione o repositório.
+4. O Netlify reconhecerá o netlify.toml.
+5. Não é necessário informar comando de build.
+6. Publique.
+
+Também é possível usar o Netlify CLI:
+npm install
+npx netlify deploy --build --prod
+
+PASSO 4 — CONFIGURAR VARIÁVEIS NO NETLIFY
+No projeto do Netlify:
+1. Abra Project configuration.
+2. Entre em Environment variables.
+3. Crie:
+   SUPABASE_URL = URL do projeto Supabase
+   SUPABASE_SERVICE_ROLE_KEY = chave secret/service_role do Supabase
+   STORE_TOKEN = uma senha forte para a tela da loja
+4. Faça um novo deploy após salvar.
+
+Exemplo de STORE_TOKEN:
+Beach@Pedidos2026
+
+PASSO 5 — TESTAR
+Site do cliente:
+https://SEU-SITE.netlify.app/
+
+Tela da loja:
+https://SEU-SITE.netlify.app/loja.html
+
+Na tela da loja, digite o mesmo valor configurado em STORE_TOKEN.
+
+IMPRESSÃO AUTOMÁTICA
+O navegador normalmente abre a janela de impressão por segurança.
+Para imprimir direto na impressora padrão:
+
+1. Defina a impressora térmica como padrão do Windows.
+2. Configure o papel para 80 mm.
+3. Feche todas as janelas do Chrome.
+4. Crie um atalho com:
+
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing https://SEU-SITE.netlify.app/loja.html
+
+5. Abra a tela pelo atalho.
+6. Deixe “Impressão automática: ON”.
+
+OBSERVAÇÕES
+- A tela verifica novos pedidos a cada 3 segundos.
+- Pedido novo emite som.
+- O cliente também é direcionado ao WhatsApp.
+- O cadastro local por telefone continua no aparelho do cliente.
+- Os pedidos ficam salvos no Supabase.

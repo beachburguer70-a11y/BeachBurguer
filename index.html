@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070707">
+  <meta name="description" content="Delivery oficial da Beach Burguer em Atafona - SJB.">
+  <title>Beach Burguer | Delivery</title>
+  <link rel="icon" href="assets/logo.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+<header class="topo">
+  <div class="container barra">
+    <a href="#inicio" class="marca">
+      <img src="assets/logo.png" alt="Logo Beach Burguer">
+      <div><strong>BEACH</strong><span>BURGUER</span></div>
+    </a>
+    <nav>
+      <a href="#inicio">Início</a>
+      <a href="#cardapio">Cardápio</a>
+      <a href="#finalizar">Pedido</a>
+      <button id="abrirAdmin" class="link-admin">Admin</button>
+    </nav>
+    <a id="whatsappTopo" class="btn btn-amarelo" target="_blank">WhatsApp</a>
+  </div>
+</header>
+
+<main>
+  <section id="inicio" class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="selo">DELIVERY EM ATAFONA — SJB</span>
+        <h1>Seu lanche favorito em poucos cliques.</h1>
+        <p>Escolha, personalize e envie seu pedido diretamente para o WhatsApp da Beach Burguer.</p>
+        <div class="acoes">
+          <a href="#cardapio" class="btn btn-amarelo">Ver cardápio</a>
+          <a href="#finalizar" class="btn btn-escuro">Ver carrinho</a>
+        </div>
+      </div>
+      <div class="painel-destaque">
+        <img src="assets/logo.png" alt="Beach Burguer">
+        <h2>Seu momento, nosso sabor.</h2>
+        <p>Quarta a domingo, das 19h às 23h.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="cardapio" class="secao">
+    <div class="container">
+      <div class="titulo">
+        <h2>Cardápio</h2>
+        <p>Escolha uma categoria.</p>
+      </div>
+
+      <div id="abas" class="abas"></div>
+      <div id="produtos" class="grade-produtos"></div>
+    </div>
+  </section>
+
+  <section id="finalizar" class="secao secao-clara">
+    <div class="container">
+      <div class="titulo">
+        <h2>Finalizar pedido</h2>
+        <p>Confira seu carrinho e preencha seus dados.</p>
+      </div>
+
+      <div class="checkout">
+        <div class="card">
+          <h3>Dados do cliente</h3>
+          <div class="form-grid">
+            <label>Nome *
+              <input id="nome" placeholder="Seu nome">
+            </label>
+            <label>Telefone *
+              <input id="telefone" placeholder="(22) 99999-9999">
+            </label>
+            <label class="full">Endereço *
+              <input id="endereco" placeholder="Rua, número e complemento">
+            </label>
+            <label>Bairro *
+              <input id="bairro" placeholder="Seu bairro">
+            </label>
+            <label>Referência
+              <input id="referencia" placeholder="Próximo a...">
+            </label>
+            <label>Tipo do pedido
+              <select id="tipoPedido">
+                <option value="Entrega">Entrega</option>
+                <option value="Retirada">Retirada no local</option>
+              </select>
+            </label>
+            <label>Taxa de entrega
+              <select id="taxaEntrega"></select>
+            </label>
+            <label class="full">Observações gerais
+              <textarea id="observacoes" placeholder="Ex.: sem cebola, retirar molho..."></textarea>
+            </label>
+          </div>
+
+          <h3>Pagamento</h3>
+          <div id="pagamentos" class="pagamentos">
+            <button class="pagamento ativo" data-forma="Pix">Pix</button>
+            <button class="pagamento" data-forma="Cartão">Cartão</button>
+            <button class="pagamento" data-forma="Dinheiro">Dinheiro</button>
+          </div>
+
+          <label id="campoTroco" class="campo-oculto">Troco para quanto?
+            <input id="troco" placeholder="Ex.: R$ 100,00">
+          </label>
+
+          <div id="pixBox" class="pix-box ativo">
+            <h3>Pagamento via Pix</h3>
+            <div id="qrcode"></div>
+            <div id="pixChave" class="pix-chave"></div>
+            <button id="copiarPix" class="btn btn-amarelo">Copiar chave Pix</button>
+          </div>
+        </div>
+
+        <aside class="card carrinho">
+          <h3>Seu pedido</h3>
+          <div id="itensCarrinho"></div>
+          <div class="linha"><span>Subtotal</span><strong id="subtotal">R$ 0,00</strong></div>
+          <div class="linha"><span>Entrega</span><strong id="entrega">R$ 0,00</strong></div>
+          <div class="linha total"><span>Total</span><strong id="total">R$ 0,00</strong></div>
+          <button id="enviarPedido" class="btn btn-verde btn-largo">Enviar no WhatsApp</button>
+          <button id="limparCarrinho" class="btn btn-escuro btn-largo">Limpar carrinho</button>
+        </aside>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container rodape">
+    <div class="marca">
+      <img src="assets/logo.png" alt="Logo Beach Burguer">
+      <div><strong>BEACH</strong><span>BURGUER</span></div>
+    </div>
+    <p>Atafona — São João da Barra</p>
+    <p>(22) 99784-9915</p>
+  </div>
+</footer>
+
+<a id="whatsappFlutuante" class="whatsapp-flutuante" target="_blank">💬<span id="contador">0</span></a>
+
+<div id="modalProduto" class="modal">
+  <div class="modal-box">
+    <button id="fecharProduto" class="fechar">×</button>
+    <h2 id="produtoNome"></h2>
+    <p id="produtoDescricao"></p>
+    <div id="produtoPreco" class="preco-modal"></div>
+
+    <h3>Adicionais</h3>
+    <div id="listaAdicionais"></div>
+
+    <label>Quantidade
+      <input id="produtoQtd" type="number" min="1" value="1">
+    </label>
+
+    <label>Observação do item
+      <input id="produtoObs" placeholder="Ex.: sem salada">
+    </label>
+
+    <button id="confirmarProduto" class="btn btn-amarelo btn-largo">Adicionar ao carrinho</button>
+  </div>
+</div>
+
+<div id="modalAdmin" class="modal">
+  <div class="modal-box admin-box">
+    <button id="fecharAdmin" class="fechar">×</button>
+
+    <div id="loginAdmin">
+      <h2>Painel administrativo</h2>
+      <p>Digite a senha para acessar.</p>
+      <label>Senha
+        <input id="senhaAdmin" type="password" placeholder="Senha">
+      </label>
+      <button id="entrarAdmin" class="btn btn-amarelo btn-largo">Entrar</button>
+    </div>
+
+    <div id="conteudoAdmin" hidden>
+      <h2>Painel administrativo</h2>
+      <p class="aviso-admin">As alterações ficam salvas neste navegador.</p>
+      <div id="listaAdmin"></div>
+      <h3>Taxas de entrega</h3>
+      <div id="taxasAdmin"></div>
+      <button id="salvarAdmin" class="btn btn-amarelo btn-largo">Salvar alterações</button>
+      <button id="restaurarAdmin" class="btn btn-escuro btn-largo">Restaurar padrão</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

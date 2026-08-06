@@ -1,0 +1,15 @@
+{
+  "name": "Beach Burguer Delivery",
+  "short_name": "Beach Burguer",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#070707",
+  "theme_color": "#070707",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
