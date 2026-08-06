@@ -1,0 +1,30 @@
+BEACH BURGUER V6 — QZ TRAY
+
+ALTERAÇÕES
+- Impressão direta pelo QZ Tray, sem a janela de impressão do navegador.
+- Seleção da impressora na tela de pedidos.
+- Bobina de 58 mm ou 80 mm.
+- Botão para imprimir teste.
+- Impressão automática só marca o pedido como impresso depois que o QZ aceita o trabalho.
+
+CONFIGURAÇÃO
+1. Instale e abra o QZ Tray no computador da loja.
+2. Publique os arquivos deste ZIP no GitHub.
+3. Aguarde o Netlify publicar.
+4. Abra https://beach-burguer.netlify.app/loja.html
+5. Entre com a senha da loja.
+6. Clique em “Conectar impressora”.
+7. Na autorização do QZ Tray, marque “Sempre permitir” e clique em Permitir.
+8. Selecione a impressora.
+9. Escolha 58 mm ou 80 mm.
+10. Clique em “Salvar impressora”.
+11. Clique em “Imprimir teste”.
+12. Deixe “Impressão automática: ON”.
+
+IMPORTANTE
+A integração elimina o pop-up de impressão do Chrome. Sem assinatura digital, o próprio QZ Tray pode exibir uma autorização de segurança. Marcar “Sempre permitir” reduz as confirmações. A remoção garantida de todos os avisos do QZ exige assinatura digital com certificado e chave privada.
+
+
+ATUALIZAÇÃO V6.1
+- Mistos Quentes não possuem mais adicionais.
+- Combos, Mistos Quentes, Beach Podrão e Bebidas mostram apenas quantidade e observação.

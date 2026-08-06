@@ -58,7 +58,7 @@ const ADICIONAIS=[
   {nome:"Batata",preco:7}
 ];
 
-const CATEGORIAS_SEM_ADICIONAIS=["Combos","Beach Podrão","Bebidas"];
+const CATEGORIAS_SEM_ADICIONAIS=["Combos","Mistos Quentes","Beach Podrão","Bebidas"];
 const CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas"];
 
 let dados=carregarDadosLocais();
