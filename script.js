@@ -372,9 +372,7 @@ ${montarMensagem()}`;
     salvarCarrinho();
     alert(`Pedido #${pedido.id} recebido pela loja!`);
   }catch(erro){
-    alert("Não foi possível enviar o pedido.
-
-"+erro.message);
+    alert("Não foi possível enviar o pedido.\n\n"+erro.message);
   }finally{
     botao.disabled=false;
     botao.textContent=original;
