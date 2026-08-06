@@ -1,0 +1,31 @@
+BEACH BURGUER V5 — ATUALIZAÇÃO
+
+ALTERAÇÕES:
+- Nova aba Bebidas.
+- Combos, Beach Podrão e Bebidas sem adicionais.
+- Adicionais e preços corrigidos.
+- Controle Disponível / Em falta no Admin.
+- Produto em falta aparece como ESGOTADO e não pode ser adicionado.
+- Disponibilidade salva online no Supabase.
+
+PASSO OBRIGATÓRIO NO SUPABASE:
+1. Abra SQL Editor.
+2. Abra o arquivo supabase/MIGRACAO-V5.sql deste pacote.
+3. Copie tudo, cole no SQL Editor e clique em Run.
+4. Confirme a mensagem Success.
+
+PUBLICAÇÃO:
+1. Substitua TODOS os arquivos do repositório GitHub pelos arquivos deste ZIP.
+2. Faça Commit changes.
+3. Aguarde o Netlify publicar.
+4. Atualize o site com Ctrl + F5.
+
+ADMIN:
+- Clique em Admin no site.
+- Use a mesma senha STORE_TOKEN da tela da loja.
+- Marque ou desmarque Disponível.
+- Clique em Salvar alterações.
+
+IMPORTANTE:
+- A tabela product_availability precisa existir antes do primeiro teste.
+- Não publique nem compartilhe as chaves secretas do Supabase.

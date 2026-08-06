@@ -102,7 +102,7 @@ async function api(method,body){
 }
 
 async function carregarPedidos(){
-  const data=await api("GET");
+  const data=await api("POST",{action:"list_orders"});
   render(data.orders);
 
   const novos=data.orders.filter(p=>p.status==="novo"&&!conhecidos.has(p.id));

@@ -6,6 +6,17 @@ export async function handler(event) {
   try {
     const supabase = getSupabase();
 
+    // Public endpoint used by the customer menu.
+    if (event.httpMethod === "GET") {
+      const { data, error } = await supabase
+        .from("product_availability")
+        .select("product_id,available,updated_at")
+        .order("product_id", { ascending: true });
+
+      if (error) throw error;
+      return json(200, { ok: true, products: data || [] });
+    }
+
     if (event.httpMethod === "POST") {
       const body = JSON.parse(event.body || "{}");
       const action = body.action || "create";
@@ -42,15 +53,9 @@ export async function handler(event) {
           total: Number(body.total || 0),
         };
 
-        const { data, error } = await supabase
-          .from("orders")
-          .insert(order)
-          .select()
-          .single();
-
+        const { data, error } = await supabase.from("orders").insert(order).select().single();
         if (error) throw error;
 
-        // Saves/updates customer for future operational use.
         await supabase.from("customers").upsert(
           {
             telefone,
@@ -66,34 +71,58 @@ export async function handler(event) {
         return json(200, { ok: true, order: data });
       }
 
+      if (action === "list_orders") {
+        if (!authorized(event)) return json(401, { ok: false, error: "Não autorizado." });
+        const limit = Math.min(Number(body.limit || 100), 300);
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(limit);
+        if (error) throw error;
+        return json(200, { ok: true, orders: data || [] });
+      }
+
+      if (action === "list_products") {
+        if (!authorized(event)) return json(401, { ok: false, error: "Não autorizado." });
+        const { data, error } = await supabase
+          .from("product_availability")
+          .select("product_id,available,updated_at")
+          .order("product_id", { ascending: true });
+        if (error) throw error;
+        return json(200, { ok: true, products: data || [] });
+      }
+
+      if (action === "update_products") {
+        if (!authorized(event)) return json(401, { ok: false, error: "Não autorizado." });
+        if (!Array.isArray(body.products)) return json(400, { ok: false, error: "Lista de produtos inválida." });
+
+        const rows = body.products.map(item => ({
+          product_id: Number(item.product_id),
+          available: Boolean(item.available),
+          updated_at: new Date().toISOString(),
+        }));
+
+        const { error } = await supabase
+          .from("product_availability")
+          .upsert(rows, { onConflict: "product_id" });
+
+        if (error) throw error;
+        return json(200, { ok: true });
+      }
+
       if (action === "update") {
         if (!authorized(event)) return json(401, { ok: false, error: "Não autorizado." });
-
         const id = Number(body.id);
         const allowed = {};
         if (body.status !== undefined) allowed.status = String(body.status);
         if (body.printed !== undefined) allowed.printed = Boolean(body.printed);
-
         const { error } = await supabase.from("orders").update(allowed).eq("id", id);
         if (error) throw error;
         return json(200, { ok: true });
       }
 
       return json(400, { ok: false, error: "Ação inválida." });
-    }
-
-    if (event.httpMethod === "GET") {
-      if (!authorized(event)) return json(401, { ok: false, error: "Não autorizado." });
-
-      const limit = Math.min(Number(event.queryStringParameters?.limit || 100), 300);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(limit);
-
-      if (error) throw error;
-      return json(200, { ok: true, orders: data || [] });
     }
 
     return json(405, { ok: false, error: "Método não permitido." });
