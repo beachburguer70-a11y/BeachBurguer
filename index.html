@@ -49,7 +49,7 @@
     </div>
   </section>
 
-  <section id="cardapio" class="secao">
+  <section id="cardapio" class="secao conteudo-pos-inicio">
     <div class="container">
       <div class="titulo">
         <h2>Cardápio</h2>
@@ -61,7 +61,7 @@
     </div>
   </section>
 
-  <section id="finalizar" class="secao secao-clara">
+  <section id="finalizar" class="secao secao-clara conteudo-pos-inicio">
     <div class="container">
       <div class="titulo">
         <h2>Finalizar pedido</h2>
@@ -70,7 +70,14 @@
 
       <div class="checkout">
         <div class="card">
-          <h3>Dados do cliente</h3>
+          <div class="dados-cabecalho">
+            <h3>Dados do cliente</h3>
+            <div class="troca-tipo-pedido" aria-label="Tipo do pedido">
+              <button type="button" class="tipo-rapido ativo" data-tipo-rapido="Entrega">🛵 Entrega</button>
+              <button type="button" class="tipo-rapido" data-tipo-rapido="Retirada">🛍️ Retirada no local</button>
+              <button type="button" class="tipo-rapido" data-tipo-rapido="Consumir no local">🍽️ Consumir no local</button>
+            </div>
+          </div>
           <div class="form-grid">
             <label>Nome *
               <input id="nome" placeholder="Seu nome">
@@ -87,7 +94,7 @@
             <label class="campo-entrega">Referência
               <input id="referencia" placeholder="Próximo a...">
             </label>
-            <label>Tipo do pedido
+            <label class="campo-entrega">Tipo do pedido
               <select id="tipoPedido">
                 <option value="Entrega">Entrega</option>
                 <option value="Retirada">Retirada no local</option>
@@ -97,7 +104,7 @@
             <label class="campo-entrega">Taxa de entrega
               <select id="taxaEntrega"></select>
             </label>
-            <label class="full">Observações gerais
+            <label class="full campo-entrega">Observações gerais
               <textarea id="observacoes" placeholder="Ex.: sem cebola, retirar molho..."></textarea>
             </label>
           </div>

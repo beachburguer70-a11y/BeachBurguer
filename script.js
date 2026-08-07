@@ -153,7 +153,57 @@ async function iniciar(){
 
   renderTaxas();renderAbas();
   await carregarDisponibilidade();
-  renderProdutos();renderCarrinho();atualizarCamposEntrega();atualizarBotaoPedido();
+  
+function liberarConteudo(destino="#cardapio"){
+  document.body.classList.remove("inicio-travado");
+  requestAnimationFrame(()=>{
+    const alvo=document.querySelector(destino);
+    if(alvo)alvo.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+}
+
+function configurarPaginaInicial(){
+  const hash=location.hash;
+  const abrirDireto=hash==="#cardapio"||hash==="#finalizar";
+  if(!abrirDireto){
+    document.body.classList.add("inicio-travado");
+    window.scrollTo(0,0);
+  }
+
+  const btnVer=$("verCardapio");
+  if(btnVer){
+    btnVer.onclick=()=>liberarConteudo("#cardapio");
+  }
+
+  document.querySelectorAll('a[href="#cardapio"]').forEach(a=>{
+    a.addEventListener("click",e=>{
+      if(document.body.classList.contains("inicio-travado")){
+        e.preventDefault();
+        liberarConteudo("#cardapio");
+      }
+    });
+  });
+
+  document.querySelectorAll('a[href="#finalizar"]').forEach(a=>{
+    a.addEventListener("click",e=>{
+      if(document.body.classList.contains("inicio-travado")){
+        e.preventDefault();
+        liberarConteudo("#finalizar");
+      }
+    });
+  });
+
+  window.addEventListener("hashchange",()=>{
+    if(location.hash==="#cardapio"||location.hash==="#finalizar"){
+      document.body.classList.remove("inicio-travado");
+    }
+  });
+}
+
+configurarPaginaInicial();
+renderProdutos();renderCarrinho();atualizarCamposEntrega();atualizarBotaoPedido();
+window.addEventListener("pageshow",()=>setTimeout(atualizarCamposEntrega,0));
+setTimeout(atualizarCamposEntrega,100);
 }
 
 function renderTaxas(){
@@ -407,14 +457,30 @@ async function verificarStatusPix(){
   }
 }
 
+function sincronizarTipoRapido(){
+  const atual=$("tipoPedido").value;
+  document.querySelectorAll(".tipo-rapido").forEach(btn=>{
+    btn.classList.toggle("ativo",btn.dataset.tipoRapido===atual);
+  });
+}
+
 function atualizarCamposEntrega(){
+  sincronizarTipoRapido();
   const entrega=$("tipoPedido").value==="Entrega";
-  document.querySelectorAll(".campo-entrega").forEach(el=>el.hidden=!entrega);
+
+  // Usa style.display para garantir que o CSS do formulário não mantenha
+  // os labels visíveis quando for Retirada ou Consumir no local.
+  document.querySelectorAll(".campo-entrega").forEach(el=>{
+    el.style.display=entrega?"":"none";
+  });
+
   $("taxaEntrega").disabled=!entrega;
+
   if(!entrega){
     $("endereco").value="";
     $("bairro").value="";
     $("referencia").value="";
+    $("observacoes").value="";
     $("taxaEntrega").selectedIndex=0;
   }
 }
@@ -529,6 +595,13 @@ $("verCardapio").onclick=()=>$("modalTipoPedido").classList.add("ativo");
 $("fecharTipoPedido").onclick=()=>$("modalTipoPedido").classList.remove("ativo");
 $("modalTipoPedido").onclick=e=>{if(e.target===$("modalTipoPedido"))$("modalTipoPedido").classList.remove("ativo")};
 document.querySelectorAll(".opcao-pedido").forEach(btn=>btn.addEventListener("click",()=>selecionarTipoPedido(btn.dataset.tipo)));
+document.querySelectorAll(".tipo-rapido").forEach(btn=>btn.addEventListener("click",()=>{
+  // Troca o tipo de pedido sem sair da tela de finalização.
+  $("tipoPedido").value=btn.dataset.tipoRapido;
+  atualizarCamposEntrega();
+  resetarConfirmacaoPix();
+  renderCarrinho();
+}));
 
 $("continuarComprando").onclick=()=>{
   $("modalDepoisAdicionar").classList.remove("ativo");
