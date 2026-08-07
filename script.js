@@ -653,4 +653,8 @@ window.abrirProduto=abrirProduto;
 window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js?v=815",{updateViaCache:"none"})
+    .then(reg=>reg.update())
+    .catch(()=>{});
+}
