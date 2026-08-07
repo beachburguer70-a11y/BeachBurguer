@@ -111,7 +111,7 @@ function salvarClienteAtual(){
   const clientes=obterClientesSalvos();
   clientes[tel]={
     nome:$("nome").value.trim(),telefone:$("telefone").value.trim(),
-    email:$("email").value.trim(),endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),
+    endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),
     referencia:$("referencia").value.trim()
   };
   localStorage.setItem("bb_clientes",JSON.stringify(clientes));
@@ -120,7 +120,7 @@ function preencherClientePeloTelefone(){
   const tel=normalizarTelefone($("telefone").value);
   if(tel.length<10)return;
   const c=obterClientesSalvos()[tel];if(!c)return;
-  $("nome").value=c.nome||"";$("email").value=c.email||"";$("endereco").value=c.endereco||"";
+  $("nome").value=c.nome||"";$("endereco").value=c.endereco||"";
   $("bairro").value=c.bairro||"";$("referencia").value=c.referencia||"";
 }
 
@@ -248,9 +248,6 @@ function alterarQtd(uid,delta){const i=carrinho.find(x=>x.uid===uid);if(!i)retur
 function removerItem(uid){carrinho=carrinho.filter(x=>x.uid!==uid);resetarConfirmacaoPix();salvarCarrinho()}
 
 
-function emailValido(valor){
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(valor||"").trim());
-}
 
 function atualizarBotaoPedido(){
   const botao=$("enviarPedido");
@@ -295,7 +292,6 @@ function validarDadosParaPix(){
   if(!carrinho.length){alert("Adicione pelo menos um produto ao carrinho.");return false}
   if(!$("nome").value.trim()){alert("Preencha seu nome antes de gerar o Pix.");$("nome").focus();return false}
   if(!telefoneValido($("telefone").value)){alert("Informe um telefone com DDD antes de gerar o Pix.");$("telefone").focus();return false}
-  if(!emailValido($("email").value)){alert("Informe um e-mail válido. O Mercado Pago exige o e-mail do pagador para gerar o Pix.");$("email").focus();return false}
   if($("tipoPedido").value==="Entrega"&&(!$("endereco").value.trim()||!$("bairro").value.trim())){
     alert("Preencha endereço e bairro antes de gerar o Pix.");return false
   }
@@ -320,7 +316,6 @@ async function gerarPixAutomatico(){
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         amount:totalPedido,
-        email:$("email").value.trim(),
         name:$("nome").value.trim(),
         phone:normalizarTelefone($("telefone").value)
       })
@@ -422,7 +417,6 @@ function selecionarTipoPedido(tipo){
 }
 
 function validar(){
-  if(pagamento==="Pix"&&!emailValido($("email").value)){alert("Informe um e-mail válido para o pagamento Pix.");return false}
   if(pagamento==="Pix"&&!pixConfirmado){alert("O Pix ainda não foi confirmado pelo Mercado Pago.");return false}
   if(!carrinho.length){alert("Adicione pelo menos um produto.");return false}
   if(!$("nome").value.trim()){alert("Preencha seu nome.");return false}
@@ -435,8 +429,8 @@ async function enviarPedidoAoServidor(){
   const sub=subtotal(),taxa=taxaAtual();
   const local=$("tipoPedido").value==="Entrega"?($("taxaEntrega").selectedOptions[0]?.textContent?.split(" — ")[0]||""):$("tipoPedido").value;
   const pedido={
-    action:"create",cliente:$("nome").value.trim(),telefone:$("telefone").value.trim(),email:$("email").value.trim(),
-    email:$("email").value.trim(),endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),referencia:$("referencia").value.trim(),
+    action:"create",cliente:$("nome").value.trim(),telefone:$("telefone").value.trim(),
+    endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),referencia:$("referencia").value.trim(),
     localidade:local,tipo:$("tipoPedido").value,pagamento,
     troco:pagamento==="Dinheiro"?$("troco").value.trim():"",observacoes:$("observacoes").value.trim(),
     itens:carrinho.map(i=>({nome:i.nome,quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:valorItem(i)})),
@@ -457,8 +451,6 @@ function montarMensagem(){
 
 *Cliente:* ${$("nome").value.trim()}
 *Telefone:* ${$("telefone").value.trim()}
-*E-mail:* ${$("email").value.trim()}
-
 *PEDIDO:*
 ${itens}
 
@@ -538,7 +530,6 @@ $("irFinalizar").onclick=()=>{
 $("telefone").addEventListener("input",e=>e.target.value=formatarTelefone(e.target.value));
 $("telefone").addEventListener("blur",preencherClientePeloTelefone);
 $("telefone").addEventListener("change",preencherClientePeloTelefone);
-$("email").addEventListener("input",()=>{if(pixPaymentId)resetarConfirmacaoPix()});
 ["nome","endereco","bairro","referencia"].forEach(id=>{$(id).addEventListener("input",()=>{if(pixPaymentId)resetarConfirmacaoPix()})});
 
 $("fecharProduto").onclick=()=>$("modalProduto").classList.remove("ativo");

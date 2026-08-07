@@ -13,14 +13,12 @@ export async function onRequestPost({ request, env }) {
   try {
     const body = await request.json();
     const amount = Number(body.amount);
-    const email = String(body.email || "").trim();
+    const phone = String(body.phone || "").replace(/\D/g, "").slice(0, 11);
+    const email = `cliente${phone ? `+${phone}` : ""}@beachburguer.pages.dev`;
     const name = String(body.name || "").trim();
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return json({ ok:false, error:"Valor inválido." }, 400);
-    }
-    if (!email || !email.includes("@")) {
-      return json({ ok:false, error:"E-mail inválido." }, 400);
     }
 
     const idempotencyKey = uuid();
