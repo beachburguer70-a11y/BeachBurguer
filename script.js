@@ -221,7 +221,7 @@ function adicionarProduto(){
 function valorItem(i){return (i.preco+(i.adicionais||[]).reduce((s,a)=>s+a.preco,0))*i.quantidade}
 function subtotal(){return carrinho.reduce((s,i)=>s+valorItem(i),0)}
 function taxaAtual(){
-  if($("tipoPedido").value==="Retirada no local")return 0;
+  if($("tipoPedido").value!=="Entrega")return 0;
   const local=$("taxaEntrega").selectedOptions[0]?.textContent?.split(" — ")[0]||"";
   if(local==="Atafona")return pagamento==="Cartão"?2:0;
   if(local==="São João da Barra"||local==="Chapéu do Sol")return 5;
@@ -347,14 +347,13 @@ $("modalProduto").onclick=e=>{if(e.target===$("modalProduto"))$("modalProduto").
 $("pagamentos").onclick=e=>{const b=e.target.closest(".pagamento");if(!b)return;document.querySelectorAll(".pagamento").forEach(x=>x.classList.remove("ativo"));b.classList.add("ativo");pagamento=b.dataset.forma;$("pixBox").classList.toggle("ativo",pagamento==="Pix");$("campoTroco").style.display=pagamento==="Dinheiro"?"flex":"none";renderCarrinho()};
 $("copiarPix").onclick=()=>navigator.clipboard.writeText(dados.config.chavePix).then(()=>alert("Chave Pix copiada!")).catch(()=>prompt("Copie a chave Pix:",dados.config.chavePix));
 $("taxaEntrega").onchange=renderCarrinho;
-$("tipoPedido").onchange=()=>{$("taxaEntrega").disabled=$("tipoPedido").value==="Retirada no local";renderCarrinho()};
+$("tipoPedido").onchange=()=>{$("taxaEntrega").disabled=$("tipoPedido").value!=="Entrega";renderCarrinho()};
 $("enviarPedido").onclick=async()=>{
   if(!validar())return;
-  const botao=$("enviarPedido"),original=botao.textContent;botao.disabled=true;botao.textContent="ENVIANDO...";
+  const botao=$("enviarPedido"),original=botao.textContent;botao.disabled=true;botao.textContent="PROCESSANDO...";
   try{
     salvarClienteAtual();const pedido=await enviarPedidoAoServidor();
     const mensagem=`*Pedido #${pedido.id}*\n\n${montarMensagem()}`;
-    window.open(`https://wa.me/${dados.config.whatsapp}?text=${encodeURIComponent(mensagem)}`,"_blank");
     carrinho=[];salvarCarrinho();alert(`Pedido #${pedido.id} recebido pela loja!`);
   }catch(erro){alert("Não foi possível enviar o pedido.\n\n"+erro.message)}
   finally{botao.disabled=false;botao.textContent=original}
