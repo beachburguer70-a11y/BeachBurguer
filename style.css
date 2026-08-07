@@ -120,3 +120,32 @@ footer{background:#030303;border-top:1px solid var(--borda);padding:30px 0}
 .status-produto.falta{border-color:#793b3b;background:#351515;color:#ffb6b6}
 .status-produto input{width:auto}
 @media(max-width:700px){.admin-item{grid-template-columns:1fr}}
+
+
+/* V8.5 - fluxo do pedido */
+.modal-escolha{text-align:center;max-width:560px}
+.opcoes-pedido{display:grid;gap:12px;margin-top:20px}
+.opcao-pedido{
+  display:grid;grid-template-columns:44px 1fr;column-gap:12px;align-items:center;
+  text-align:left;background:#101010;color:#fff;border:1px solid #3b3b3b;
+  border-radius:14px;padding:16px;cursor:pointer;transition:.2s
+}
+.opcao-pedido:hover{border-color:var(--amarelo);transform:translateY(-2px)}
+.opcao-pedido{font-size:26px}
+.opcao-pedido strong{font-size:17px;color:var(--amarelo)}
+.opcao-pedido span{grid-column:2;color:#aaa;font-size:13px;margin-top:2px}
+.acoes-pos-adicionar{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+.pix-instrucao{color:#bbb;line-height:1.45}
+.pix-copia-cola{max-height:110px;overflow:auto;text-align:left;font-family:monospace;font-size:12px}
+.status-pix{font-size:13px;color:#ffcf57;margin:12px 0 0}
+.status-pix.pago{color:#73e58c;font-weight:800}
+#enviarPedido:disabled{opacity:.55;cursor:not-allowed;transform:none;background:#555}
+@media(max-width:600px){.acoes-pos-adicionar{grid-template-columns:1fr}}
+
+/* V8.6 - Pix automático Mercado Pago */
+.pix-pagamento-area{margin-top:16px}
+.qrcode-dinamico{background:#fff;width:max-content;max-width:100%;padding:12px;border-radius:12px;margin:14px auto}
+.qrcode-dinamico img,.qrcode-dinamico canvas{max-width:210px;height:auto}
+.status-pix.erro{color:#ff7b7b;font-weight:800}
+.pix-tempo{color:#aaa;font-size:12px;line-height:1.45}
+#gerarPix:disabled{opacity:.6;cursor:wait}

@@ -41,7 +41,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small></div></div>
     <div class="controls">
       <button id="somBtn" class="btn dark">🔊 Som ativado</button>
-      <button id="autoBtn" class="btn yellow">🖨️ Impressão automática: ON</button>
+      <span class="badge">🖨️ Impressão automática pelo programa do Windows</span>
       <button id="atualizar" class="btn dark">Atualizar</button>
       <button id="sair" class="btn red">Sair</button>
     </div>
@@ -64,8 +64,8 @@ let token=localStorage.getItem(TOKEN_KEY)||"";
 let conhecidos=new Set();
 let primeiraCarga=true;
 let somAtivo=true;
-let impressaoAutomatica=true;
 let intervalo=null;
+
 
 const $=id=>document.getElementById(id);
 const moeda=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -77,7 +77,6 @@ $("senha").onkeydown=e=>{if(e.key==="Enter")entrar()};
 $("sair").onclick=()=>{localStorage.removeItem(TOKEN_KEY);location.reload()};
 $("atualizar").onclick=carregarPedidos;
 $("somBtn").onclick=()=>{somAtivo=!somAtivo;$("somBtn").textContent=somAtivo?"🔊 Som ativado":"🔇 Som desativado"};
-$("autoBtn").onclick=()=>{impressaoAutomatica=!impressaoAutomatica;$("autoBtn").textContent=`🖨️ Impressão automática: ${impressaoAutomatica?"ON":"OFF"}`};
 
 async function entrar(){
   token=$("senha").value.trim();
@@ -108,12 +107,7 @@ async function carregarPedidos(){
   const novos=data.orders.filter(p=>p.status==="novo"&&!conhecidos.has(p.id));
   if(!primeiraCarga&&novos.length){
     if(somAtivo)tocarSom();
-    for(const pedido of novos){
-      if(impressaoAutomatica&&!pedido.printed){
-        imprimirPedido(pedido);
-        await atualizarPedido(pedido.id,{printed:true});
-      }
-    }
+
   }
   data.orders.forEach(p=>conhecidos.add(p.id));
   primeiraCarga=false;
@@ -149,7 +143,7 @@ function render(list){
     <div class="line total"><span>Total</span><strong>${moeda(p.total)}</strong></div>
     ${p.observacoes?`<p><strong>Observações:</strong> ${esc(p.observacoes)}</p>`:""}
     <div class="actions">
-      <button class="btn yellow" onclick="imprimirPorId(${p.id})">Imprimir</button>
+      <button class="btn yellow" onclick="imprimirPorId(${p.id})">Reimprimir</button>
       <button class="btn dark" onclick="mudarStatus(${p.id},'preparo')">Em preparo</button>
       <button class="btn green" onclick="mudarStatus(${p.id},'pronto')">Pronto</button>
       <button class="btn dark" onclick="mudarStatus(${p.id},'entregue')">Entregue</button>
@@ -162,22 +156,14 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function formatPhone(v){const n=String(v||"").replace(/\D/g,"");return n.length===11?`(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`:n}
 async function atualizarPedido(id,campos){await api("POST",{action:"update",id,...campos})}
 async function mudarStatus(id,status){await atualizarPedido(id,{status});await carregarPedidos()}
-function imprimirPorId(id){const p=window._pedidos.find(x=>x.id===id);if(p)imprimirPedido(p)}
-
-function imprimirPedido(p){
-  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Pedido #${p.id}</title>
-  <style>@page{size:80mm auto;margin:2mm}body{font-family:monospace;width:74mm;margin:0;color:#000}h1,h2,p{margin:4px 0}.center{text-align:center}.sep{border-top:1px dashed #000;margin:7px 0}.row{display:flex;justify-content:space-between}.big{font-size:18px;font-weight:bold}</style></head><body>
-  <div class="center"><h2>BEACH BURGUER</h2><h1>PEDIDO #${p.id}</h1><p>${dataHora(p.created_at)}</p></div>
-  <div class="sep"></div><p><b>Cliente:</b> ${esc(p.cliente)}</p><p><b>Telefone:</b> ${esc(formatPhone(p.telefone))}</p><p><b>Tipo:</b> ${esc(p.tipo)}</p>
-  ${p.tipo==="Entrega"?`<p><b>Endereço:</b> ${esc(p.endereco)}</p><p><b>Bairro:</b> ${esc(p.bairro)}</p><p><b>Localidade:</b> ${esc(p.localidade)}</p><p><b>Referência:</b> ${esc(p.referencia||"-")}</p>`:""}
-  <div class="sep"></div>${(p.itens||[]).map(i=>`<p><b>${i.quantidade}x ${esc(i.nome)}</b> — ${moeda(i.total)}</p>${i.adicionais?.length?`<p>+ ${i.adicionais.map(a=>esc(a.nome)).join(", ")}</p>`:""}${i.observacao?`<p>OBS: ${esc(i.observacao)}</p>`:""}`).join("")}
-  <div class="sep"></div><div class="row"><span>Subtotal</span><b>${moeda(p.subtotal)}</b></div><div class="row"><span>Entrega</span><b>${moeda(p.entrega)}</b></div><div class="row big"><span>TOTAL</span><b>${moeda(p.total)}</b></div>
-  <p><b>Pagamento:</b> ${esc(p.pagamento)}</p>${p.troco?`<p><b>Troco:</b> ${esc(p.troco)}</p>`:""}${p.observacoes?`<p><b>OBS GERAL:</b> ${esc(p.observacoes)}</p>`:""}
-  <div class="sep"></div><p class="center">Seu momento, nosso sabor.</p>
-  <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),900)}<\/script></body></html>`;
-  const w=window.open("","_blank","width=420,height=700");
-  if(!w){alert("Permita pop-ups para imprimir.");return}
-  w.document.open();w.document.write(html);w.document.close();
+async function imprimirPorId(id){
+  try{
+    await atualizarPedido(id,{printed:false});
+    alert(`Pedido #${id} enviado para a fila de impressão. O programa do Windows imprimirá em alguns segundos.`);
+    await carregarPedidos();
+  }catch(erro){
+    alert("Não foi possível enviar para reimpressão.\n\n"+erro.message);
+  }
 }
 </script>
 </body>

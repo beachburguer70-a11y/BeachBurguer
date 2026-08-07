@@ -35,9 +35,9 @@
       <div>
         <span class="selo">DELIVERY EM ATAFONA — SJB</span>
         <h1>Seu lanche favorito em poucos cliques.</h1>
-        <p>Escolha, personalize e envie seu pedido diretamente para o WhatsApp da Beach Burguer.</p>
+        <p>Escolha, personalize e faça seu pedido diretamente pelo site da Beach Burguer.</p>
         <div class="acoes">
-          <a href="#cardapio" class="btn btn-amarelo">Ver cardápio</a>
+          <button id="verCardapio" class="btn btn-amarelo">Ver cardápio</button>
           <a href="#finalizar" class="btn btn-escuro">Ver carrinho</a>
         </div>
       </div>
@@ -78,6 +78,9 @@
             <label>Telefone *
               <input id="telefone" placeholder="(22) 99999-9999">
             </label>
+            <label>E-mail *
+              <input id="email" type="email" placeholder="seuemail@exemplo.com">
+            </label>
             <label class="full">Endereço *
               <input id="endereco" placeholder="Rua, número e complemento">
             </label>
@@ -91,6 +94,7 @@
               <select id="tipoPedido">
                 <option value="Entrega">Entrega</option>
                 <option value="Retirada">Retirada no local</option>
+                <option value="Consumir no local">Consumir no local</option>
               </select>
             </label>
             <label>Taxa de entrega
@@ -114,9 +118,16 @@
 
           <div id="pixBox" class="pix-box ativo">
             <h3>Pagamento via Pix</h3>
-            <div id="qrcode"></div>
-            <div id="pixChave" class="pix-chave"></div>
-            <button id="copiarPix" class="btn btn-amarelo">Copiar chave Pix</button>
+            <p class="pix-instrucao">O Pix será gerado com o valor exato do pedido. Após o Mercado Pago confirmar o pagamento, o botão <strong>Fazer pedido</strong> será liberado automaticamente.</p>
+            <button id="gerarPix" class="btn btn-amarelo btn-largo">Gerar Pix deste pedido</button>
+
+            <div id="pixPagamentoArea" class="pix-pagamento-area" hidden>
+              <div id="qrcodeDinamico" class="qrcode-dinamico"></div>
+              <div id="pixCopiaCola" class="pix-chave pix-copia-cola"></div>
+              <button id="copiarPix" class="btn btn-amarelo">Copiar código Pix</button>
+              <p id="statusPix" class="status-pix aguardando">Aguardando pagamento...</p>
+              <p id="pixTempo" class="pix-tempo"></p>
+            </div>
           </div>
         </div>
 
@@ -126,7 +137,7 @@
           <div class="linha"><span>Subtotal</span><strong id="subtotal">R$ 0,00</strong></div>
           <div class="linha"><span>Entrega</span><strong id="entrega">R$ 0,00</strong></div>
           <div class="linha total"><span>Total</span><strong id="total">R$ 0,00</strong></div>
-          <button id="enviarPedido" class="btn btn-verde btn-largo">Enviar no WhatsApp</button>
+          <button id="enviarPedido" class="btn btn-verde btn-largo">Fazer pedido</button>
           <button id="limparCarrinho" class="btn btn-escuro btn-largo">Limpar carrinho</button>
         </aside>
       </div>
@@ -146,6 +157,31 @@
 </footer>
 
 <a id="whatsappFlutuante" class="whatsapp-flutuante" target="_blank">💬<span id="contador">0</span></a>
+
+
+<div id="modalTipoPedido" class="modal">
+  <div class="modal-box modal-escolha">
+    <button id="fecharTipoPedido" class="fechar">×</button>
+    <h2>Como será seu pedido?</h2>
+    <p>Escolha uma opção para continuar para o cardápio.</p>
+    <div class="opcoes-pedido">
+      <button class="opcao-pedido" data-tipo="Entrega">🛵 <strong>Entrega</strong><span>Receber no endereço informado</span></button>
+      <button class="opcao-pedido" data-tipo="Retirada">🛍️ <strong>Retirar no local</strong><span>Buscar seu pedido na Beach Burguer</span></button>
+      <button class="opcao-pedido" data-tipo="Consumir no local">🍽️ <strong>Consumir no local</strong><span>Fazer o pedido para comer na loja</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="modalDepoisAdicionar" class="modal">
+  <div class="modal-box modal-escolha">
+    <h2>Produto adicionado! ✅</h2>
+    <p>Deseja continuar escolhendo ou finalizar seu pedido?</p>
+    <div class="acoes-pos-adicionar">
+      <button id="continuarComprando" class="btn btn-escuro">Continuar comprando</button>
+      <button id="irFinalizar" class="btn btn-amarelo">Finalizar pedido</button>
+    </div>
+  </div>
+</div>
 
 <div id="modalProduto" class="modal">
   <div class="modal-box">

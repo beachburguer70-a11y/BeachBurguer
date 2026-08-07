@@ -58,7 +58,7 @@ const ADICIONAIS=[
   {nome:"Batata",preco:7}
 ];
 
-const CATEGORIAS_SEM_ADICIONAIS=["Combos","Beach Podrão","Bebidas"];
+const CATEGORIAS_SEM_ADICIONAIS=["Combos","Mistos Quentes","Beach Podrão","Bebidas"];
 const CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas"];
 
 let dados=carregarDadosLocais();
@@ -66,6 +66,12 @@ let carrinho=JSON.parse(localStorage.getItem("bb_carrinho")||"[]");
 let categoriaAtual="Artesanais";
 let produtoSelecionado=null;
 let pagamento="Pix";
+let pixConfirmado=false;
+let pixPaymentId=null;
+let pixCopiaColaAtual="";
+let pixValorGerado=0;
+let pixPollingTimer=null;
+let pixPollingStartedAt=0;
 let adminToken="";
 
 const $=id=>document.getElementById(id);
@@ -105,7 +111,7 @@ function salvarClienteAtual(){
   const clientes=obterClientesSalvos();
   clientes[tel]={
     nome:$("nome").value.trim(),telefone:$("telefone").value.trim(),
-    endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),
+    email:$("email").value.trim(),endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),
     referencia:$("referencia").value.trim()
   };
   localStorage.setItem("bb_clientes",JSON.stringify(clientes));
@@ -114,7 +120,7 @@ function preencherClientePeloTelefone(){
   const tel=normalizarTelefone($("telefone").value);
   if(tel.length<10)return;
   const c=obterClientesSalvos()[tel];if(!c)return;
-  $("nome").value=c.nome||"";$("endereco").value=c.endereco||"";
+  $("nome").value=c.nome||"";$("email").value=c.email||"";$("endereco").value=c.endereco||"";
   $("bairro").value=c.bairro||"";$("referencia").value=c.referencia||"";
 }
 
@@ -144,14 +150,10 @@ async function carregarDisponibilidade(){
 async function iniciar(){
   const link=`https://wa.me/${dados.config.whatsapp}?text=${encodeURIComponent("Olá! Gostaria de fazer um pedido na Beach Burguer.")}`;
   $("whatsappTopo").href=link;$("whatsappFlutuante").href=link;
-  $("pixChave").textContent=dados.config.chavePix;
-
-  const qr=$("qrcode");qr.innerHTML="";
-  if(window.QRCode)new QRCode(qr,{text:dados.config.pixPayload,width:190,height:190,correctLevel:QRCode.CorrectLevel.H});
 
   renderTaxas();renderAbas();
   await carregarDisponibilidade();
-  renderProdutos();renderCarrinho();
+  renderProdutos();renderCarrinho();atualizarBotaoPedido();
 }
 
 function renderTaxas(){
@@ -215,13 +217,14 @@ function adicionarProduto(){
     adicionais,observacao:$("produtoObs").value.trim()
   });
   salvarCarrinho();$("modalProduto").classList.remove("ativo");
-  $("finalizar").scrollIntoView({behavior:"smooth"});
+  resetarConfirmacaoPix();
+  $("modalDepoisAdicionar").classList.add("ativo");
 }
 
 function valorItem(i){return (i.preco+(i.adicionais||[]).reduce((s,a)=>s+a.preco,0))*i.quantidade}
 function subtotal(){return carrinho.reduce((s,i)=>s+valorItem(i),0)}
 function taxaAtual(){
-  if($("tipoPedido").value==="Retirada no local")return 0;
+  if($("tipoPedido").value!=="Entrega")return 0;
   const local=$("taxaEntrega").selectedOptions[0]?.textContent?.split(" — ")[0]||"";
   if(local==="Atafona")return pagamento==="Cartão"?2:0;
   if(local==="São João da Barra"||local==="Chapéu do Sol")return 5;
@@ -241,10 +244,186 @@ function renderCarrinho(){
   $("subtotal").textContent=moeda(sub);$("entrega").textContent=moeda(taxa);$("total").textContent=moeda(sub+taxa);
   $("contador").textContent=carrinho.reduce((s,i)=>s+i.quantidade,0);
 }
-function alterarQtd(uid,delta){const i=carrinho.find(x=>x.uid===uid);if(!i)return;i.quantidade+=delta;if(i.quantidade<=0)carrinho=carrinho.filter(x=>x.uid!==uid);salvarCarrinho()}
-function removerItem(uid){carrinho=carrinho.filter(x=>x.uid!==uid);salvarCarrinho()}
+function alterarQtd(uid,delta){const i=carrinho.find(x=>x.uid===uid);if(!i)return;i.quantidade+=delta;if(i.quantidade<=0)carrinho=carrinho.filter(x=>x.uid!==uid);resetarConfirmacaoPix();salvarCarrinho()}
+function removerItem(uid){carrinho=carrinho.filter(x=>x.uid!==uid);resetarConfirmacaoPix();salvarCarrinho()}
+
+
+function emailValido(valor){
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(valor||"").trim());
+}
+
+function atualizarBotaoPedido(){
+  const botao=$("enviarPedido");
+  if(!botao)return;
+  const bloqueado=pagamento==="Pix"&&!pixConfirmado;
+  botao.disabled=bloqueado;
+  botao.title=bloqueado?"O Mercado Pago ainda não confirmou o Pix.":"";
+  botao.textContent=bloqueado?"Aguardando pagamento Pix":"Fazer pedido";
+}
+
+function pararPollingPix(){
+  if(pixPollingTimer){
+    clearInterval(pixPollingTimer);
+    pixPollingTimer=null;
+  }
+}
+
+function limparPixGerado(){
+  pararPollingPix();
+  pixConfirmado=false;
+  pixPaymentId=null;
+  pixCopiaColaAtual="";
+  pixValorGerado=0;
+  pixPollingStartedAt=0;
+
+  if($("pixPagamentoArea"))$("pixPagamentoArea").hidden=true;
+  if($("qrcodeDinamico"))$("qrcodeDinamico").innerHTML="";
+  if($("pixCopiaCola"))$("pixCopiaCola").textContent="";
+  if($("statusPix")){
+    $("statusPix").textContent="Aguardando geração do Pix.";
+    $("statusPix").className="status-pix aguardando";
+  }
+  if($("pixTempo"))$("pixTempo").textContent="";
+  atualizarBotaoPedido();
+}
+
+function resetarConfirmacaoPix(){
+  limparPixGerado();
+}
+
+function validarDadosParaPix(){
+  if(!carrinho.length){alert("Adicione pelo menos um produto ao carrinho.");return false}
+  if(!$("nome").value.trim()){alert("Preencha seu nome antes de gerar o Pix.");$("nome").focus();return false}
+  if(!telefoneValido($("telefone").value)){alert("Informe um telefone com DDD antes de gerar o Pix.");$("telefone").focus();return false}
+  if(!emailValido($("email").value)){alert("Informe um e-mail válido. O Mercado Pago exige o e-mail do pagador para gerar o Pix.");$("email").focus();return false}
+  if($("tipoPedido").value==="Entrega"&&(!$("endereco").value.trim()||!$("bairro").value.trim())){
+    alert("Preencha endereço e bairro antes de gerar o Pix.");return false
+  }
+  if(subtotal()+taxaAtual()<=0){alert("O valor do pedido precisa ser maior que zero.");return false}
+  return true;
+}
+
+async function gerarPixAutomatico(){
+  if(!validarDadosParaPix())return;
+  limparPixGerado();
+
+  const btn=$("gerarPix");
+  const original=btn.textContent;
+  btn.disabled=true;
+  btn.textContent="Gerando Pix...";
+
+  try{
+    const totalPedido=Number((subtotal()+taxaAtual()).toFixed(2));
+
+    const resposta=await fetch("/api/pix-create",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        amount:totalPedido,
+        email:$("email").value.trim(),
+        name:$("nome").value.trim(),
+        phone:normalizarTelefone($("telefone").value)
+      })
+    });
+
+    const dadosPix=await resposta.json();
+    if(!resposta.ok||!dadosPix.ok)throw new Error(dadosPix.error||"Não foi possível gerar o Pix.");
+
+    pixPaymentId=String(dadosPix.payment_id);
+    pixCopiaColaAtual=dadosPix.qr_code;
+    pixValorGerado=totalPedido;
+    pixPollingStartedAt=Date.now();
+
+    $("pixPagamentoArea").hidden=false;
+    $("pixCopiaCola").textContent=pixCopiaColaAtual;
+    $("qrcodeDinamico").innerHTML="";
+
+    if(window.QRCode){
+      new QRCode($("qrcodeDinamico"),{
+        text:pixCopiaColaAtual,
+        width:210,
+        height:210,
+        correctLevel:QRCode.CorrectLevel.M
+      });
+    }
+
+    $("statusPix").textContent="Pix gerado. Aguardando confirmação do Mercado Pago...";
+    $("statusPix").className="status-pix aguardando";
+    $("pixTempo").textContent="A confirmação é automática. Depois de pagar, aguarde alguns segundos.";
+    iniciarPollingPix();
+  }catch(erro){
+    alert("Não foi possível gerar o Pix.\n\n"+erro.message);
+    limparPixGerado();
+  }finally{
+    btn.disabled=false;
+    btn.textContent=original;
+  }
+}
+
+function iniciarPollingPix(){
+  pararPollingPix();
+  verificarStatusPix();
+  pixPollingTimer=setInterval(verificarStatusPix,3000);
+}
+
+async function verificarStatusPix(){
+  if(!pixPaymentId)return;
+
+  try{
+    const resposta=await fetch(
+      `/api/pix-status?payment_id=${encodeURIComponent(pixPaymentId)}`,
+      {cache:"no-store"}
+    );
+
+    const r=await resposta.json();
+    if(!resposta.ok||!r.ok)throw new Error(r.error||"Erro ao consultar pagamento.");
+
+    const totalAtual=Number((subtotal()+taxaAtual()).toFixed(2));
+    const mesmoValor=
+      Math.abs(Number(r.amount||0)-totalAtual)<0.01 &&
+      Math.abs(pixValorGerado-totalAtual)<0.01;
+
+    if(r.status==="approved"&&mesmoValor){
+      pixConfirmado=true;
+      pararPollingPix();
+      $("statusPix").textContent="✅ Pagamento Pix confirmado automaticamente!";
+      $("statusPix").className="status-pix pago";
+      $("pixTempo").textContent="Pagamento aprovado. O botão Fazer pedido está liberado.";
+      atualizarBotaoPedido();
+      return;
+    }
+
+    if(["rejected","cancelled","refunded","charged_back"].includes(r.status)){
+      pararPollingPix();
+      $("statusPix").textContent=`Pagamento não aprovado (${r.status}). Gere um novo Pix.`;
+      $("statusPix").className="status-pix erro";
+      pixConfirmado=false;
+      atualizarBotaoPedido();
+      return;
+    }
+
+    if(Date.now()-pixPollingStartedAt>30*60*1000){
+      pararPollingPix();
+      $("statusPix").textContent="Tempo de acompanhamento encerrado. Gere um novo Pix se necessário.";
+      $("statusPix").className="status-pix erro";
+    }
+  }catch(erro){
+    console.warn("Consulta Pix:",erro.message);
+  }
+}
+
+function selecionarTipoPedido(tipo){
+  $("tipoPedido").value=tipo;
+  $("taxaEntrega").disabled=tipo!=="Entrega";
+  resetarConfirmacaoPix();
+  renderCarrinho();
+  $("modalTipoPedido").classList.remove("ativo");
+  $("cardapio").scrollIntoView({behavior:"smooth"});
+}
 
 function validar(){
+  if(pagamento==="Pix"&&!emailValido($("email").value)){alert("Informe um e-mail válido para o pagamento Pix.");return false}
+  if(pagamento==="Pix"&&!pixConfirmado){alert("O Pix ainda não foi confirmado pelo Mercado Pago.");return false}
   if(!carrinho.length){alert("Adicione pelo menos um produto.");return false}
   if(!$("nome").value.trim()){alert("Preencha seu nome.");return false}
   if(!telefoneValido($("telefone").value)){alert("Informe um telefone com DDD. Exemplo: (22) 99784-9915.");$("telefone").focus();return false}
@@ -254,14 +433,14 @@ function validar(){
 
 async function enviarPedidoAoServidor(){
   const sub=subtotal(),taxa=taxaAtual();
-  const local=$("tipoPedido").value==="Entrega"?($("taxaEntrega").selectedOptions[0]?.textContent?.split(" — ")[0]||""):"Retirada";
+  const local=$("tipoPedido").value==="Entrega"?($("taxaEntrega").selectedOptions[0]?.textContent?.split(" — ")[0]||""):$("tipoPedido").value;
   const pedido={
-    action:"create",cliente:$("nome").value.trim(),telefone:$("telefone").value.trim(),
-    endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),referencia:$("referencia").value.trim(),
+    action:"create",cliente:$("nome").value.trim(),telefone:$("telefone").value.trim(),email:$("email").value.trim(),
+    email:$("email").value.trim(),endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),referencia:$("referencia").value.trim(),
     localidade:local,tipo:$("tipoPedido").value,pagamento,
     troco:pagamento==="Dinheiro"?$("troco").value.trim():"",observacoes:$("observacoes").value.trim(),
     itens:carrinho.map(i=>({nome:i.nome,quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:valorItem(i)})),
-    subtotal:sub,entrega:taxa,total:sub+taxa
+    subtotal:sub,entrega:taxa,total:sub+taxa,pix_payment_id:pagamento==="Pix"?pixPaymentId:null
   };
   return (await apiPedidos("POST",pedido)).order;
 }
@@ -278,6 +457,7 @@ function montarMensagem(){
 
 *Cliente:* ${$("nome").value.trim()}
 *Telefone:* ${$("telefone").value.trim()}
+*E-mail:* ${$("email").value.trim()}
 
 *PEDIDO:*
 ${itens}
@@ -338,28 +518,54 @@ async function salvarAdmin(){
   }catch(erro){alert("Não foi possível salvar a disponibilidade online.\n\n"+erro.message)}
 }
 
+
+$("gerarPix").onclick=gerarPixAutomatico;
+
+$("verCardapio").onclick=()=>$("modalTipoPedido").classList.add("ativo");
+$("fecharTipoPedido").onclick=()=>$("modalTipoPedido").classList.remove("ativo");
+$("modalTipoPedido").onclick=e=>{if(e.target===$("modalTipoPedido"))$("modalTipoPedido").classList.remove("ativo")};
+document.querySelectorAll(".opcao-pedido").forEach(btn=>btn.addEventListener("click",()=>selecionarTipoPedido(btn.dataset.tipo)));
+
+$("continuarComprando").onclick=()=>{
+  $("modalDepoisAdicionar").classList.remove("ativo");
+  $("cardapio").scrollIntoView({behavior:"smooth"});
+};
+$("irFinalizar").onclick=()=>{
+  $("modalDepoisAdicionar").classList.remove("ativo");
+  $("finalizar").scrollIntoView({behavior:"smooth"});
+};
+
 $("telefone").addEventListener("input",e=>e.target.value=formatarTelefone(e.target.value));
 $("telefone").addEventListener("blur",preencherClientePeloTelefone);
 $("telefone").addEventListener("change",preencherClientePeloTelefone);
+$("email").addEventListener("input",()=>{if(pixPaymentId)resetarConfirmacaoPix()});
+["nome","endereco","bairro","referencia"].forEach(id=>{$(id).addEventListener("input",()=>{if(pixPaymentId)resetarConfirmacaoPix()})});
+
 $("fecharProduto").onclick=()=>$("modalProduto").classList.remove("ativo");
 $("confirmarProduto").onclick=adicionarProduto;
 $("modalProduto").onclick=e=>{if(e.target===$("modalProduto"))$("modalProduto").classList.remove("ativo")};
-$("pagamentos").onclick=e=>{const b=e.target.closest(".pagamento");if(!b)return;document.querySelectorAll(".pagamento").forEach(x=>x.classList.remove("ativo"));b.classList.add("ativo");pagamento=b.dataset.forma;$("pixBox").classList.toggle("ativo",pagamento==="Pix");$("campoTroco").style.display=pagamento==="Dinheiro"?"flex":"none";renderCarrinho()};
-$("copiarPix").onclick=()=>navigator.clipboard.writeText(dados.config.chavePix).then(()=>alert("Chave Pix copiada!")).catch(()=>prompt("Copie a chave Pix:",dados.config.chavePix));
-$("taxaEntrega").onchange=renderCarrinho;
-$("tipoPedido").onchange=()=>{$("taxaEntrega").disabled=$("tipoPedido").value==="Retirada no local";renderCarrinho()};
+$("pagamentos").onclick=e=>{
+  const b=e.target.closest(".pagamento");if(!b)return;
+  document.querySelectorAll(".pagamento").forEach(x=>x.classList.remove("ativo"));
+  b.classList.add("ativo");pagamento=b.dataset.forma;
+  $("pixBox").classList.toggle("ativo",pagamento==="Pix");
+  $("campoTroco").style.display=pagamento==="Dinheiro"?"flex":"none";
+  resetarConfirmacaoPix();
+  renderCarrinho();
+};
+$("copiarPix").onclick=()=>{if(!pixCopiaColaAtual)return alert("Gere o Pix primeiro.");navigator.clipboard.writeText(pixCopiaColaAtual).then(()=>alert("Código Pix Copia e Cola copiado!")).catch(()=>prompt("Copie o código Pix:",pixCopiaColaAtual));};
+$("taxaEntrega").onchange=()=>{resetarConfirmacaoPix();renderCarrinho()};
+$("tipoPedido").onchange=()=>{$("taxaEntrega").disabled=$("tipoPedido").value!=="Entrega";resetarConfirmacaoPix();renderCarrinho()};
 $("enviarPedido").onclick=async()=>{
   if(!validar())return;
-  const botao=$("enviarPedido"),original=botao.textContent;botao.disabled=true;botao.textContent="ENVIANDO...";
+  const botao=$("enviarPedido"),original=botao.textContent;botao.disabled=true;botao.textContent="PROCESSANDO...";
   try{
     salvarClienteAtual();const pedido=await enviarPedidoAoServidor();
-    const mensagem=`*Pedido #${pedido.id}*\n\n${montarMensagem()}`;
-    window.open(`https://wa.me/${dados.config.whatsapp}?text=${encodeURIComponent(mensagem)}`,"_blank");
-    carrinho=[];salvarCarrinho();alert(`Pedido #${pedido.id} recebido pela loja!`);
-  }catch(erro){alert("Não foi possível enviar o pedido.\n\n"+erro.message)}
+    carrinho=[];resetarConfirmacaoPix();salvarCarrinho();alert(`Pedido #${pedido.id} realizado com sucesso! A loja já recebeu seu pedido.`);
+  }catch(erro){alert("Não foi possível realizar o pedido.\n\n"+erro.message)}
   finally{botao.disabled=false;botao.textContent=original}
 };
-$("limparCarrinho").onclick=()=>{if(confirm("Limpar o carrinho?")){carrinho=[];salvarCarrinho()}};
+$("limparCarrinho").onclick=()=>{if(confirm("Limpar o carrinho?")){carrinho=[];resetarConfirmacaoPix();salvarCarrinho()}};
 $("abrirAdmin").onclick=()=>{$("modalAdmin").classList.add("ativo");$("loginAdmin").hidden=false;$("conteudoAdmin").hidden=true;$("senhaAdmin").value=""};
 $("fecharAdmin").onclick=()=>$("modalAdmin").classList.remove("ativo");
 $("entrarAdmin").onclick=entrarAdmin;

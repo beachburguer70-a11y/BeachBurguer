@@ -1,9 +1,5 @@
 {
-  "name": "beach-burguer-delivery",
-  "version": "4.0.0",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.57.0"
-  }
+  "name": "beach-burguer-delivery-cloudflare",
+  "version": "8.6.0",
+  "private": true
 }
