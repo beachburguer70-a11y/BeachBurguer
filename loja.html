@@ -22,11 +22,6 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 .total{font-size:24px;color:var(--y);font-weight:900}.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
 .login{min-height:100vh;display:grid;place-items:center}.loginbox{width:min(420px,92%);background:var(--p);border:1px solid var(--b);border-radius:18px;padding:25px}.loginbox input{width:100%;padding:13px;border-radius:10px;border:1px solid #444;background:#0d0d0d;color:white;margin:10px 0}
 .hidden{display:none!important}.empty{text-align:center;color:#aaa;padding:80px 20px;grid-column:1/-1}
-.qz-panel{background:#111;border:1px solid var(--b);border-radius:14px;padding:13px;margin:0 0 18px}
-.qz-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.qz-row select{background:#0b0b0b;color:#fff;border:1px solid #444;border-radius:9px;padding:10px;min-width:230px}
-.qz-status{font-weight:900}.qz-ok{color:#61df88}.qz-erro{color:#ff7777}.qz-aviso{color:#ffd367}
-.qz-help{color:#aaa;font-size:13px;margin:9px 0 0}
 @media(max-width:1050px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
@@ -45,9 +40,8 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
   <div class="container top">
     <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small></div></div>
     <div class="controls">
-      <button id="qzBtn" class="btn dark">🔌 Conectar impressora</button>
       <button id="somBtn" class="btn dark">🔊 Som ativado</button>
-      <button id="autoBtn" class="btn yellow">🖨️ Impressão automática: ON</button>
+      <span class="badge">🖨️ Impressão automática pelo programa do Windows</span>
       <button id="atualizar" class="btn dark">Atualizar</button>
       <button id="sair" class="btn red">Sair</button>
     </div>
@@ -60,37 +54,18 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     <div class="badge">Prontos: <strong id="qPronto">0</strong></div>
     <div class="badge">Entregues: <strong id="qEntregue">0</strong></div>
   </div>
-  <section class="qz-panel">
-    <div class="qz-row">
-      <strong id="qzStatus" class="qz-status qz-aviso">QZ Tray desconectado</strong>
-      <select id="printerSelect"><option value="">Selecione a impressora</option></select>
-      <select id="paperWidth">
-        <option value="80">Bobina 80 mm</option>
-        <option value="58">Bobina 58 mm</option>
-      </select>
-      <button id="salvarImpressora" class="btn yellow">Salvar impressora</button>
-      <button id="testeImpressao" class="btn dark">Imprimir teste</button>
-    </div>
-    <p class="qz-help">Deixe o QZ Tray aberto no Windows. Na primeira conexão, marque “Sempre permitir” e clique em Permitir.</p>
-  </section>
   <div id="pedidos" class="grid"></div>
 </main>
 </div>
 
-<script src="https://demo.qz.io/js/qz-tray.js"></script>
 <script>
 const TOKEN_KEY="bb_store_token";
 let token=localStorage.getItem(TOKEN_KEY)||"";
 let conhecidos=new Set();
 let primeiraCarga=true;
 let somAtivo=true;
-let impressaoAutomatica=true;
 let intervalo=null;
 
-const QZ_PRINTER_KEY="bb_qz_printer";
-const QZ_WIDTH_KEY="bb_qz_width";
-let qzConectando=false;
-let qzPronto=false;
 
 const $=id=>document.getElementById(id);
 const moeda=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -101,12 +76,7 @@ $("entrar").onclick=entrar;
 $("senha").onkeydown=e=>{if(e.key==="Enter")entrar()};
 $("sair").onclick=()=>{localStorage.removeItem(TOKEN_KEY);location.reload()};
 $("atualizar").onclick=carregarPedidos;
-$("qzBtn").onclick=conectarQZ;
-$("salvarImpressora").onclick=salvarImpressora;
-$("testeImpressao").onclick=imprimirTesteQZ;
-$("paperWidth").value=localStorage.getItem(QZ_WIDTH_KEY)||"80";
 $("somBtn").onclick=()=>{somAtivo=!somAtivo;$("somBtn").textContent=somAtivo?"🔊 Som ativado":"🔇 Som desativado"};
-$("autoBtn").onclick=()=>{impressaoAutomatica=!impressaoAutomatica;$("autoBtn").textContent=`🖨️ Impressão automática: ${impressaoAutomatica?"ON":"OFF"}`};
 
 async function entrar(){
   token=$("senha").value.trim();
@@ -116,7 +86,6 @@ async function entrar(){
     localStorage.setItem(TOKEN_KEY,token);
     $("login").classList.add("hidden");
     $("app").classList.remove("hidden");
-    conectarQZ().catch(()=>{});
     if(intervalo)clearInterval(intervalo);
     intervalo=setInterval(carregarPedidos,3000);
   }catch(e){alert("Senha incorreta ou conexão indisponível.");}
@@ -138,17 +107,7 @@ async function carregarPedidos(){
   const novos=data.orders.filter(p=>p.status==="novo"&&!conhecidos.has(p.id));
   if(!primeiraCarga&&novos.length){
     if(somAtivo)tocarSom();
-    for(const pedido of novos){
-      if(impressaoAutomatica&&!pedido.printed){
-        try{
-          await imprimirPedidoQZ(pedido);
-          await atualizarPedido(pedido.id,{printed:true});
-        }catch(erro){
-          console.error("Falha na impressão automática:",erro);
-          mostrarQZStatus("Pedido não impresso: "+erro.message,"erro");
-        }
-      }
-    }
+
   }
   data.orders.forEach(p=>conhecidos.add(p.id));
   primeiraCarga=false;
@@ -184,7 +143,7 @@ function render(list){
     <div class="line total"><span>Total</span><strong>${moeda(p.total)}</strong></div>
     ${p.observacoes?`<p><strong>Observações:</strong> ${esc(p.observacoes)}</p>`:""}
     <div class="actions">
-      <button class="btn yellow" onclick="imprimirPorId(${p.id})">Imprimir</button>
+      <button class="btn yellow" onclick="imprimirPorId(${p.id})">Reimprimir</button>
       <button class="btn dark" onclick="mudarStatus(${p.id},'preparo')">Em preparo</button>
       <button class="btn green" onclick="mudarStatus(${p.id},'pronto')">Pronto</button>
       <button class="btn dark" onclick="mudarStatus(${p.id},'entregue')">Entregue</button>
@@ -198,195 +157,14 @@ function formatPhone(v){const n=String(v||"").replace(/\D/g,"");return n.length=
 async function atualizarPedido(id,campos){await api("POST",{action:"update",id,...campos})}
 async function mudarStatus(id,status){await atualizarPedido(id,{status});await carregarPedidos()}
 async function imprimirPorId(id){
-  const p=window._pedidos.find(x=>x.id===id);
-  if(!p)return;
   try{
-    await imprimirPedidoQZ(p);
-    await atualizarPedido(p.id,{printed:true});
-    mostrarQZStatus(`Pedido #${p.id} impresso com sucesso.`,"ok");
+    await atualizarPedido(id,{printed:false});
+    alert(`Pedido #${id} enviado para a fila de impressão. O programa do Windows imprimirá em alguns segundos.`);
+    await carregarPedidos();
   }catch(erro){
-    alert("Não foi possível imprimir.\n\n"+erro.message+"\n\nConfirme se o QZ Tray está aberto e se a impressora foi selecionada.");
+    alert("Não foi possível enviar para reimpressão.\n\n"+erro.message);
   }
 }
-
-function mostrarQZStatus(texto,tipo="aviso"){
-  const el=$("qzStatus");
-  el.textContent=texto;
-  el.className="qz-status "+(tipo==="ok"?"qz-ok":tipo==="erro"?"qz-erro":"qz-aviso");
-  $("qzBtn").textContent=qzPronto?"✅ Impressora conectada":"🔌 Conectar impressora";
-}
-
-async function conectarQZ(){
-  if(qzConectando)return;
-  if(!window.qz){
-    qzPronto=false;
-    mostrarQZStatus("Biblioteca do QZ Tray não carregou.","erro");
-    throw new Error("Biblioteca do QZ Tray não carregou. Verifique a internet.");
-  }
-
-  try{
-    qzConectando=true;
-    if(!qz.websocket.isActive()){
-      mostrarQZStatus("Conectando ao QZ Tray...","aviso");
-      await qz.websocket.connect({retries:3,delay:1});
-    }
-    qzPronto=true;
-    mostrarQZStatus("QZ Tray conectado.","ok");
-    await listarImpressoras();
-  }catch(erro){
-    qzPronto=false;
-    mostrarQZStatus("QZ Tray desconectado.","erro");
-    throw new Error("Abra o QZ Tray no Windows e permita a conexão.");
-  }finally{
-    qzConectando=false;
-  }
-}
-
-async function listarImpressoras(){
-  if(!qz.websocket.isActive())await conectarQZ();
-  const impressoras=await qz.printers.find();
-  const selecionada=localStorage.getItem(QZ_PRINTER_KEY)||"";
-  $("printerSelect").innerHTML='<option value="">Selecione a impressora</option>'+
-    impressoras.map(nome=>`<option value="${esc(nome)}" ${nome===selecionada?"selected":""}>${esc(nome)}</option>`).join("");
-
-  if(selecionada&&!impressoras.includes(selecionada)){
-    localStorage.removeItem(QZ_PRINTER_KEY);
-    mostrarQZStatus("Impressora salva não foi encontrada.","erro");
-  }else if(selecionada){
-    mostrarQZStatus("QZ conectado: "+selecionada,"ok");
-  }
-}
-
-function salvarImpressora(){
-  const nome=$("printerSelect").value;
-  if(!nome)return alert("Selecione uma impressora.");
-  localStorage.setItem(QZ_PRINTER_KEY,nome);
-  localStorage.setItem(QZ_WIDTH_KEY,$("paperWidth").value);
-  mostrarQZStatus("Impressora salva: "+nome,"ok");
-  alert("Impressora salva. Os próximos pedidos serão enviados diretamente para ela.");
-}
-
-function textoSeguro(v){
-  return String(v??"")
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^\x20-\x7E\n\r]/g,"");
-}
-
-function linhaSeparadora(colunas){return "-".repeat(colunas)}
-function alinharLinha(esquerda,direita,colunas){
-  esquerda=textoSeguro(esquerda);direita=textoSeguro(direita);
-  const espacos=Math.max(1,colunas-esquerda.length-direita.length);
-  return esquerda+" ".repeat(espacos)+direita;
-}
-function quebrarTexto(texto,colunas){
-  texto=textoSeguro(texto).trim();
-  if(!texto)return [];
-  const palavras=texto.split(/\s+/),linhas=[];let linha="";
-  for(const palavra of palavras){
-    if(!linha)linha=palavra;
-    else if((linha+" "+palavra).length<=colunas)linha+=" "+palavra;
-    else{linhas.push(linha);linha=palavra}
-  }
-  if(linha)linhas.push(linha);
-  return linhas;
-}
-
-function montarCupomTexto(p){
-  const largura=Number(localStorage.getItem(QZ_WIDTH_KEY)||$("paperWidth").value||80);
-  const colunas=largura===58?32:48;
-  const linhas=[];
-
-  linhas.push("\x1B\x40");
-  linhas.push("\x1B\x61\x01");
-  linhas.push("\x1B\x45\x01");
-  linhas.push("BEACH BURGUER\n");
-  linhas.push(`PEDIDO #${p.id}\n`);
-  linhas.push("\x1B\x45\x00");
-  linhas.push(textoSeguro(dataHora(p.created_at))+"\n");
-  linhas.push("\x1B\x61\x00");
-  linhas.push(linhaSeparadora(colunas)+"\n");
-
-  quebrarTexto(`Cliente: ${p.cliente}`,colunas).forEach(l=>linhas.push(l+"\n"));
-  linhas.push(`Telefone: ${textoSeguro(formatPhone(p.telefone))}\n`);
-  linhas.push(`Tipo: ${textoSeguro(p.tipo)}\n`);
-
-  if(p.tipo==="Entrega"){
-    quebrarTexto(`Endereco: ${p.endereco}`,colunas).forEach(l=>linhas.push(l+"\n"));
-    quebrarTexto(`Bairro: ${p.bairro}`,colunas).forEach(l=>linhas.push(l+"\n"));
-    quebrarTexto(`Localidade: ${p.localidade}`,colunas).forEach(l=>linhas.push(l+"\n"));
-    quebrarTexto(`Referencia: ${p.referencia||"-"}`,colunas).forEach(l=>linhas.push(l+"\n"));
-  }
-
-  linhas.push(linhaSeparadora(colunas)+"\n");
-  (p.itens||[]).forEach(i=>{
-    quebrarTexto(`${i.quantidade}x ${i.nome}`,colunas).forEach((l,idx)=>{
-      if(idx===0)linhas.push("\x1B\x45\x01"+l+"\x1B\x45\x00\n");
-      else linhas.push(l+"\n");
-    });
-    linhas.push(alinharLinha("",moeda(i.total),colunas)+"\n");
-    if(i.adicionais?.length){
-      quebrarTexto("+ "+i.adicionais.map(a=>a.nome).join(", "),colunas).forEach(l=>linhas.push(l+"\n"));
-    }
-    if(i.observacao){
-      quebrarTexto("OBS: "+i.observacao,colunas).forEach(l=>linhas.push(l+"\n"));
-    }
-    linhas.push("\n");
-  });
-
-  linhas.push(linhaSeparadora(colunas)+"\n");
-  linhas.push(alinharLinha("Subtotal",moeda(p.subtotal),colunas)+"\n");
-  linhas.push(alinharLinha("Entrega",moeda(p.entrega),colunas)+"\n");
-  linhas.push("\x1B\x45\x01");
-  linhas.push(alinharLinha("TOTAL",moeda(p.total),colunas)+"\n");
-  linhas.push("\x1B\x45\x00");
-  linhas.push(`Pagamento: ${textoSeguro(p.pagamento)}\n`);
-  if(p.troco)quebrarTexto(`Troco: ${p.troco}`,colunas).forEach(l=>linhas.push(l+"\n"));
-  if(p.observacoes){
-    linhas.push(linhaSeparadora(colunas)+"\n");
-    quebrarTexto("OBS GERAL: "+p.observacoes,colunas).forEach(l=>linhas.push(l+"\n"));
-  }
-
-  linhas.push("\n");
-  linhas.push("\x1B\x61\x01");
-  linhas.push("Seu momento, nosso sabor.\n\n\n");
-  linhas.push("\x1D\x56\x00");
-
-  return linhas.join("");
-}
-
-async function imprimirPedidoQZ(p){
-  await conectarQZ();
-  const impressora=localStorage.getItem(QZ_PRINTER_KEY)||$("printerSelect").value;
-  if(!impressora)throw new Error("Selecione e salve a impressora primeiro.");
-
-  const config=qz.configs.create(impressora,{
-    encoding:"UTF-8",
-    copies:1,
-    jobName:`Beach Burguer - Pedido #${p.id}`
-  });
-  const dados=[{type:"raw",format:"plain",data:montarCupomTexto(p)}];
-  await qz.print(config,dados);
-}
-
-async function imprimirTesteQZ(){
-  try{
-    const teste={
-      id:"TESTE",created_at:new Date().toISOString(),cliente:"Teste de impressao",
-      telefone:"22997849915",tipo:"Retirada no local",itens:[
-        {quantidade:1,nome:"Teste Beach Burguer",total:15,adicionais:[],observacao:"Impressao configurada"}
-      ],
-      subtotal:15,entrega:0,total:15,pagamento:"Pix",troco:"",observacoes:"QZ Tray funcionando"
-    };
-    await imprimirPedidoQZ(teste);
-    mostrarQZStatus("Teste enviado para a impressora.","ok");
-  }catch(erro){
-    alert("Falha no teste.\n\n"+erro.message);
-  }
-}
-
-window.addEventListener("beforeunload",()=>{
-  if(window.qz&&qz.websocket.isActive())qz.websocket.disconnect().catch(()=>{});
-});
 </script>
 </body>
 </html>

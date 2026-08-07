@@ -1,4 +1,4 @@
-const CACHE='beach-burguer-v6-1-mistos-sem-adicionais';
+const CACHE='beach-burguer-v8-impressao-local';
 const FILES=['./','index.html','style.css','script.js','manifest.json','assets/logo.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
