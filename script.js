@@ -353,9 +353,8 @@ $("enviarPedido").onclick=async()=>{
   const botao=$("enviarPedido"),original=botao.textContent;botao.disabled=true;botao.textContent="PROCESSANDO...";
   try{
     salvarClienteAtual();const pedido=await enviarPedidoAoServidor();
-    const mensagem=`*Pedido #${pedido.id}*\n\n${montarMensagem()}`;
-    carrinho=[];salvarCarrinho();alert(`Pedido #${pedido.id} recebido pela loja!`);
-  }catch(erro){alert("Não foi possível enviar o pedido.\n\n"+erro.message)}
+    carrinho=[];salvarCarrinho();alert(`Pedido #${pedido.id} realizado com sucesso! A loja já recebeu seu pedido.`);
+  }catch(erro){alert("Não foi possível realizar o pedido.\n\n"+erro.message)}
   finally{botao.disabled=false;botao.textContent=original}
 };
 $("limparCarrinho").onclick=()=>{if(confirm("Limpar o carrinho?")){carrinho=[];salvarCarrinho()}};
