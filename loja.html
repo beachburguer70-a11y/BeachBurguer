@@ -13,7 +13,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 .container{width:min(1450px,95%);margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:15px}
 .brand{display:flex;align-items:center;gap:12px;font-weight:900}.brand img{width:58px;height:58px;object-fit:contain}.brand span{color:var(--y)}
 .controls{display:flex;gap:10px;flex-wrap:wrap}button,input{font:inherit}.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:900;cursor:pointer}.yellow{background:var(--y)}.dark{background:#222;color:white;border:1px solid #444}.green{background:var(--g);color:white}.red{background:var(--r);color:white}
-.statusbar{display:flex;gap:10px;flex-wrap:wrap;padding:18px 0}.badge{background:#171717;border:1px solid var(--b);padding:10px 14px;border-radius:999px}
+.statusbar{display:flex;gap:10px;flex-wrap:wrap;padding:18px 0}.badge{background:#171717;border:1px solid var(--b);padding:10px 14px;border-radius:999px}.filtro-status{color:var(--t);cursor:pointer}.filtro-status.ativo{background:var(--y);color:#111;border-color:var(--y)}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding-bottom:50px}
 .order{background:var(--p);border:1px solid var(--b);border-radius:17px;padding:18px;box-shadow:0 15px 35px rgba(0,0,0,.35)}
 .order.novo{border-color:var(--y);box-shadow:0 0 0 2px rgba(255,183,0,.18)}
@@ -49,10 +49,11 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 </header>
 <main class="container">
   <div class="statusbar">
-    <div class="badge">Novos: <strong id="qNovo">0</strong></div>
-    <div class="badge">Em preparo: <strong id="qPreparo">0</strong></div>
-    <div class="badge">Prontos: <strong id="qPronto">0</strong></div>
-    <div class="badge">Entregues: <strong id="qEntregue">0</strong></div>
+    <button class="badge filtro-status ativo" data-status="novo">Novos: <strong id="qNovo">0</strong></button>
+    <button class="badge filtro-status" data-status="preparo">Em preparo: <strong id="qPreparo">0</strong></button>
+    <button class="badge filtro-status" data-status="pronto">Prontos: <strong id="qPronto">0</strong></button>
+    <button class="badge filtro-status" data-status="entregue">Entregues: <strong id="qEntregue">0</strong></button>
+    <button class="badge filtro-status" data-status="todos">Todos</button>
   </div>
   <div id="pedidos" class="grid"></div>
 </main>
@@ -65,6 +66,7 @@ let conhecidos=new Set();
 let primeiraCarga=true;
 let somAtivo=true;
 let intervalo=null;
+let filtroAtual="novo";
 
 
 const $=id=>document.getElementById(id);
@@ -77,6 +79,11 @@ $("senha").onkeydown=e=>{if(e.key==="Enter")entrar()};
 $("sair").onclick=()=>{localStorage.removeItem(TOKEN_KEY);location.reload()};
 $("atualizar").onclick=carregarPedidos;
 $("somBtn").onclick=()=>{somAtivo=!somAtivo;$("somBtn").textContent=somAtivo?"🔊 Som ativado":"🔇 Som desativado"};
+document.querySelectorAll(".filtro-status").forEach(btn=>btn.addEventListener("click",()=>{
+  filtroAtual=btn.dataset.status;
+  document.querySelectorAll(".filtro-status").forEach(b=>b.classList.toggle("ativo",b===btn));
+  render(window._pedidos||[]);
+}));
 
 async function entrar(){
   token=$("senha").value.trim();
@@ -122,12 +129,14 @@ function tocarSom(){
 }
 
 function render(list){
+  window._pedidos=list;
   $("qNovo").textContent=list.filter(p=>p.status==="novo").length;
   $("qPreparo").textContent=list.filter(p=>p.status==="preparo").length;
   $("qPronto").textContent=list.filter(p=>p.status==="pronto").length;
   $("qEntregue").textContent=list.filter(p=>p.status==="entregue").length;
 
-  $("pedidos").innerHTML=list.length?list.map(p=>`
+  const exibidos=filtroAtual==="todos"?list:list.filter(p=>p.status===filtroAtual);
+  $("pedidos").innerHTML=exibidos.length?exibidos.map(p=>`
   <article class="order ${p.status}">
     <h2>Pedido #${p.id}</h2>
     <div class="meta">${dataHora(p.created_at)} • ${String(p.status).toUpperCase()}</div>
@@ -148,8 +157,7 @@ function render(list){
       <button class="btn green" onclick="mudarStatus(${p.id},'pronto')">Pronto</button>
       <button class="btn dark" onclick="mudarStatus(${p.id},'entregue')">Entregue</button>
     </div>
-  </article>`).join(""):'<div class="empty">Nenhum pedido recebido.</div>';
-  window._pedidos=list;
+  </article>`).join(""):'<div class="empty">Nenhum pedido nesta aba.</div>';
 }
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}

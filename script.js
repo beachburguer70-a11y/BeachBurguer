@@ -153,7 +153,7 @@ async function iniciar(){
 
   renderTaxas();renderAbas();
   await carregarDisponibilidade();
-  renderProdutos();renderCarrinho();atualizarBotaoPedido();
+  renderProdutos();renderCarrinho();atualizarCamposEntrega();atualizarBotaoPedido();
 }
 
 function renderTaxas(){
@@ -407,9 +407,21 @@ async function verificarStatusPix(){
   }
 }
 
+function atualizarCamposEntrega(){
+  const entrega=$("tipoPedido").value==="Entrega";
+  document.querySelectorAll(".campo-entrega").forEach(el=>el.hidden=!entrega);
+  $("taxaEntrega").disabled=!entrega;
+  if(!entrega){
+    $("endereco").value="";
+    $("bairro").value="";
+    $("referencia").value="";
+    $("taxaEntrega").selectedIndex=0;
+  }
+}
+
 function selecionarTipoPedido(tipo){
   $("tipoPedido").value=tipo;
-  $("taxaEntrega").disabled=tipo!=="Entrega";
+  atualizarCamposEntrega();
   resetarConfirmacaoPix();
   renderCarrinho();
   $("modalTipoPedido").classList.remove("ativo");
@@ -546,7 +558,7 @@ $("pagamentos").onclick=e=>{
 };
 $("copiarPix").onclick=()=>{if(!pixCopiaColaAtual)return alert("Gere o Pix primeiro.");navigator.clipboard.writeText(pixCopiaColaAtual).then(()=>alert("Código Pix Copia e Cola copiado!")).catch(()=>prompt("Copie o código Pix:",pixCopiaColaAtual));};
 $("taxaEntrega").onchange=()=>{resetarConfirmacaoPix();renderCarrinho()};
-$("tipoPedido").onchange=()=>{$("taxaEntrega").disabled=$("tipoPedido").value!=="Entrega";resetarConfirmacaoPix();renderCarrinho()};
+$("tipoPedido").onchange=()=>{atualizarCamposEntrega();resetarConfirmacaoPix();renderCarrinho()};
 $("enviarPedido").onclick=async()=>{
   if(!validar())return;
   const botao=$("enviarPedido"),original=botao.textContent;botao.disabled=true;botao.textContent="PROCESSANDO...";
