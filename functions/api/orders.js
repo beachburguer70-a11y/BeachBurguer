@@ -1,4 +1,4 @@
-import webpush from "web-push";
+import { sendNotification } from "web-push-neo";
 
 import { json, authorized, supabaseRequest, mpToken } from "./_shared.js";
 
@@ -87,12 +87,6 @@ async function enviarPushPedido(env, telefone, pedido) {
   const phone=String(telefone||"").replace(/\D/g,"");
   if(!phone) return {ok:false,error:"Telefone ausente."};
 
-  webpush.setVapidDetails(
-    env.VAPID_SUBJECT || "mailto:contato@beachburguer.local",
-    env.VAPID_PUBLIC_KEY,
-    env.VAPID_PRIVATE_KEY
-  );
-
   const rows=await supabaseRequest(
     env,
     `push_subscriptions?select=endpoint,subscription&telefone=eq.${phone}`
@@ -117,9 +111,18 @@ async function enviarPushPedido(env, telefone, pedido) {
 
   for(const row of rows||[]){
     try{
-      await webpush.sendNotification(row.subscription,payload);
+      const result = await sendNotification(row.subscription, payload, {
+        vapidDetails: {
+          subject: env.VAPID_SUBJECT || "mailto:contato@beachburguer.local",
+          publicKey: env.VAPID_PUBLIC_KEY,
+          privateKey: env.VAPID_PRIVATE_KEY
+        },
+        TTL: 120,
+        urgency: "high",
+        topic: `pedido-${pedido?.id || "novo"}`.slice(0,32)
+      });
       enviados++;
-      console.log("PUSH enviado com sucesso:", phone);
+      console.log("PUSH enviado com sucesso:", phone, result?.statusCode || "ok");
     }catch(error){
       const status=Number(error?.statusCode||0);
       const msg=String(error?.message||error);
