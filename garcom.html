@@ -48,8 +48,14 @@
       .garcom-form .full{grid-column:auto}
       .garcom-barra{align-items:flex-start;flex-direction:column}
     }
+  .modo-edicao-aviso{background:#2a2100;border:1px solid #ffb800;color:#ffcf4a;padding:10px 12px;border-radius:10px;margin-bottom:12px;font-weight:900}
+    .lista-pedidos-editar{display:grid;gap:10px;margin-top:14px;max-height:60vh;overflow:auto}
+    .pedido-editar-card{border:1px solid #333;background:#0b0b0b;border-radius:12px;padding:12px}
+    .pedido-editar-topo{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .pedido-editar-itens{font-size:13px;color:#bbb;margin:7px 0}
+    .modal-editar-pedido-garcom{max-width:650px}
   </style>
-  <script defer src="garcom.js?v=830"></script>
+  <script defer src="garcom.js?v=838"></script>
 </head>
 <body>
 <div id="loginGarcom" class="login-garcom">
@@ -75,6 +81,7 @@
     <div class="garcom-acoes">
       <span class="selo-garcom">👨‍🍳 GARÇOM</span>
       <button id="novoPedido" class="btn btn-escuro">Novo pedido</button>
+      <button id="editarPedidoGarcom" class="btn btn-escuro">✏️ Editar pedido</button>
       <button id="sairGarcom" class="btn btn-escuro">Sair</button>
     </div>
   </div>
@@ -127,6 +134,15 @@
   </div>
 </main>
 
+<div id="modalEditarPedidoGarcom" class="modal">
+  <div class="modal-box modal-editar-pedido-garcom">
+    <button id="fecharEditarPedidoGarcom" class="fechar">×</button>
+    <h2>✏️ Editar pedido</h2>
+    <p>Selecione um pedido feito pelo garçom. Ao salvar, a comanda completa será impressa novamente.</p>
+    <button id="atualizarPedidosGarcom" class="btn btn-amarelo btn-largo">Atualizar lista</button>
+    <div id="listaPedidosEditarGarcom" class="lista-pedidos-editar"></div>
+  </div>
+</div>
 <div id="modalProdutoGarcom" class="modal">
   <div class="modal-box">
     <button id="fecharProdutoGarcom" class="fechar">×</button>

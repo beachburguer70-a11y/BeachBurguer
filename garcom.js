@@ -70,6 +70,7 @@ let produtoSelecionado=null;
 let tipoPedido="Consumir no local";
 let pagamento="A pagar";
 let enviando=false;
+let pedidoEditando=null;
 
 const $=id=>document.getElementById(id);
 const moeda=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -250,6 +251,7 @@ function renderTudo(){
 }
 
 function novoPedido(){
+  pedidoEditando=null;
   carrinho=[];
   $("nomeGarcom").value="";
   $("observacoesGarcom").value="";
@@ -258,8 +260,50 @@ function novoPedido(){
   document.querySelectorAll(".tipo-btn").forEach(b=>b.classList.toggle("ativo",b.dataset.tipo===tipoPedido));
   document.querySelectorAll(".pg-btn").forEach(b=>b.classList.toggle("ativo",b.dataset.pagamento===pagamento));
   $("statusGarcom").textContent="";
+  $("enviarGarcom").textContent="ENVIAR PEDIDO";
+  const aviso=document.getElementById("avisoEdicaoGarcom");
+  if(aviso)aviso.remove();
   renderCarrinho();
   window.scrollTo({top:0,behavior:"smooth"});
+}
+
+
+async function abrirListaEditarPedido(){
+  $("modalEditarPedidoGarcom").classList.add("ativo");
+  await carregarPedidosParaEditar();
+}
+async function carregarPedidosParaEditar(){
+  const box=$("listaPedidosEditarGarcom");
+  box.innerHTML="<p>Carregando pedidos...</p>";
+  try{
+    const r=await api("POST",{action:"list_orders",limit:100},true);
+    const pedidos=(r.orders||[]).filter(p=>String(p.origem||"")==="garcom" && p.status!=="cancelado");
+    window.__pedidosGarcomEditar=pedidos;
+    box.innerHTML=pedidos.length?pedidos.map(p=>`
+      <div class="pedido-editar-card">
+        <div class="pedido-editar-topo"><strong>Pedido #${p.id} — ${esc(p.cliente)}</strong><strong>${moeda(p.total)}</strong></div>
+        <div class="pedido-editar-itens">${(p.itens||[]).map(i=>`${i.quantidade}x ${esc(i.nome)}`).join(" • ")}</div>
+        <small>${esc(p.tipo||"")} • ${esc(p.pagamento||"")} • ${esc(p.status||"")}</small>
+        <button class="btn btn-amarelo btn-largo" onclick="carregarPedidoParaEdicao(${p.id})">Editar este pedido</button>
+      </div>`).join(""):"<p>Nenhum pedido do garçom encontrado.</p>";
+  }catch(e){box.innerHTML=`<p>Erro ao carregar pedidos: ${esc(e.message)}</p>`}
+}
+function carregarPedidoParaEdicao(id){
+  const p=(window.__pedidosGarcomEditar||[]).find(x=>Number(x.id)===Number(id));
+  if(!p)return;
+  pedidoEditando=p;
+  carrinho=(p.itens||[]).map((i,n)=>({uid:Date.now()+n+Math.random(),id:i.id,nome:i.nome,categoria:i.categoria||"",preco:Number(i.preco||0),quantidade:Number(i.quantidade||1),adicionais:Array.isArray(i.adicionais)?i.adicionais:[],observacao:i.observacao||""}));
+  $("nomeGarcom").value=p.cliente||"";
+  $("observacoesGarcom").value=p.observacoes||"";
+  tipoPedido=p.tipo||"Consumir no local"; pagamento=p.pagamento||"A pagar";
+  document.querySelectorAll(".tipo-btn").forEach(b=>b.classList.toggle("ativo",b.dataset.tipo===tipoPedido));
+  document.querySelectorAll(".pg-btn").forEach(b=>b.classList.toggle("ativo",b.dataset.pagamento===pagamento));
+  $("modalEditarPedidoGarcom").classList.remove("ativo");
+  $("enviarGarcom").textContent=`SALVAR ALTERAÇÃO DO PEDIDO #${p.id}`;
+  let aviso=document.getElementById("avisoEdicaoGarcom");
+  if(!aviso){aviso=document.createElement("div");aviso.id="avisoEdicaoGarcom";aviso.className="modo-edicao-aviso";$("itensGarcom").parentElement.insertBefore(aviso,$("itensGarcom"))}
+  aviso.textContent=`EDITANDO PEDIDO #${p.id} — ao salvar, será impresso novamente.`;
+  renderCarrinho(); window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function validar(){
@@ -305,10 +349,18 @@ async function enviarPedido(){
       origem:"garcom"
     };
 
-    const r=await api("POST",body,false);
-    const id=r.order?.id||"";
-    alert(`Pedido ${id?"#"+id+" ":""}enviado para a cozinha!`);
-    novoPedido();
+    if(pedidoEditando){
+      body.action="edit_waiter_order";
+      body.id=pedidoEditando.id;
+      await api("POST",body,true);
+      alert(`Pedido #${pedidoEditando.id} atualizado! A comanda será impressa novamente com as alterações.`);
+      novoPedido();
+    }else{
+      const r=await api("POST",body,false);
+      const id=r.order?.id||"";
+      alert(`Pedido ${id?"#"+id+" ":""}enviado para a cozinha!`);
+      novoPedido();
+    }
   }catch(e){
     $("statusGarcom").textContent="Erro ao enviar o pedido.";
     alert("Não foi possível enviar o pedido.\n\n"+e.message);
@@ -345,3 +397,8 @@ window.alterarQtd=alterarQtd;
 window.remover=remover;
 
 if(token)entrar();
+
+$("editarPedidoGarcom").onclick=abrirListaEditarPedido;
+$("fecharEditarPedidoGarcom").onclick=()=>$("modalEditarPedidoGarcom").classList.remove("ativo");
+$("atualizarPedidosGarcom").onclick=carregarPedidosParaEditar;
+$("modalEditarPedidoGarcom").onclick=e=>{if(e.target.id==="modalEditarPedidoGarcom")$("modalEditarPedidoGarcom").classList.remove("ativo")};
