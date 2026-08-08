@@ -57,8 +57,8 @@ const ADICIONAIS = [
   {nome:"Batata",preco:7}
 ];
 
-const CATEGORIAS_SEM_ADICIONAIS=["Combos","Mistos Quentes","Beach Podrão","Bebidas"];
-const CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas"];
+const CATEGORIAS_SEM_ADICIONAIS=["Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
+const CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
 const TOKEN_KEY="bb_store_token";
 const GARCOM_CART_KEY="bb_carrinho_garcom";
 
@@ -116,6 +116,13 @@ async function entrar(){
 async function carregarDisponibilidade(){
   try{
     const r=await api("GET");
+    if(Array.isArray(r.catalog)&&r.catalog.length){
+      dados.produtos=r.catalog.map(p=>({
+        id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",
+        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false
+      }));
+      return;
+    }
     (r.products||[]).forEach(st=>{
       const p=dados.produtos.find(x=>x.id===Number(st.product_id));
       if(p)p.disponivel=st.available!==false;
@@ -124,7 +131,7 @@ async function carregarDisponibilidade(){
 }
 
 function icone(c){
-  return c==="Bebidas"?"🥤":c==="Combos"?"🍔":c==="Mistos Quentes"?"🥪":"🍔";
+  return c==="Bebidas"?"🥤":c==="Doces"?"🍰":c==="Combos"?"🍔":c==="Mistos Quentes"?"🥪":"🍔";
 }
 
 function renderAbas(){
@@ -245,7 +252,6 @@ function renderTudo(){
 function novoPedido(){
   carrinho=[];
   $("nomeGarcom").value="";
-  $("telefoneGarcom").value="";
   $("observacoesGarcom").value="";
   tipoPedido="Consumir no local";
   pagamento="A pagar";
@@ -262,21 +268,15 @@ function validar(){
     $("nomeGarcom").focus();
     return false;
   }
-  const tel=normalizarTelefone($("telefoneGarcom").value);
-  if(tel.length!==10&&tel.length!==11){
-    alert("Informe um telefone com DDD.");
-    $("telefoneGarcom").focus();
-    return false;
-  }
   if(!carrinho.length){
     alert("Adicione pelo menos um item ao pedido.");
     return false;
   }
 
   // Mesma regra do site: não permite pedido apenas de bebidas.
-  const temLanche=carrinho.some(i=>String(i.categoria||"").toLowerCase()!=="bebidas");
+  const temLanche=carrinho.some(i=>!["bebidas","doces"].includes(String(i.categoria||"").toLowerCase()));
   if(!temLanche){
-    alert("É obrigatório escolher pelo menos 1 lanche. Não é permitido fazer pedido somente de bebidas.");
+    alert("É obrigatório escolher pelo menos 1 lanche. Não é permitido fazer pedido somente de bebidas e/ou doces.");
     return false;
   }
   return true;
@@ -293,7 +293,7 @@ async function enviarPedido(){
     const body={
       action:"create",
       cliente:$("nomeGarcom").value.trim(),
-      telefone:normalizarTelefone($("telefoneGarcom").value),
+      telefone:"",
       endereco:"",
       bairro:"",
       referencia:"",

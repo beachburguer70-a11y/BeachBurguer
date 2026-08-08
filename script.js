@@ -58,8 +58,8 @@ const ADICIONAIS=[
   {nome:"Batata",preco:7}
 ];
 
-const CATEGORIAS_SEM_ADICIONAIS=["Combos","Mistos Quentes","Beach Podrão","Bebidas"];
-const CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas"];
+const CATEGORIAS_SEM_ADICIONAIS=["Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
+const CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
 
 let dados=carregarDadosLocais();
 let carrinho=JSON.parse(localStorage.getItem("bb_carrinho")||"[]");
@@ -138,13 +138,21 @@ async function apiPedidos(method="GET",body=null,token=""){
 async function carregarDisponibilidade(){
   try{
     const resultado=await apiPedidos("GET",null,"");
-    if(!Array.isArray(resultado.products))return;
-    resultado.products.forEach(status=>{
-      const produto=dados.produtos.find(p=>p.id===Number(status.product_id));
-      if(produto)produto.disponivel=status.available!==false;
-    });
+    if(Array.isArray(resultado.catalog)&&resultado.catalog.length){
+      dados.produtos=resultado.catalog.map(p=>({
+        id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",
+        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false
+      }));
+      return;
+    }
+    if(Array.isArray(resultado.products)){
+      resultado.products.forEach(status=>{
+        const produto=dados.produtos.find(p=>p.id===Number(status.product_id));
+        if(produto)produto.disponivel=status.available!==false;
+      });
+    }
   }catch(erro){
-    console.warn("Não foi possível consultar disponibilidade:",erro.message);
+    console.warn("Não foi possível consultar catálogo:",erro.message);
   }
 }
 
@@ -345,7 +353,7 @@ function carrinhoTemLanche(){
   return carrinho.some(item=>{
     const produto=dados.produtos.find(p=>Number(p.id)===Number(item.id) || p.nome===item.nome);
     const categoria=String(item.categoria || produto?.categoria || "").trim().toLowerCase();
-    return categoria && categoria!=="bebidas";
+    return categoria && !["bebidas","doces"].includes(categoria);
   });
 }
 
@@ -353,7 +361,7 @@ function validarLancheObrigatorio(){
   if(!carrinho.length)return true;
   if(carrinhoTemLanche())return true;
 
-  alert("Para finalizar o pedido, é obrigatório escolher pelo menos 1 lanche. Não é permitido fazer pedido somente de bebidas.");
+  alert("Para finalizar o pedido, é obrigatório escolher pelo menos 1 lanche. Não é permitido fazer pedido somente de bebidas e/ou doces.");
   document.querySelector("#cardapio")?.scrollIntoView({behavior:"smooth",block:"start"});
   return false;
 }
@@ -596,11 +604,32 @@ async function entrarAdmin(){
   if(!adminToken)return alert("Digite a senha da loja.");
   try{
     const resultado=await apiPedidos("POST",{action:"list_products"},adminToken);
-    if(Array.isArray(resultado.products)){
+    if(Array.isArray(resultado.catalog)&&resultado.catalog.length){
+      dados.produtos=resultado.catalog.map(p=>({
+        id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",
+        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false
+      }));
+    }else if(Array.isArray(resultado.products)){
       resultado.products.forEach(s=>{const p=dados.produtos.find(x=>x.id===Number(s.product_id));if(p)p.disponivel=s.available!==false});
     }
     $("loginAdmin").hidden=true;$("conteudoAdmin").hidden=false;renderAdmin();
   }catch{alert("Senha incorreta ou conexão indisponível.")}
+}
+
+async function cadastrarProdutoAdmin(){
+  const categoria=$("novoProdutoCategoria").value;
+  const nome=$("novoProdutoNome").value.trim();
+  const descricao=$("novoProdutoDescricao").value.trim();
+  const preco=Number($("novoProdutoPreco").value||0);
+  if(!categoria||!nome)return alert("Informe a categoria e o nome do produto.");
+  try{
+    const r=await apiPedidos("POST",{action:"create_product",category:categoria,name:nome,description:descricao,price:preco},adminToken);
+    const p=r.product;
+    dados.produtos.push({id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false});
+    $("novoProdutoNome").value="";$("novoProdutoDescricao").value="";$("novoProdutoPreco").value="";
+    renderAdmin();renderProdutos();
+    alert("Produto cadastrado com sucesso e já disponível no cardápio.");
+  }catch(e){alert("Não foi possível cadastrar o produto.\n\n"+e.message)}
 }
 
 async function salvarAdmin(){
@@ -609,15 +638,18 @@ async function salvarAdmin(){
   document.querySelectorAll(".taxa-nome").forEach(el=>dados.taxas[Number(el.dataset.i)].nome=el.value);
   document.querySelectorAll(".taxa-valor").forEach(el=>dados.taxas[Number(el.dataset.i)].valor=Number(el.value||0));
 
-  const products=[...document.querySelectorAll(".admin-disponivel")].map(el=>({
-    product_id:Number(el.dataset.id),available:el.checked
+  const products=dados.produtos.map(p=>({
+    id:p.id,
+    price:Number(document.querySelector(`.admin-preco[data-id="${p.id}"]`)?.value??p.preco),
+    active:Boolean(document.querySelector(`.admin-ativo[data-id="${p.id}"]`)?.checked),
+    available:Boolean(document.querySelector(`.admin-disponivel[data-id="${p.id}"]`)?.checked)
   }));
   try{
-    await apiPedidos("POST",{action:"update_products",products},adminToken);
-    products.forEach(s=>{const p=dados.produtos.find(x=>x.id===s.product_id);if(p)p.disponivel=s.available});
+    await apiPedidos("POST",{action:"save_catalog",products},adminToken);
+    products.forEach(s=>{const p=dados.produtos.find(x=>x.id===s.id);if(p){p.preco=s.price;p.ativo=s.active;p.disponivel=s.available}});
     salvarDados();renderTaxas();renderProdutos();renderCarrinho();renderAdmin();
-    alert("Alterações salvas. A disponibilidade já foi atualizada para todos os clientes.");
-  }catch(erro){alert("Não foi possível salvar a disponibilidade online.\n\n"+erro.message)}
+    alert("Alterações salvas online para todos os clientes e garçons.");
+  }catch(erro){alert("Não foi possível salvar o catálogo online.\n\n"+erro.message)}
 }
 
 
@@ -677,6 +709,7 @@ $("limparCarrinho").onclick=()=>{if(confirm("Limpar o carrinho?")){carrinho=[];r
 $("abrirAdmin").onclick=()=>{$("modalAdmin").classList.add("ativo");$("loginAdmin").hidden=false;$("conteudoAdmin").hidden=true;$("senhaAdmin").value=""};
 $("fecharAdmin").onclick=()=>$("modalAdmin").classList.remove("ativo");
 $("entrarAdmin").onclick=entrarAdmin;
+$("cadastrarProdutoAdmin").onclick=cadastrarProdutoAdmin;
 $("salvarAdmin").onclick=salvarAdmin;
 $("restaurarAdmin").onclick=()=>{if(confirm("Restaurar preços e exibição padrão neste navegador?")){dados=structuredClone(PADRAO);salvarDados();renderAdmin();renderTaxas();renderProdutos();renderCarrinho()}};
 
@@ -686,7 +719,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=821",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=824",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }

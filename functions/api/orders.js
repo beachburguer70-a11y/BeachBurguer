@@ -30,12 +30,21 @@ export async function onRequestOptions() {
 
 export async function onRequestGet({ request, env }) {
   try {
-    // Público: somente disponibilidade dos produtos
-    const products = await supabaseRequest(
-      env,
-      "product_availability?select=product_id,available,updated_at&order=product_id.asc"
-    );
-    return json({ ok:true, products:products || [] });
+    // Público: catálogo completo para cliente e garçom.
+    try {
+      const catalog = await supabaseRequest(
+        env,
+        "products?select=id,category,name,description,price,active,available,sort_order&order=sort_order.asc,id.asc"
+      );
+      return json({ ok:true, catalog:catalog || [], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})) });
+    } catch {
+      // Compatibilidade caso a migração V8.24 ainda não tenha sido executada.
+      const products = await supabaseRequest(
+        env,
+        "product_availability?select=product_id,available,updated_at&order=product_id.asc"
+      );
+      return json({ ok:true, products:products || [] });
+    }
   } catch (error) {
     console.error(error);
     return json({ ok:false, error:error.message || "Erro interno." }, 500);
@@ -48,15 +57,16 @@ export async function onRequestPost({ request, env }) {
     const action = body.action || "create";
 
     if (action === "create") {
-      const required = ["cliente","telefone","itens","total","pagamento","tipo"];
+      const isGarcom = String(body.origem || "").toLowerCase() === "garcom";
+      const required = isGarcom ? ["cliente","itens","total","pagamento","tipo"] : ["cliente","telefone","itens","total","pagamento","tipo"];
       for (const field of required) {
         if (body[field] === undefined || body[field] === "" || body[field] === null) {
           return json({ ok:false, error:`Campo obrigatório: ${field}` }, 400);
         }
       }
 
-      const telefone = String(body.telefone).replace(/\D/g, "");
-      if (telefone.length !== 10 && telefone.length !== 11) {
+      const telefone = String(body.telefone || "").replace(/\D/g, "");
+      if (!isGarcom && telefone.length !== 10 && telefone.length !== 11) {
         return json({ ok:false, error:"Telefone deve conter DDD." }, 400);
       }
 
@@ -65,14 +75,14 @@ export async function onRequestPost({ request, env }) {
       }
 
       const temLanche = body.itens.some(item =>
-        String(item?.categoria || "").trim().toLowerCase() !== "bebidas" &&
+        !["bebidas","doces"].includes(String(item?.categoria || "").trim().toLowerCase()) &&
         String(item?.categoria || "").trim() !== ""
       );
 
       if (!temLanche) {
         return json({
           ok:false,
-          error:"Para finalizar o pedido, é obrigatório escolher pelo menos 1 lanche. Não é permitido pedir somente bebidas."
+          error:"Para finalizar o pedido, é obrigatório escolher pelo menos 1 lanche. Não é permitido pedir somente bebidas e/ou doces."
         }, 400);
       }
 
@@ -115,24 +125,26 @@ export async function onRequestPost({ request, env }) {
       );
       const saved = Array.isArray(inserted) ? inserted[0] : inserted;
 
-      const customer = {
-        telefone,
-        nome:order.cliente,
-        endereco:order.endereco,
-        bairro:order.bairro,
-        referencia:order.referencia,
-        updated_at:new Date().toISOString()
-      };
+      if (!isGarcom && telefone) {
+        const customer = {
+          telefone,
+          nome:order.cliente,
+          endereco:order.endereco,
+          bairro:order.bairro,
+          referencia:order.referencia,
+          updated_at:new Date().toISOString()
+        };
 
-      await supabaseRequest(
-        env,
-        "customers?on_conflict=telefone",
-        {
-          method:"POST",
-          headers:{ Prefer:"resolution=merge-duplicates,return=minimal" },
-          body:JSON.stringify(customer)
-        }
-      );
+        await supabaseRequest(
+          env,
+          "customers?on_conflict=telefone",
+          {
+            method:"POST",
+            headers:{ Prefer:"resolution=merge-duplicates,return=minimal" },
+            body:JSON.stringify(customer)
+          }
+        );      }
+
 
       return json({ ok:true, order:saved });
     }
@@ -149,11 +161,44 @@ export async function onRequestPost({ request, env }) {
 
     if (action === "list_products") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
-      const products = await supabaseRequest(
+      const catalog = await supabaseRequest(
         env,
-        "product_availability?select=product_id,available,updated_at&order=product_id.asc"
+        "products?select=id,category,name,description,price,active,available,sort_order&order=sort_order.asc,id.asc"
       );
-      return json({ ok:true, products:products || [] });
+      return json({ ok:true, catalog:catalog || [], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})) });
+    }
+
+    if (action === "create_product") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+      const category=String(body.category||"").trim();
+      const name=String(body.name||"").trim();
+      const description=String(body.description||"").trim();
+      const price=Number(body.price||0);
+      if(!category||!name||price<0) return json({ok:false,error:"Preencha categoria, nome e preço."},400);
+
+      const maxRows=await supabaseRequest(env,"products?select=sort_order&order=sort_order.desc&limit=1");
+      const sortOrder=Number(maxRows?.[0]?.sort_order||0)+1;
+      const inserted=await supabaseRequest(env,"products?select=*",
+        {method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify({
+          category,name,description,price,active:true,available:true,sort_order:sortOrder,updated_at:new Date().toISOString()
+        })}
+      );
+      return json({ok:true,product:Array.isArray(inserted)?inserted[0]:inserted});
+    }
+
+    if (action === "save_catalog") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+      if (!Array.isArray(body.products)) return json({ok:false,error:"Lista inválida."},400);
+      for (const p of body.products) {
+        const id=Number(p.id);
+        if(!id) continue;
+        await supabaseRequest(env,`products?id=eq.${id}`,{
+          method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({
+            price:Number(p.price||0),active:p.active!==false,available:p.available!==false,updated_at:new Date().toISOString()
+          })
+        });
+      }
+      return json({ok:true});
     }
 
     if (action === "update_products") {

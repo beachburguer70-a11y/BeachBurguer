@@ -168,3 +168,29 @@ body.inicio-travado #inicio{
   display:flex;
   align-items:center;
 }
+
+
+/* V8.23 - categorias em duas linhas */
+.abas{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:8px!important;
+  overflow:visible!important;
+}
+.abas button{
+  width:100%!important;
+  min-width:0!important;
+  white-space:normal!important;
+  text-align:center!important;
+}
+@media(max-width:520px){
+  .abas button{padding:9px 4px!important;font-size:12px!important}
+}
+
+/* V8.24 cadastro de produtos no Admin */
+.admin-cadastrar-produto{border:1px solid #343434;background:#0b0b0b;border-radius:14px;padding:16px;margin:18px 0}
+.admin-novo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.admin-novo-grid label{display:grid;gap:6px;font-weight:700}
+.admin-novo-grid input,.admin-novo-grid select,.admin-novo-grid textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#111;color:#fff}
+.admin-novo-grid .full{grid-column:1/-1}
+@media(max-width:700px){.admin-novo-grid{grid-template-columns:1fr}.admin-novo-grid .full{grid-column:auto}}
