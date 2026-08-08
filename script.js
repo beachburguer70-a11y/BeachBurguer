@@ -760,6 +760,7 @@ $("enviarPedido").onclick=async()=>{
   const botao=$("enviarPedido"),original=botao.textContent;botao.disabled=true;botao.textContent="PROCESSANDO...";
   try{
     salvarClienteAtual();const pedido=await enviarPedidoAoServidor();
+    await vincularPushAoTelefone($("telefone").value);
     carrinho=[];resetarConfirmacaoPix();salvarCarrinho();alert(`Pedido #${pedido.id} realizado com sucesso! A loja já recebeu seu pedido.`);
   }catch(erro){alert("Não foi possível realizar o pedido.\n\n"+erro.message)}
   finally{botao.disabled=false;botao.textContent=original}
@@ -777,13 +778,63 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=835",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=836",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }
 
 
 
+
+
+// V8.36 - cria a assinatura push imediatamente após a permissão.
+// O telefone é vinculado automaticamente quando o cliente faz o pedido.
+async function garantirAssinaturaPush(){
+  if(!("Notification" in window)||!("serviceWorker" in navigator)||!("PushManager" in window)) return null;
+  if(Notification.permission!=="granted") return null;
+
+  try{
+    const keyRes=await fetch("/api/push-public-key",{cache:"no-store"});
+    if(!keyRes.ok) return null;
+    const data=await keyRes.json();
+    if(!data.publicKey) return null;
+
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(data.publicKey)
+      });
+    }
+    localStorage.setItem("bb_push_subscription",JSON.stringify(sub.toJSON ? sub.toJSON() : sub));
+    return sub;
+  }catch(e){
+    console.warn("Não foi possível criar assinatura push:",e);
+    return null;
+  }
+}
+
+async function vincularPushAoTelefone(telefone){
+  const tel=String(telefone||"").replace(/\D/g,"");
+  if(tel.length!==10&&tel.length!==11) return false;
+  if(Notification.permission!=="granted") return false;
+
+  try{
+    const sub=await garantirAssinaturaPush();
+    if(!sub) return false;
+
+    const res=await fetch("/api/push-subscribe",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({phone:tel,subscription:sub.toJSON ? sub.toJSON() : sub})
+    });
+    return res.ok;
+  }catch(e){
+    console.warn("Não foi possível vincular push ao telefone:",e);
+    return false;
+  }
+}
 
 // V8.34 - solicitar ativação de notificações logo na entrada do site.
 // Navegadores modernos só permitem abrir a permissão nativa após um clique do usuário,
@@ -811,6 +862,7 @@ function configurarNotificacaoNaEntrada(){
 
       if(permissao==="granted"){
         localStorage.setItem("bb_notificacoes_permitidas","1");
+        await garantirAssinaturaPush();
       }
     }catch(e){
       console.warn("Permissão de notificação:",e);
@@ -904,39 +956,13 @@ async function ativarNotificacoesPedido(tel){
   try{
     const perm=Notification.permission==="granted"?"granted":await Notification.requestPermission();
     if(perm!=="granted")return;
-
-    const keyRes=await fetch("/api/push-public-key",{cache:"no-store"});
-    if(!keyRes.ok){
-      if(aviso)aviso.textContent="Status disponível. As notificações push ainda precisam ser configuradas no Cloudflare.";
-      return;
-    }
-
-    const {publicKey}=await keyRes.json();
-    if(!publicKey)return;
-
-    const reg=await navigator.serviceWorker.ready;
-    let sub=await reg.pushManager.getSubscription();
-    if(!sub){
-      sub=await reg.pushManager.subscribe({
-        userVisibleOnly:true,
-        applicationServerKey:urlBase64ToUint8Array(publicKey)
-      });
-    }
-
-    const save=await fetch("/api/push-subscribe",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({phone:tel,subscription:sub})
-    });
-    if(!save.ok)throw new Error("Falha ao registrar notificação.");
-
-    if(aviso)aviso.textContent="🔔 Notificações ativadas para este telefone.";
+    const ok=await vincularPushAoTelefone(tel);
+    if(aviso)aviso.textContent=ok?"🔔 Notificações ativadas para este telefone.":"O status funciona, mas não foi possível vincular a notificação.";
   }catch(e){
     console.warn("Push:",e);
     if(aviso)aviso.textContent="O status funciona normalmente, mas não foi possível ativar a notificação neste aparelho.";
   }
 }
-
 if($("abrirMeusPedidos")){
   $("abrirMeusPedidos").onclick=async()=>{
     // V8.33: solicita a permissão antes de mostrar o campo de telefone.

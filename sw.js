@@ -1,4 +1,4 @@
-const CACHE = "beach-burguer-v8-35";
+const CACHE = "beach-burguer-v8-36";
 const STATIC_FILES = [
   "./assets/logo.png",
   "./manifest.json"
@@ -63,6 +63,7 @@ self.addEventListener("push", event => {
     body:data.body || "Seu pedido foi atualizado.",
     icon:"./assets/logo.png",
     badge:"./assets/logo.png",
+    tag:data.tag || undefined,
     data:{url:data.url || "./"}
   };
   event.waitUntil(self.registration.showNotification(title,options));

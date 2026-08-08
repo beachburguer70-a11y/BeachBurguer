@@ -79,10 +79,13 @@ async function sendWhatsAppTemplate(env, telefone, templateName, nomeCliente, or
 
 
 async function enviarPushPedido(env, telefone, pedido) {
-  if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) return;
+  if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) {
+    console.warn("PUSH: chaves VAPID ausentes.");
+    return {ok:false,error:"Chaves VAPID ausentes."};
+  }
 
   const phone=String(telefone||"").replace(/\D/g,"");
-  if(!phone)return;
+  if(!phone) return {ok:false,error:"Telefone ausente."};
 
   webpush.setVapidDetails(
     env.VAPID_SUBJECT || "mailto:contato@beachburguer.local",
@@ -95,18 +98,34 @@ async function enviarPushPedido(env, telefone, pedido) {
     `push_subscriptions?select=endpoint,subscription&telefone=eq.${phone}`
   );
 
-  const entrega=String(pedido?.tipo||"")==="Entrega";
+  console.log(`PUSH: telefone ${phone}, assinaturas encontradas: ${(rows||[]).length}`);
+
+  if(!(rows||[]).length){
+    return {ok:false,error:"Nenhuma assinatura encontrada para este telefone."};
+  }
+
+  const entrega=String(pedido?.tipo||"").trim().toLowerCase()==="entrega";
   const payload=JSON.stringify({
     title:"Beach Burguer",
     body:entrega ? "🛵 Seu pedido está a caminho!" : "🍔 Seu pedido está pronto!",
-    url:"/?meus-pedidos=1"
+    url:"/?meus-pedidos=1",
+    tag:`pedido-${pedido?.id||""}-pronto`
   });
+
+  let enviados=0;
+  let erros=[];
 
   for(const row of rows||[]){
     try{
       await webpush.sendNotification(row.subscription,payload);
+      enviados++;
+      console.log("PUSH enviado com sucesso:", phone);
     }catch(error){
       const status=Number(error?.statusCode||0);
+      const msg=String(error?.message||error);
+      console.warn("PUSH falhou:",status,msg);
+      erros.push({status,message:msg});
+
       if(status===404||status===410){
         try{
           await supabaseRequest(
@@ -115,13 +134,12 @@ async function enviarPushPedido(env, telefone, pedido) {
             {method:"DELETE"}
           );
         }catch{}
-      }else{
-        console.warn("Push não enviado:",error?.message||error);
       }
     }
   }
-}
 
+  return {ok:enviados>0,enviados,erros};
+}
 export async function onRequestOptions() {
   return json({}, 204);
 }
@@ -402,25 +420,37 @@ export async function onRequestPost({ request, env }) {
         }
       );
 
-      // Quando a loja clicar em "Pronto", envia uma única vez ao cliente.
+      // V8.36: todo clique explícito em "Pronto" tenta enviar a notificação.
+      // Isso também permite refazer o envio caso o pedido já estivesse marcado como pronto.
+      let pushResult=null;
       if (
         String(body.status || "") === "pronto" &&
         before &&
-        String(before.status || "") !== "pronto" &&
         String(before.origem || "cliente") !== "garcom" &&
         before.telefone
       ) {
-        await sendWhatsAppTemplate(
-          env,
-          before.telefone,
-          env.WHATSAPP_TEMPLATE_PEDIDO_CAMINHO || "bb_pedido_a_caminho",
-          before.cliente,
-          before.id
-        );
-        await enviarPushPedido(env,before.telefone,before);
+        // WhatsApp permanece opcional; falha nele não bloqueia o Web Push.
+        try{
+          await sendWhatsAppTemplate(
+            env,
+            before.telefone,
+            env.WHATSAPP_TEMPLATE_PEDIDO_CAMINHO || "bb_pedido_a_caminho",
+            before.cliente,
+            before.id
+          );
+        }catch(e){
+          console.warn("WhatsApp ignorado:",e?.message||e);
+        }
+
+        try{
+          pushResult=await enviarPushPedido(env,before.telefone,before);
+        }catch(e){
+          console.error("Erro geral no PUSH:",e);
+          pushResult={ok:false,error:e?.message||String(e)};
+        }
       }
 
-      return json({ ok:true });
+      return json({ ok:true, push:pushResult });
     }
 
     return json({ ok:false, error:"Ação inválida." }, 400);
