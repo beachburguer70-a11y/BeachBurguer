@@ -8,9 +8,9 @@
   <title>Beach Burguer | Delivery</title>
   <link rel="icon" href="assets/logo.png">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=824">
+  <link rel="stylesheet" href="style.css?v=825">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="script.js?v=824"></script>
+  <script defer src="script.js?v=825"></script>
 
 <style id="checkout-mobile-fix-v815">
 .dados-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
@@ -260,7 +260,8 @@
             <textarea id="novoProdutoDescricao" placeholder="Descrição do produto"></textarea>
           </label>
         </div>
-        <button id="cadastrarProdutoAdmin" class="btn btn-verde btn-largo">Cadastrar produto</button>
+        <button id="cadastrarProdutoAdmin" type="button" class="btn btn-verde btn-largo" onclick="cadastrarProdutoAdmin()">Cadastrar produto</button>
+<p id="statusCadastroProduto" style="margin-top:10px;color:#aaa"></p>
       </div>
 
       <h3>Produtos cadastrados</h3>

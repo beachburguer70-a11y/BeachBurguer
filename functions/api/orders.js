@@ -178,12 +178,44 @@ export async function onRequestPost({ request, env }) {
 
       const maxRows=await supabaseRequest(env,"products?select=sort_order&order=sort_order.desc&limit=1");
       const sortOrder=Number(maxRows?.[0]?.sort_order||0)+1;
-      const inserted=await supabaseRequest(env,"products?select=*",
-        {method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify({
-          category,name,description,price,active:true,available:true,sort_order:sortOrder,updated_at:new Date().toISOString()
-        })}
+      const inserted=await supabaseRequest(
+        env,
+        "products?select=id,category,name,description,price,active,available,sort_order",
+        {
+          method:"POST",
+          headers:{Prefer:"return=representation"},
+          body:JSON.stringify({
+            category,
+            name,
+            description,
+            price,
+            active:true,
+            available:true,
+            sort_order:sortOrder,
+            updated_at:new Date().toISOString()
+          })
+        }
       );
-      return json({ok:true,product:Array.isArray(inserted)?inserted[0]:inserted});
+
+      const product=Array.isArray(inserted)?inserted[0]:inserted;
+      if(!product?.id) return json({ok:false,error:"Produto não foi gravado no banco."},500);
+
+      // Mantém a tabela antiga de disponibilidade sincronizada para compatibilidade.
+      await supabaseRequest(
+        env,
+        "product_availability?on_conflict=product_id",
+        {
+          method:"POST",
+          headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
+          body:JSON.stringify({
+            product_id:Number(product.id),
+            available:true,
+            updated_at:new Date().toISOString()
+          })
+        }
+      );
+
+      return json({ok:true,product});
     }
 
     if (action === "save_catalog") {

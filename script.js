@@ -617,20 +617,78 @@ async function entrarAdmin(){
 }
 
 async function cadastrarProdutoAdmin(){
-  const categoria=$("novoProdutoCategoria").value;
-  const nome=$("novoProdutoNome").value.trim();
-  const descricao=$("novoProdutoDescricao").value.trim();
-  const preco=Number($("novoProdutoPreco").value||0);
-  if(!categoria||!nome)return alert("Informe a categoria e o nome do produto.");
+  const botao=$("cadastrarProdutoAdmin");
+  const status=$("statusCadastroProduto");
+  const categoria=$("novoProdutoCategoria")?.value||"";
+  const nome=$("novoProdutoNome")?.value.trim()||"";
+  const descricao=$("novoProdutoDescricao")?.value.trim()||"";
+  const precoTexto=String($("novoProdutoPreco")?.value||"").replace(",",".");
+  const preco=Number(precoTexto);
+
+  if(!categoria||!nome){
+    alert("Informe a categoria e o nome do produto.");
+    return;
+  }
+  if(!Number.isFinite(preco)||preco<0){
+    alert("Informe um preço válido.");
+    return;
+  }
+  if(!adminToken){
+    alert("Sua sessão do Admin expirou. Entre novamente com a senha.");
+    return;
+  }
+
   try{
-    const r=await apiPedidos("POST",{action:"create_product",category:categoria,name:nome,description:descricao,price:preco},adminToken);
-    const p=r.product;
-    dados.produtos.push({id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false});
-    $("novoProdutoNome").value="";$("novoProdutoDescricao").value="";$("novoProdutoPreco").value="";
-    renderAdmin();renderProdutos();
-    alert("Produto cadastrado com sucesso e já disponível no cardápio.");
-  }catch(e){alert("Não foi possível cadastrar o produto.\n\n"+e.message)}
+    if(botao){botao.disabled=true;botao.textContent="CADASTRANDO...";}
+    if(status)status.textContent="Salvando produto no catálogo online...";
+
+    const r=await apiPedidos("POST",{
+      action:"create_product",
+      category:categoria,
+      name:nome,
+      description:descricao,
+      price:preco
+    },adminToken);
+
+    if(!r.product||!r.product.id){
+      throw new Error("O servidor não retornou o produto cadastrado.");
+    }
+
+    // Recarrega do servidor para garantir que o que aparece no Admin é exatamente o que foi salvo.
+    const atualizado=await apiPedidos("POST",{action:"list_products"},adminToken);
+    if(Array.isArray(atualizado.catalog)){
+      dados.produtos=atualizado.catalog.map(p=>({
+        id:Number(p.id),
+        categoria:p.category,
+        nome:p.name,
+        descricao:p.description||"",
+        preco:Number(p.price||0),
+        ativo:p.active!==false,
+        disponivel:p.available!==false
+      }));
+    }
+
+    $("novoProdutoNome").value="";
+    $("novoProdutoDescricao").value="";
+    $("novoProdutoPreco").value="";
+
+    salvarDados();
+    renderAdmin();
+    renderAbas();
+    renderProdutos();
+
+    if(status)status.textContent=`✅ ${nome} cadastrado com sucesso.`;
+    alert("Produto cadastrado com sucesso!");
+  }catch(e){
+    console.error("Erro ao cadastrar produto:",e);
+    if(status)status.textContent="❌ Não foi possível salvar o produto.";
+    alert("Não foi possível cadastrar o produto.\n\n"+e.message);
+  }finally{
+    if(botao){botao.disabled=false;botao.textContent="Cadastrar produto";}
+  }
 }
+
+window.cadastrarProdutoAdmin=cadastrarProdutoAdmin;
 
 async function salvarAdmin(){
   document.querySelectorAll(".admin-preco").forEach(el=>{const p=dados.produtos.find(x=>x.id===Number(el.dataset.id));p.preco=Number(el.value||0)});
@@ -709,7 +767,6 @@ $("limparCarrinho").onclick=()=>{if(confirm("Limpar o carrinho?")){carrinho=[];r
 $("abrirAdmin").onclick=()=>{$("modalAdmin").classList.add("ativo");$("loginAdmin").hidden=false;$("conteudoAdmin").hidden=true;$("senhaAdmin").value=""};
 $("fecharAdmin").onclick=()=>$("modalAdmin").classList.remove("ativo");
 $("entrarAdmin").onclick=entrarAdmin;
-$("cadastrarProdutoAdmin").onclick=cadastrarProdutoAdmin;
 $("salvarAdmin").onclick=salvarAdmin;
 $("restaurarAdmin").onclick=()=>{if(confirm("Restaurar preços e exibição padrão neste navegador?")){dados=structuredClone(PADRAO);salvarDados();renderAdmin();renderTaxas();renderProdutos();renderCarrinho()}};
 
@@ -719,7 +776,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=824",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=825",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }
