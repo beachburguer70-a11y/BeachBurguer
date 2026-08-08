@@ -777,11 +777,52 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=833",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=834",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }
 
+
+
+
+// V8.34 - solicitar ativação de notificações logo na entrada do site.
+// Navegadores modernos só permitem abrir a permissão nativa após um clique do usuário,
+// por isso mostramos primeiro um aviso próprio com o botão "Permitir notificações".
+function configurarNotificacaoNaEntrada(){
+  const modal=$("modalAtivarNotificacoes");
+  const btn=$("ativarNotificacoesEntrada");
+  const agoraNao=$("agoraNaoNotificacoes");
+  if(!modal||!btn||!agoraNao)return;
+
+  const jaDispensou=sessionStorage.getItem("bb_notificacao_entrada_dispensada")==="1";
+
+  if(
+    "Notification" in window &&
+    Notification.permission==="default" &&
+    !jaDispensou
+  ){
+    setTimeout(()=>modal.classList.add("ativo"),350);
+  }
+
+  btn.onclick=async()=>{
+    try{
+      const permissao=await Notification.requestPermission();
+      modal.classList.remove("ativo");
+
+      if(permissao==="granted"){
+        localStorage.setItem("bb_notificacoes_permitidas","1");
+      }
+    }catch(e){
+      console.warn("Permissão de notificação:",e);
+      modal.classList.remove("ativo");
+    }
+  };
+
+  agoraNao.onclick=()=>{
+    sessionStorage.setItem("bb_notificacao_entrada_dispensada","1");
+    modal.classList.remove("ativo");
+  };
+}
 
 // V8.31 - Meus Pedidos por telefone + notificações push no Cloudflare Pages
 let telefoneConsultaPedidos="";
@@ -933,3 +974,5 @@ if($("telefoneMeusPedidos")){
     else e.target.value=`(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`;
   });
 }
+
+configurarNotificacaoNaEntrada();

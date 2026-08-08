@@ -262,3 +262,23 @@ body.inicio-travado #inicio{
     padding:9px 3px !important;
   }
 }
+
+
+/* V8.34 - aviso de notificações na entrada */
+.modal-notificacao-entrada.ativo{
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+.notificacao-entrada-box{
+  max-width:420px;
+  text-align:center;
+}
+.notificacao-entrada-box h2{margin-top:0}
+.notificacao-entrada-box .btn{margin-top:10px}
+.notificacao-entrada-box small{
+  display:block;
+  margin-top:12px;
+  color:#999;
+}
