@@ -777,7 +777,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=832",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=833",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }
@@ -897,7 +897,17 @@ async function ativarNotificacoesPedido(tel){
 }
 
 if($("abrirMeusPedidos")){
-  $("abrirMeusPedidos").onclick=()=>{
+  $("abrirMeusPedidos").onclick=async()=>{
+    // V8.33: solicita a permissão antes de mostrar o campo de telefone.
+    // O navegador exige que essa solicitação parta de um clique do usuário.
+    if("Notification" in window && Notification.permission==="default"){
+      try{
+        await Notification.requestPermission();
+      }catch(e){
+        console.warn("Permissão de notificação:",e);
+      }
+    }
+
     $("modalMeusPedidos").classList.add("ativo");
     $("telefoneMeusPedidos").value=$("telefone")?.value||"";
     if($("telefoneMeusPedidos").value)buscarMeusPedidos(true);
