@@ -340,7 +340,25 @@ function resetarConfirmacaoPix(){
   limparPixGerado();
 }
 
+
+function carrinhoTemLanche(){
+  return carrinho.some(item=>{
+    const produto=dados.produtos.find(p=>p.id===item.id || p.nome===item.nome);
+    return produto && produto.categoria!=="Bebidas";
+  });
+}
+
+function validarLancheObrigatorio(){
+  if(!carrinho.length)return true;
+  if(carrinhoTemLanche())return true;
+
+  alert("Para finalizar o pedido, é obrigatório escolher pelo menos 1 lanche. Não é permitido fazer pedido somente de bebidas.");
+  document.querySelector("#cardapio")?.scrollIntoView({behavior:"smooth",block:"start"});
+  return false;
+}
+
 function validarDadosParaPix(){
+  if(!validarLancheObrigatorio())return false;
   if(!carrinho.length){alert("Adicione pelo menos um produto ao carrinho.");return false}
   if(!$("nome").value.trim()){alert("Preencha seu nome antes de gerar o Pix.");$("nome").focus();return false}
   if(!telefoneValido($("telefone").value)){alert("Informe um telefone com DDD antes de gerar o Pix.");$("telefone").focus();return false}
@@ -507,6 +525,7 @@ function selecionarTipoPedido(tipo){
 }
 
 function validar(){
+  if(!validarLancheObrigatorio())return false;
   if(pagamento==="Pix"&&!pixConfirmado){alert("O Pix ainda não foi confirmado pelo Mercado Pago.");return false}
   if(!carrinho.length){alert("Adicione pelo menos um produto.");return false}
   if(!$("nome").value.trim()){alert("Preencha seu nome.");return false}
@@ -666,7 +685,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=819",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=820",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }
