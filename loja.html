@@ -40,7 +40,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
   <div class="container top">
     <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small></div></div>
     <div class="controls">
-      <button id="somBtn" class="btn dark">🔊 Som ativado</button>
+      <button id="somBtn" class="btn dark">🔔 Campainha ativada</button>
       <span class="badge">🖨️ Impressão automática pelo programa do Windows</span>
       <button id="atualizar" class="btn dark">Atualizar</button>
       <button id="sair" class="btn red">Sair</button>
@@ -78,7 +78,7 @@ $("entrar").onclick=entrar;
 $("senha").onkeydown=e=>{if(e.key==="Enter")entrar()};
 $("sair").onclick=()=>{localStorage.removeItem(TOKEN_KEY);location.reload()};
 $("atualizar").onclick=carregarPedidos;
-$("somBtn").onclick=()=>{somAtivo=!somAtivo;$("somBtn").textContent=somAtivo?"🔊 Som ativado":"🔇 Som desativado"};
+$("somBtn").onclick=()=>{somAtivo=!somAtivo;$("somBtn").textContent=somAtivo?"🔔 Campainha ativada":"🔕 Campainha desativada"};
 document.querySelectorAll(".filtro-status").forEach(btn=>btn.addEventListener("click",()=>{
   filtroAtual=btn.dataset.status;
   document.querySelectorAll(".filtro-status").forEach(b=>b.classList.toggle("ativo",b===btn));
@@ -121,11 +121,39 @@ async function carregarPedidos(){
 }
 
 function tocarSom(){
-  const ctx=new (window.AudioContext||window.webkitAudioContext)();
-  const osc=ctx.createOscillator(),gain=ctx.createGain();
-  osc.connect(gain);gain.connect(ctx.destination);
-  osc.frequency.value=880;gain.gain.value=.2;osc.start();
-  setTimeout(()=>{osc.stop();ctx.close()},700);
+  try{
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if(!AudioCtx)return;
+    const ctx=new AudioCtx();
+
+    function nota(freq,inicio,duracao,volume){
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type="sine";
+      osc.frequency.setValueAtTime(freq,inicio);
+      gain.gain.setValueAtTime(0.0001,inicio);
+      gain.gain.exponentialRampToValueAtTime(volume,inicio+0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001,inicio+duracao);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(inicio);
+      osc.stop(inicio+duracao+0.03);
+    }
+
+    const t=ctx.currentTime+0.02;
+
+    // DING
+    nota(1046.5,t,0.42,0.34);
+    nota(1318.5,t,0.42,0.18);
+
+    // DONG
+    nota(659.3,t+0.48,0.62,0.36);
+    nota(783.9,t+0.48,0.62,0.16);
+
+    setTimeout(()=>{try{ctx.close()}catch(e){}},1400);
+  }catch(e){
+    console.warn("Não foi possível tocar a campainha:",e);
+  }
 }
 
 function render(list){
