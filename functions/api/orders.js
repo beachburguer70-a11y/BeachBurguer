@@ -24,6 +24,58 @@ async function verifyApprovedPix(env, paymentId, expectedAmount) {
   return { ok:true, payment };
 }
 
+
+async function sendWhatsAppTemplate(env, telefone, templateName, nomeCliente, orderId) {
+  const token = env.WHATSAPP_ACCESS_TOKEN;
+  const phoneNumberId = env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!token || !phoneNumberId || !templateName || !telefone) {
+    return { ok:false, skipped:true, reason:"WhatsApp não configurado." };
+  }
+
+  let to = String(telefone || "").replace(/\D/g, "");
+  if (to.length === 10 || to.length === 11) to = "55" + to;
+
+  const payload = {
+    messaging_product: "whatsapp",
+    to,
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: env.WHATSAPP_LANGUAGE_CODE || "pt_BR" },
+      components: [{
+        type: "body",
+        parameters: [
+          { type: "text", text: String(nomeCliente || "Cliente") },
+          { type: "text", text: String(orderId || "") }
+        ]
+      }]
+    }
+  };
+
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v23.0/${encodeURIComponent(phoneNumberId)}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      }
+    );
+    const data = await response.json();
+    if (!response.ok) {
+      console.warn("WhatsApp não enviado:", data);
+      return { ok:false, error:data?.error?.message || "Falha no WhatsApp." };
+    }
+    return { ok:true, data };
+  } catch (error) {
+    console.warn("Erro ao enviar WhatsApp:", error);
+    return { ok:false, error:error.message };
+  }
+}
+
 export async function onRequestOptions() {
   return json({}, 204);
 }
@@ -111,7 +163,8 @@ export async function onRequestPost({ request, env }) {
         entrega:Number(body.entrega || 0),
         total:Number(body.total || 0),
         pix_payment_id:pixPayment ? String(pixPayment.id) : null,
-        pix_status:pixPayment ? String(pixPayment.status) : null
+        pix_status:pixPayment ? String(pixPayment.status) : null,
+        origem:isGarcom ? "garcom" : "cliente"
       };
 
       const inserted = await supabaseRequest(
@@ -124,6 +177,18 @@ export async function onRequestPost({ request, env }) {
         }
       );
       const saved = Array.isArray(inserted) ? inserted[0] : inserted;
+
+      // Pedido do cliente: tenta enviar confirmação automática pelo WhatsApp.
+      // A falha do WhatsApp nunca impede o pedido de ser criado.
+      if (!isGarcom && telefone) {
+        await sendWhatsAppTemplate(
+          env,
+          telefone,
+          env.WHATSAPP_TEMPLATE_PEDIDO_ACEITO || "bb_pedido_aceito",
+          order.cliente,
+          saved?.id
+        );
+      }
 
       if (!isGarcom && telefone) {
         const customer = {
@@ -259,6 +324,12 @@ export async function onRequestPost({ request, env }) {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
 
       const id = Number(body.id);
+      const beforeRows = await supabaseRequest(
+        env,
+        `orders?select=id,status,cliente,telefone,origem,tipo&id=eq.${id}&limit=1`
+      );
+      const before = Array.isArray(beforeRows) ? beforeRows[0] : null;
+
       const allowed = {};
       if (body.status !== undefined) allowed.status = String(body.status);
       if (body.printed !== undefined) allowed.printed = Boolean(body.printed);
@@ -272,6 +343,24 @@ export async function onRequestPost({ request, env }) {
           body:JSON.stringify(allowed)
         }
       );
+
+      // Quando a loja clicar em "Pronto", envia uma única vez ao cliente.
+      if (
+        String(body.status || "") === "pronto" &&
+        before &&
+        String(before.status || "") !== "pronto" &&
+        String(before.origem || "cliente") !== "garcom" &&
+        before.telefone
+      ) {
+        await sendWhatsAppTemplate(
+          env,
+          before.telefone,
+          env.WHATSAPP_TEMPLATE_PEDIDO_CAMINHO || "bb_pedido_a_caminho",
+          before.cliente,
+          before.id
+        );
+      }
+
       return json({ ok:true });
     }
 

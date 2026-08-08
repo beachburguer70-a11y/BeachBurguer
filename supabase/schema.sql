@@ -140,3 +140,15 @@ where not exists (select 1 from public.products);
 
 select setval(pg_get_serial_sequence('public.products','id'),
               greatest((select coalesce(max(id),1) from public.products),1), true);
+
+
+
+-- BEACH BURGUER V8.30
+-- Execute UMA VEZ no SQL Editor do Supabase.
+alter table public.orders
+  add column if not exists origem text not null default 'cliente';
+
+-- Pedidos antigos permanecem como cliente.
+update public.orders
+set origem = 'cliente'
+where origem is null or origem = '';

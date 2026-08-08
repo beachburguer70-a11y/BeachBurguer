@@ -148,7 +148,7 @@ function render(list){
       ${i.observacao?`<small><br>Obs.: ${esc(i.observacao)}</small>`:""}</div>`).join("")}</div>
     <div class="line"><span>Pagamento</span><strong>${esc(p.pagamento)}</strong></div>
     ${p.troco?`<div class="line"><span>Troco</span><strong>${esc(p.troco)}</strong></div>`:""}
-    <div class="line"><span>Entrega</span><strong>${moeda(p.entrega)}</strong></div>
+    ${String(p.origem||"cliente")==="garcom"?"":`<div class="line"><span>Entrega</span><strong>${moeda(p.entrega)}</strong></div>`}
     <div class="line total"><span>Total</span><strong>${moeda(p.total)}</strong></div>
     ${p.observacoes?`<p><strong>Observações:</strong> ${esc(p.observacoes)}</p>`:""}
     <div class="actions">
