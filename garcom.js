@@ -136,7 +136,7 @@ function icone(c){
 
 function renderAbas(){
   $("abasGarcom").innerHTML=CATEGORIAS.map(c=>
-    `<button class="${c===categoriaAtual?"ativa":""}" onclick="selecionarCategoriaGarcom('${c.replace(/'/g,"\\'")}')">${c}</button>`
+    `<button class="aba ${c===categoriaAtual?"ativa":""}" onclick="selecionarCategoriaGarcom('${c.replace(/'/g,"\\'")}')">${c}</button>`
   ).join("");
 }
 
