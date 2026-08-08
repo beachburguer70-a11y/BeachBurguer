@@ -194,3 +194,15 @@ body.inicio-travado #inicio{
 .admin-novo-grid input,.admin-novo-grid select,.admin-novo-grid textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#111;color:#fff}
 .admin-novo-grid .full{grid-column:1/-1}
 @media(max-width:700px){.admin-novo-grid{grid-template-columns:1fr}.admin-novo-grid .full{grid-column:auto}}
+
+
+/* V8.31 - Meus Pedidos */
+.meu-pedido-card{background:#111;border:1px solid #333;border-radius:14px;padding:14px;margin:12px 0}
+.meu-pedido-topo{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.meu-pedido-status{font-weight:900;color:#ffb700}
+.meu-pedido-etapas{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.meu-pedido-etapas span{padding:6px 9px;border-radius:999px;background:#252525;font-size:12px}
+.meu-pedido-etapas span.ativo{background:#ffb700;color:#111}
+.meu-pedido-itens{color:#ccc;font-size:14px}
+.meu-pedido-total{font-size:18px;font-weight:900;color:#ffb700}
+.notificacao-info{font-size:13px;color:#aaa;margin-top:8px}

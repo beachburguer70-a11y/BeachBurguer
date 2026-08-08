@@ -1,0 +1,40 @@
+BEACH BURGUER V8.31 — CLOUDFLARE PAGES
+
+IMPORTANTE:
+ESTA VERSÃO É PARA CLOUDFLARE PAGES, NÃO NETLIFY.
+
+1. SUPABASE
+Abra SQL Editor e execute UMA VEZ:
+supabase/ATUALIZAR_V8_31_MEUS_PEDIDOS.sql
+
+2. GERAR CHAVES VAPID
+No Prompt/PowerShell em um computador com Node.js:
+npx web-push generate-vapid-keys
+
+3. CLOUDFLARE
+Abra:
+Workers & Pages > seu projeto Beach Burguer > Settings > Variables and Secrets
+
+Adicione:
+VAPID_PUBLIC_KEY = chave pública
+VAPID_PRIVATE_KEY = chave privada
+VAPID_SUBJECT = mailto:SEU_EMAIL
+
+A VAPID_PRIVATE_KEY deve ser cadastrada como Secret.
+
+4. FAÇA NOVO DEPLOY
+Publique a pasta SITE_GITHUB_CLOUDFLARE.
+
+COMO FUNCIONA:
+- Menu "Pedido" virou "Meus Pedidos".
+- Cliente informa o telefone usado no pedido.
+- O sistema mostra os pedidos e status vinculados ao telefone.
+- A tela atualiza automaticamente enquanto estiver aberta.
+- Na primeira consulta, o navegador pede autorização de notificações.
+- Quando a loja marca PRONTO:
+  Entrega -> "Seu pedido está a caminho!"
+  Retirada / Consumir no local -> "Seu pedido está pronto!"
+
+OBSERVAÇÃO:
+Para receber push com o navegador fechado, o cliente precisa aceitar notificações.
+Em iPhone/iOS, o site deve ser adicionado à Tela de Início para Web Push funcionar como PWA.

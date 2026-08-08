@@ -777,7 +777,149 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=826",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=831",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
+}
+
+
+// V8.31 - Meus Pedidos por telefone + notificações push no Cloudflare Pages
+let telefoneConsultaPedidos="";
+let pollingMeusPedidos=null;
+
+const rotulosStatusPedidos={
+  novo:"Pedido recebido",
+  preparo:"Em preparação",
+  pronto:"Pronto",
+  entregue:"Entregue",
+  cancelado:"Cancelado"
+};
+
+function etapasPedidoCliente(p){
+  if(p.status==="cancelado")return '<span class="ativo">Cancelado</span>';
+  const etapas=p.tipo==="Entrega"
+    ?["novo","preparo","pronto","entregue"]
+    :["novo","preparo","pronto"];
+  const atual=Math.max(0,etapas.indexOf(p.status));
+  return etapas.map((e,i)=>`<span class="${i<=atual?'ativo':''}">${rotulosStatusPedidos[e]||e}</span>`).join("");
+}
+
+function renderMeusPedidos(lista){
+  const box=$("listaMeusPedidos");
+  if(!box)return;
+  if(!lista.length){
+    box.innerHTML='<p>Nenhum pedido encontrado para este telefone.</p>';
+    return;
+  }
+  box.innerHTML=lista.map(p=>`
+    <div class="meu-pedido-card">
+      <div class="meu-pedido-topo">
+        <strong>Pedido #${p.id}</strong>
+        <span class="meu-pedido-status">${rotulosStatusPedidos[p.status]||p.status}</span>
+      </div>
+      <div class="meu-pedido-etapas">${etapasPedidoCliente(p)}</div>
+      <div class="meu-pedido-itens">${(p.itens||[]).map(i=>`${i.quantidade}x ${i.nome}`).join(" • ")}</div>
+      <p>${p.tipo||""}</p>
+      <div class="meu-pedido-total">${Number(p.total||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</div>
+    </div>`).join("");
+}
+
+async function buscarMeusPedidos(silencioso=false){
+  const campo=$("telefoneMeusPedidos");
+  const tel=String(campo?.value||"").replace(/\D/g,"");
+  if(tel.length!==10&&tel.length!==11){
+    if(!silencioso)alert("Informe um telefone com DDD.");
+    return;
+  }
+  telefoneConsultaPedidos=tel;
+  try{
+    const res=await fetch(`/api/orders?phone=${encodeURIComponent(tel)}`,{cache:"no-store"});
+    const data=await res.json();
+    if(!res.ok||!data.ok)throw new Error(data.error||"Erro");
+    renderMeusPedidos(data.orders||[]);
+    if(!silencioso)await ativarNotificacoesPedido(tel);
+  }catch(e){
+    if($("avisoMeusPedidos"))$("avisoMeusPedidos").textContent="Não foi possível consultar os pedidos.";
+  }
+}
+
+function urlBase64ToUint8Array(base64String){
+  const padding="=".repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+  const raw=atob(base64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+async function ativarNotificacoesPedido(tel){
+  const aviso=$("avisoMeusPedidos");
+  if(!("Notification" in window)||!("serviceWorker" in navigator)||!("PushManager" in window)){
+    if(aviso)aviso.textContent="Acompanhe o status por esta tela. Este navegador não oferece notificações push.";
+    return;
+  }
+  if(Notification.permission==="denied"){
+    if(aviso)aviso.textContent="As notificações estão bloqueadas no navegador, mas o status continuará aparecendo aqui.";
+    return;
+  }
+  try{
+    const perm=Notification.permission==="granted"?"granted":await Notification.requestPermission();
+    if(perm!=="granted")return;
+
+    const keyRes=await fetch("/api/push-public-key",{cache:"no-store"});
+    if(!keyRes.ok){
+      if(aviso)aviso.textContent="Status disponível. As notificações push ainda precisam ser configuradas no Cloudflare.";
+      return;
+    }
+
+    const {publicKey}=await keyRes.json();
+    if(!publicKey)return;
+
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(publicKey)
+      });
+    }
+
+    const save=await fetch("/api/push-subscribe",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({phone:tel,subscription:sub})
+    });
+    if(!save.ok)throw new Error("Falha ao registrar notificação.");
+
+    if(aviso)aviso.textContent="🔔 Notificações ativadas para este telefone.";
+  }catch(e){
+    console.warn("Push:",e);
+    if(aviso)aviso.textContent="O status funciona normalmente, mas não foi possível ativar a notificação neste aparelho.";
+  }
+}
+
+if($("abrirMeusPedidos")){
+  $("abrirMeusPedidos").onclick=()=>{
+    $("modalMeusPedidos").classList.add("ativo");
+    $("telefoneMeusPedidos").value=$("telefone")?.value||"";
+    if($("telefoneMeusPedidos").value)buscarMeusPedidos(true);
+    clearInterval(pollingMeusPedidos);
+    pollingMeusPedidos=setInterval(()=>{
+      if(telefoneConsultaPedidos)buscarMeusPedidos(true);
+    },5000);
+  };
+}
+if($("fecharMeusPedidos")){
+  $("fecharMeusPedidos").onclick=()=>{
+    $("modalMeusPedidos").classList.remove("ativo");
+    clearInterval(pollingMeusPedidos);
+  };
+}
+if($("buscarMeusPedidos"))$("buscarMeusPedidos").onclick=()=>buscarMeusPedidos(false);
+if($("telefoneMeusPedidos")){
+  $("telefoneMeusPedidos").addEventListener("input",e=>{
+    const n=String(e.target.value||"").replace(/\D/g,"").slice(0,11);
+    if(n.length<=2)e.target.value=n;
+    else if(n.length<=6)e.target.value=`(${n.slice(0,2)}) ${n.slice(2)}`;
+    else if(n.length<=10)e.target.value=`(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`;
+    else e.target.value=`(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`;
+  });
 }

@@ -8,9 +8,9 @@
   <title>Beach Burguer | Delivery</title>
   <link rel="icon" href="assets/logo.png">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=830">
+  <link rel="stylesheet" href="style.css?v=831">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="script.js?v=830"></script>
+  <script defer src="script.js?v=831"></script>
 
 <style id="checkout-mobile-fix-v815">
 .dados-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
@@ -36,7 +36,7 @@
     <nav>
       <a href="#inicio">Início</a>
       <a href="#cardapio">Cardápio</a>
-      <a href="#finalizar">Pedido</a>
+      <button id="abrirMeusPedidos" class="link-admin">Meus Pedidos</button>
       <button id="abrirAdmin" class="link-admin">Admin</button>
     </nav>
     <a id="whatsappTopo" class="btn btn-amarelo" target="_blank">WhatsApp</a>
@@ -218,6 +218,21 @@
     </label>
 
     <button id="confirmarProduto" class="btn btn-amarelo btn-largo">Adicionar ao carrinho</button>
+  </div>
+</div>
+
+
+<div id="modalMeusPedidos" class="modal">
+  <div class="modal-box">
+    <button id="fecharMeusPedidos" class="fechar">×</button>
+    <h2>Meus Pedidos</h2>
+    <p>Digite o mesmo número de telefone usado no pedido.</p>
+    <label>Telefone
+      <input id="telefoneMeusPedidos" placeholder="(22) 99999-9999" inputmode="tel">
+    </label>
+    <button id="buscarMeusPedidos" class="btn btn-amarelo btn-largo">Ver meus pedidos</button>
+    <p id="avisoMeusPedidos" class="notificacao-info"></p>
+    <div id="listaMeusPedidos"></div>
   </div>
 </div>
 

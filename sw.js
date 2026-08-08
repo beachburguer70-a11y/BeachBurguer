@@ -1,4 +1,4 @@
-const CACHE = "beach-burguer-v8-30";
+const CACHE = "beach-burguer-v8-31";
 const STATIC_FILES = [
   "./assets/logo.png",
   "./manifest.json"
@@ -50,5 +50,33 @@ self.addEventListener("fetch", event => {
   // Imagens/manifest: cache com fallback para rede.
   event.respondWith(
     caches.match(req).then(cached => cached || fetch(req))
+  );
+});
+
+
+// V8.31 - notificações de status do pedido
+self.addEventListener("push", event => {
+  let data={};
+  try{ data=event.data ? event.data.json() : {}; }catch{ data={body:event.data?.text()||""}; }
+  const title=data.title || "Beach Burguer";
+  const options={
+    body:data.body || "Seu pedido foi atualizado.",
+    icon:"./assets/logo.png",
+    badge:"./assets/logo.png",
+    data:{url:data.url || "./"}
+  };
+  event.waitUntil(self.registration.showNotification(title,options));
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const url=event.notification.data?.url || "./";
+  event.waitUntil(
+    clients.matchAll({type:"window",includeUncontrolled:true}).then(list=>{
+      for(const client of list){
+        if("focus" in client)return client.focus();
+      }
+      if(clients.openWindow)return clients.openWindow(url);
+    })
   );
 });

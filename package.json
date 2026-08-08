@@ -1,5 +1,8 @@
 {
   "name": "beach-burguer-delivery-cloudflare",
-  "version": "8.6.0",
-  "private": true
+  "version": "8.31.0",
+  "private": true,
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
 }

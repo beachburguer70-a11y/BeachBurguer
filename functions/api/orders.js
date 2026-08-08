@@ -1,3 +1,4 @@
+import webpush from "web-push";
 
 import { json, authorized, supabaseRequest, mpToken } from "./_shared.js";
 
@@ -76,12 +77,69 @@ async function sendWhatsAppTemplate(env, telefone, templateName, nomeCliente, or
   }
 }
 
+
+async function enviarPushPedido(env, telefone, pedido) {
+  if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) return;
+
+  const phone=String(telefone||"").replace(/\D/g,"");
+  if(!phone)return;
+
+  webpush.setVapidDetails(
+    env.VAPID_SUBJECT || "mailto:contato@beachburguer.local",
+    env.VAPID_PUBLIC_KEY,
+    env.VAPID_PRIVATE_KEY
+  );
+
+  const rows=await supabaseRequest(
+    env,
+    `push_subscriptions?select=endpoint,subscription&telefone=eq.${phone}`
+  );
+
+  const entrega=String(pedido?.tipo||"")==="Entrega";
+  const payload=JSON.stringify({
+    title:"Beach Burguer",
+    body:entrega ? "🛵 Seu pedido está a caminho!" : "🍔 Seu pedido está pronto!",
+    url:"/?meus-pedidos=1"
+  });
+
+  for(const row of rows||[]){
+    try{
+      await webpush.sendNotification(row.subscription,payload);
+    }catch(error){
+      const status=Number(error?.statusCode||0);
+      if(status===404||status===410){
+        try{
+          await supabaseRequest(
+            env,
+            `push_subscriptions?endpoint=eq.${encodeURIComponent(row.endpoint)}`,
+            {method:"DELETE"}
+          );
+        }catch{}
+      }else{
+        console.warn("Push não enviado:",error?.message||error);
+      }
+    }
+  }
+}
+
 export async function onRequestOptions() {
   return json({}, 204);
 }
 
 export async function onRequestGet({ request, env }) {
   try {
+    const url=new URL(request.url);
+    const phone=String(url.searchParams.get("phone")||"").replace(/\D/g,"");
+    if(phone){
+      if(phone.length!==10&&phone.length!==11){
+        return json({ok:false,error:"Telefone inválido."},400);
+      }
+      const orders=await supabaseRequest(
+        env,
+        `orders?select=id,created_at,status,cliente,telefone,tipo,itens,total&telefone=eq.${phone}&order=created_at.desc&limit=30`
+      );
+      return json({ok:true,orders:orders||[]});
+    }
     // Público: catálogo completo para cliente e garçom.
     try {
       const catalog = await supabaseRequest(
@@ -359,6 +417,7 @@ export async function onRequestPost({ request, env }) {
           before.cliente,
           before.id
         );
+        await enviarPushPedido(env,before.telefone,before);
       }
 
       return json({ ok:true });
