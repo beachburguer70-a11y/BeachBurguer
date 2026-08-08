@@ -263,7 +263,7 @@ function abrirProduto(id){
 function adicionarProduto(){
   const adicionais=[...document.querySelectorAll(".checkAdicional:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
   carrinho.push({
-    uid:Date.now(),id:produtoSelecionado.id,nome:produtoSelecionado.nome,
+    uid:Date.now(),id:produtoSelecionado.id,nome:produtoSelecionado.nome,categoria:produtoSelecionado.categoria,
     preco:Number(produtoSelecionado.preco),quantidade:Math.max(1,Number($("produtoQtd").value)||1),
     adicionais,observacao:$("produtoObs").value.trim()
   });
@@ -343,8 +343,9 @@ function resetarConfirmacaoPix(){
 
 function carrinhoTemLanche(){
   return carrinho.some(item=>{
-    const produto=dados.produtos.find(p=>p.id===item.id || p.nome===item.nome);
-    return produto && produto.categoria!=="Bebidas";
+    const produto=dados.produtos.find(p=>Number(p.id)===Number(item.id) || p.nome===item.nome);
+    const categoria=String(item.categoria || produto?.categoria || "").trim().toLowerCase();
+    return categoria && categoria!=="bebidas";
   });
 }
 
@@ -542,7 +543,7 @@ async function enviarPedidoAoServidor(){
     endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),referencia:$("referencia").value.trim(),
     localidade:local,tipo:$("tipoPedido").value,pagamento,
     troco:pagamento==="Dinheiro"?$("troco").value.trim():"",observacoes:$("observacoes").value.trim(),
-    itens:carrinho.map(i=>({nome:i.nome,quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:valorItem(i)})),
+    itens:carrinho.map(i=>({id:i.id,nome:i.nome,categoria:i.categoria || (dados.produtos.find(p=>Number(p.id)===Number(i.id) || p.nome===i.nome)?.categoria || ""),quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:valorItem(i)})),
     subtotal:sub,entrega:taxa,total:sub+taxa,pix_payment_id:pagamento==="Pix"?pixPaymentId:null
   };
   return (await apiPedidos("POST",pedido)).order;
@@ -685,7 +686,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=820",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=821",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }

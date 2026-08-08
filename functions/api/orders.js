@@ -60,6 +60,22 @@ export async function onRequestPost({ request, env }) {
         return json({ ok:false, error:"Telefone deve conter DDD." }, 400);
       }
 
+      if (!Array.isArray(body.itens) || !body.itens.length) {
+        return json({ ok:false, error:"Adicione pelo menos um produto ao pedido." }, 400);
+      }
+
+      const temLanche = body.itens.some(item =>
+        String(item?.categoria || "").trim().toLowerCase() !== "bebidas" &&
+        String(item?.categoria || "").trim() !== ""
+      );
+
+      if (!temLanche) {
+        return json({
+          ok:false,
+          error:"Para finalizar o pedido, é obrigatório escolher pelo menos 1 lanche. Não é permitido pedir somente bebidas."
+        }, 400);
+      }
+
       let pixPayment = null;
       if (String(body.pagamento) === "Pix") {
         const verified = await verifyApprovedPix(env, body.pix_payment_id, body.total);
