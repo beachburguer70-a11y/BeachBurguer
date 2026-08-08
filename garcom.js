@@ -272,13 +272,6 @@ function validar(){
     alert("Adicione pelo menos um item ao pedido.");
     return false;
   }
-
-  // Mesma regra do site: não permite pedido apenas de bebidas.
-  const temLanche=carrinho.some(i=>!["bebidas","doces"].includes(String(i.categoria||"").toLowerCase()));
-  if(!temLanche){
-    alert("É obrigatório escolher pelo menos 1 lanche. Não é permitido fazer pedido somente de bebidas e/ou doces.");
-    return false;
-  }
   return true;
 }
 

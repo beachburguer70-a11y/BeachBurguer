@@ -79,7 +79,7 @@ export async function onRequestPost({ request, env }) {
         String(item?.categoria || "").trim() !== ""
       );
 
-      if (!temLanche) {
+      if (!isGarcom && !temLanche) {
         return json({
           ok:false,
           error:"Para finalizar o pedido, é obrigatório escolher pelo menos 1 lanche. Não é permitido pedir somente bebidas e/ou doces."
