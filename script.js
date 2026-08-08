@@ -777,7 +777,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=831",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=832",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }

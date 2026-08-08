@@ -206,3 +206,59 @@ body.inicio-travado #inicio{
 .meu-pedido-itens{color:#ccc;font-size:14px}
 .meu-pedido-total{font-size:18px;font-weight:900;color:#ffb700}
 .notificacao-info{font-size:13px;color:#aaa;margin-top:8px}
+
+
+/* V8.32 - MENU VISÍVEL TAMBÉM NO CELULAR */
+@media (max-width: 900px){
+  .topo .barra{
+    display:grid !important;
+    grid-template-columns:1fr auto !important;
+    grid-template-areas:
+      "marca whatsapp"
+      "nav nav" !important;
+    gap:10px !important;
+    align-items:center !important;
+    padding-top:10px !important;
+    padding-bottom:10px !important;
+  }
+
+  .topo .marca{grid-area:marca !important;}
+  .topo #whatsappTopo{grid-area:whatsapp !important;}
+
+  .topo nav{
+    grid-area:nav !important;
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    width:100% !important;
+    gap:6px !important;
+    overflow:visible !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    position:static !important;
+    height:auto !important;
+  }
+
+  .topo nav a,
+  .topo nav button{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    min-width:0 !important;
+    width:100% !important;
+    margin:0 !important;
+    padding:10px 4px !important;
+    font-size:13px !important;
+    line-height:1.1 !important;
+    white-space:normal !important;
+    text-align:center !important;
+    border-radius:10px !important;
+  }
+}
+
+@media (max-width: 480px){
+  .topo nav a,
+  .topo nav button{
+    font-size:12px !important;
+    padding:9px 3px !important;
+  }
+}
