@@ -131,7 +131,7 @@ async function carregarDisponibilidade(){
 }
 
 function icone(c){
-  return c==="Bebidas"?"🥤":c==="Doces"?"🍰":c==="Combos"?"🍔":c==="Mistos Quentes"?"🥪":"🍔";
+  return c==="Bebidas"?"🥤":c==="Doces"?"🍬":c==="Combos"?"📦":c==="Mistos Quentes"?"🥪":"🍔";
 }
 
 function renderAbas(){

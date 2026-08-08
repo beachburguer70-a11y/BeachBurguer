@@ -225,9 +225,10 @@ function selecionarCategoria(c){categoriaAtual=c;renderAbas();renderProdutos()}
 
 function iconeProduto(categoria){
   if(categoria==="Mistos Quentes")return "🥪";
-  if(categoria==="Combos")return "🍟";
-  if(categoria==="Beach Podrão")return "🌭";
+  if(categoria==="Combos")return "📦";
+  if(categoria==="Beach Podrão")return "🍔";
   if(categoria==="Bebidas")return "🥤";
+  if(categoria==="Doces")return "🍬";
   return "🍔";
 }
 
@@ -776,7 +777,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=825",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=826",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }
