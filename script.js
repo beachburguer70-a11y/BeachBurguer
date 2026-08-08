@@ -72,6 +72,7 @@ let pixCopiaColaAtual="";
 let pixValorGerado=0;
 let pixPollingTimer=null;
 let pixPollingStartedAt=0;
+let pixFinalizacaoAutomaticaIniciada=false;
 let adminToken="";
 
 const $=id=>document.getElementById(id);
@@ -322,6 +323,7 @@ function limparPixGerado(){
   pixCopiaColaAtual="";
   pixValorGerado=0;
   pixPollingStartedAt=0;
+  pixFinalizacaoAutomaticaIniciada=false;
 
   if($("pixPagamentoArea"))$("pixPagamentoArea").hidden=true;
   if($("qrcodeDinamico"))$("qrcodeDinamico").innerHTML="";
@@ -433,8 +435,18 @@ async function verificarStatusPix(){
       pararPollingPix();
       $("statusPix").textContent="✅ Pagamento Pix confirmado automaticamente!";
       $("statusPix").className="status-pix pago";
-      $("pixTempo").textContent="Pagamento aprovado. O botão Fazer pedido está liberado.";
+      $("pixTempo").textContent="Pagamento aprovado. Finalizando seu pedido automaticamente...";
       atualizarBotaoPedido();
+
+      if(!pixFinalizacaoAutomaticaIniciada){
+        pixFinalizacaoAutomaticaIniciada=true;
+        setTimeout(()=>{
+          const botao=$("enviarPedido");
+          if(botao && carrinho.length){
+            botao.click();
+          }
+        },500);
+      }
       return;
     }
 
@@ -654,7 +666,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=815",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=819",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }

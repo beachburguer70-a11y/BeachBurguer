@@ -8,9 +8,9 @@
   <title>Beach Burguer | Delivery</title>
   <link rel="icon" href="assets/logo.png">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=815">
+  <link rel="stylesheet" href="style.css?v=819">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="script.js?v=815"></script>
+  <script defer src="script.js?v=819"></script>
 
 <style id="checkout-mobile-fix-v815">
 .dados-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
@@ -136,7 +136,7 @@
 
           <div id="pixBox" class="pix-box ativo">
             <h3>Pagamento via Pix</h3>
-            <p class="pix-instrucao">O Pix será gerado com o valor exato do pedido. Após o Mercado Pago confirmar o pagamento, o botão <strong>Fazer pedido</strong> será liberado automaticamente.</p>
+            <p class="pix-instrucao">O Pix será gerado com o valor exato do pedido. Após o Mercado Pago confirmar o pagamento, seu pedido será finalizado automaticamente.</p>
             <button id="gerarPix" class="btn btn-amarelo btn-largo">Gerar Pix deste pedido</button>
 
             <div id="pixPagamentoArea" class="pix-pagamento-area" hidden>
@@ -211,9 +211,7 @@
     <h3 id="tituloAdicionais">Adicionais</h3>
     <div id="listaAdicionais"></div>
 
-    <label>Quantidade
-      <input id="produtoQtd" type="number" min="1" value="1">
-    </label>
+    <input id="produtoQtd" type="hidden" value="1">
 
     <label>Observação do item
       <input id="produtoObs" placeholder="Ex.: sem salada">

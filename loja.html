@@ -122,38 +122,10 @@ async function carregarPedidos(){
 
 function tocarSom(){
   try{
-    const AudioCtx=window.AudioContext||window.webkitAudioContext;
-    if(!AudioCtx)return;
-    const ctx=new AudioCtx();
-
-    function nota(freq,inicio,duracao,volume){
-      const osc=ctx.createOscillator();
-      const gain=ctx.createGain();
-      osc.type="sine";
-      osc.frequency.setValueAtTime(freq,inicio);
-      gain.gain.setValueAtTime(0.0001,inicio);
-      gain.gain.exponentialRampToValueAtTime(volume,inicio+0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001,inicio+duracao);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(inicio);
-      osc.stop(inicio+duracao+0.03);
-    }
-
-    const t=ctx.currentTime+0.02;
-
-    // DING
-    nota(1046.5,t,0.42,0.34);
-    nota(1318.5,t,0.42,0.18);
-
-    // DONG
-    nota(659.3,t+0.48,0.62,0.36);
-    nota(783.9,t+0.48,0.62,0.16);
-
-    setTimeout(()=>{try{ctx.close()}catch(e){}},1400);
-  }catch(e){
-    console.warn("Não foi possível tocar a campainha:",e);
-  }
+    const audio=new Audio("assets/campainha-pedido.mp3?v=817");
+    audio.volume=1;
+    audio.play().catch(err=>console.warn("Campainha bloqueada:",err));
+  }catch(e){console.warn("Erro na campainha:",e);}
 }
 
 function render(list){
