@@ -777,7 +777,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=834",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=835",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }
@@ -788,6 +788,14 @@ if("serviceWorker" in navigator){
 // V8.34 - solicitar ativação de notificações logo na entrada do site.
 // Navegadores modernos só permitem abrir a permissão nativa após um clique do usuário,
 // por isso mostramos primeiro um aviso próprio com o botão "Permitir notificações".
+function mostrarAvisoNotificacaoCardapio(){
+  const modal=$("modalAtivarNotificacoes");
+  if(!modal)return;
+  if("Notification" in window && Notification.permission==="default"){
+    modal.classList.add("ativo");
+  }
+}
+
 function configurarNotificacaoNaEntrada(){
   const modal=$("modalAtivarNotificacoes");
   const btn=$("ativarNotificacoesEntrada");
@@ -795,14 +803,6 @@ function configurarNotificacaoNaEntrada(){
   if(!modal||!btn||!agoraNao)return;
 
   const jaDispensou=sessionStorage.getItem("bb_notificacao_entrada_dispensada")==="1";
-
-  if(
-    "Notification" in window &&
-    Notification.permission==="default" &&
-    !jaDispensou
-  ){
-    setTimeout(()=>modal.classList.add("ativo"),350);
-  }
 
   btn.onclick=async()=>{
     try{
@@ -976,3 +976,11 @@ if($("telefoneMeusPedidos")){
 }
 
 configurarNotificacaoNaEntrada();
+
+
+// V8.35 - ao clicar em "Ver cardápio", oferece ativar notificações.
+if($("verCardapio")){
+  $("verCardapio").addEventListener("click",()=>{
+    mostrarAvisoNotificacaoCardapio();
+  });
+}
