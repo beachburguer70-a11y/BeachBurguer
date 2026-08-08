@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070707">
+  <title>Beach Burguer | Garçom</title>
+  <link rel="icon" href="assets/logo.png">
+  <link rel="stylesheet" href="style.css?v=822">
+  <style>
+    body{background:#080808}
+    .garcom-topo{position:sticky;top:0;z-index:30;background:#050505;border-bottom:1px solid #262626}
+    .garcom-barra{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0}
+    .garcom-acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .selo-garcom{background:#ffb800;color:#111;font-weight:900;border-radius:999px;padding:8px 12px}
+    .garcom-main{padding:24px 0 60px}
+    .garcom-layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+    .garcom-card{background:#111;border:1px solid #292929;border-radius:18px;padding:20px}
+    .tipo-presencial,.pagamento-presencial{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0 18px}
+    .tipo-btn,.pg-btn{border:1px solid #414141;background:#181818;color:#fff;border-radius:12px;padding:12px 15px;font-weight:900;cursor:pointer}
+    .tipo-btn.ativo,.pg-btn.ativo{background:#ffb800;border-color:#ffb800;color:#111}
+    .garcom-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .garcom-form label{display:grid;gap:6px;font-weight:800}
+    .garcom-form input,.garcom-form textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #3b3b3b;background:#0b0b0b;color:#fff}
+    .garcom-form .full{grid-column:1/-1}
+    .garcom-carrinho{position:sticky;top:92px}
+    .linha-garcom{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #292929}
+    .linha-garcom.total{font-size:23px;color:#ffb800;border-bottom:0}
+    .carrinho-vazio{color:#999;padding:18px 0}
+    .cart-item{padding:12px 0;border-bottom:1px solid #292929}
+    .cart-item-top{display:flex;justify-content:space-between;gap:10px}
+    .cart-controls{display:flex;gap:6px;margin-top:8px;align-items:center}
+    .cart-controls button{border:0;border-radius:8px;padding:7px 10px;font-weight:900;cursor:pointer}
+    .cart-controls .menos,.cart-controls .mais{background:#222;color:#fff}
+    .cart-controls .remover{background:#5c1717;color:#fff;margin-left:auto}
+    .login-garcom{position:fixed;inset:0;background:#050505;z-index:100;display:grid;place-items:center;padding:20px}
+    .login-garcom-box{width:min(420px,96%);background:#111;border:1px solid #333;border-radius:18px;padding:25px}
+    .login-garcom-box input{width:100%;padding:13px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff;margin:12px 0}
+    .hidden{display:none!important}
+    .garcom-produtos{margin-top:18px}
+    .garcom-status{font-size:13px;color:#aaa}
+    @media(max-width:950px){
+      .garcom-layout{grid-template-columns:1fr}
+      .garcom-carrinho{position:static}
+    }
+    @media(max-width:640px){
+      .garcom-form{grid-template-columns:1fr}
+      .garcom-form .full{grid-column:auto}
+      .garcom-barra{align-items:flex-start;flex-direction:column}
+    }
+  </style>
+  <script defer src="garcom.js?v=822"></script>
+</head>
+<body>
+<div id="loginGarcom" class="login-garcom">
+  <div class="login-garcom-box">
+    <div class="marca">
+      <img src="assets/logo.png" alt="Beach Burguer">
+      <div><strong>BEACH</strong><span>BURGUER</span></div>
+    </div>
+    <h2>Página do garçom</h2>
+    <p>Digite a senha da loja para abrir os pedidos presenciais.</p>
+    <input id="senhaGarcom" type="password" placeholder="Senha da loja">
+    <button id="entrarGarcom" class="btn btn-amarelo btn-largo">Entrar</button>
+  </div>
+</div>
+
+<div id="appGarcom" class="hidden">
+<header class="garcom-topo">
+  <div class="container garcom-barra">
+    <div class="marca">
+      <img src="assets/logo.png" alt="Beach Burguer">
+      <div><strong>BEACH</strong><span>BURGUER</span><br><small>PEDIDO PRESENCIAL</small></div>
+    </div>
+    <div class="garcom-acoes">
+      <span class="selo-garcom">👨‍🍳 GARÇOM</span>
+      <button id="novoPedido" class="btn btn-escuro">Novo pedido</button>
+      <button id="sairGarcom" class="btn btn-escuro">Sair</button>
+    </div>
+  </div>
+</header>
+
+<main class="container garcom-main">
+  <div class="garcom-layout">
+    <section>
+      <div class="garcom-card">
+        <h2>Dados do pedido</h2>
+
+        <div class="tipo-presencial">
+          <button type="button" class="tipo-btn ativo" data-tipo="Consumir no local">🍽️ Consumir no local</button>
+          <button type="button" class="tipo-btn" data-tipo="Para viagem">🛍️ Para viagem</button>
+        </div>
+
+        <div class="garcom-form">
+          <label>Nome do cliente *
+            <input id="nomeGarcom" placeholder="Nome do cliente">
+          </label>
+          <label>Telefone *
+            <input id="telefoneGarcom" inputmode="tel" placeholder="(22) 99999-9999">
+          </label>
+          <label class="full">Observações gerais
+            <textarea id="observacoesGarcom" placeholder="Ex.: mesa 4, sem talher, separar bebidas..."></textarea>
+          </label>
+        </div>
+
+        <h3>Pagamento</h3>
+        <div class="pagamento-presencial">
+          <button type="button" class="pg-btn ativo" data-pagamento="A pagar">⏳ A pagar</button>
+          <button type="button" class="pg-btn" data-pagamento="Pago">✅ Pago</button>
+        </div>
+      </div>
+
+      <div class="garcom-card garcom-produtos">
+        <div class="titulo">
+          <h2>Cardápio</h2>
+          <p>Escolha os itens do pedido presencial.</p>
+        </div>
+        <div id="abasGarcom" class="abas"></div>
+        <div id="produtosGarcom" class="grade-produtos"></div>
+      </div>
+    </section>
+
+    <aside class="garcom-card garcom-carrinho">
+      <h2>Pedido atual</h2>
+      <div id="itensGarcom"></div>
+      <div class="linha-garcom total"><span>Total</span><strong id="totalGarcom">R$ 0,00</strong></div>
+      <button id="enviarGarcom" class="btn btn-verde btn-largo">ENVIAR PEDIDO</button>
+      <p id="statusGarcom" class="garcom-status"></p>
+    </aside>
+  </div>
+</main>
+
+<div id="modalProdutoGarcom" class="modal">
+  <div class="modal-box">
+    <button id="fecharProdutoGarcom" class="fechar">×</button>
+    <h2 id="produtoNomeGarcom"></h2>
+    <p id="produtoDescricaoGarcom"></p>
+    <div id="produtoPrecoGarcom" class="preco-modal"></div>
+
+    <h3 id="tituloAdicionaisGarcom">Adicionais</h3>
+    <div id="listaAdicionaisGarcom"></div>
+
+    <label>Observação do item
+      <input id="produtoObsGarcom" placeholder="Ex.: sem salada">
+    </label>
+
+    <button id="confirmarProdutoGarcom" class="btn btn-amarelo btn-largo">Adicionar ao pedido</button>
+  </div>
+</div>
+</div>
+</body>
+</html>

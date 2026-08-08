@@ -141,7 +141,7 @@ function render(list){
     <h2>Pedido #${p.id}</h2>
     <div class="meta">${dataHora(p.created_at)} • ${String(p.status).toUpperCase()}</div>
     <p><strong>${esc(p.cliente)}</strong><br>${esc(formatPhone(p.telefone))}</p>
-    ${p.tipo==="Entrega"?`<p>${esc(p.endereco)}<br>${esc(p.bairro)} — ${esc(p.localidade)}<br><small>Ref.: ${esc(p.referencia||"Não informada")}</small></p>`:`<p><strong>RETIRADA NO LOCAL</strong></p>`}
+    ${p.tipo==="Entrega"?`<p>${esc(p.endereco)}<br>${esc(p.bairro)} — ${esc(p.localidade)}<br><small>Ref.: ${esc(p.referencia||"Não informada")}</small></p>`:`<p><strong>${esc(String(p.tipo||"").toUpperCase())}</strong></p>`}
     <div class="items">${(p.itens||[]).map(i=>`
       <div class="item"><strong>${i.quantidade}x ${esc(i.nome)}</strong> — ${moeda(i.total)}
       ${i.adicionais?.length?`<small><br>+ ${i.adicionais.map(a=>esc(a.nome)).join(", ")}</small>`:""}
