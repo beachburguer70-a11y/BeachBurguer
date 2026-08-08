@@ -69,6 +69,7 @@ let categoriaAtual="Artesanais";
 let produtoSelecionado=null;
 let tipoPedido="Consumir no local";
 let pagamento="A pagar";
+let pesquisaProdutoGarcom="";
 let enviando=false;
 let pedidoEditando=null;
 
@@ -142,22 +143,36 @@ function renderAbas(){
 }
 
 function renderProdutos(){
-  const lista=dados.produtos.filter(p=>p.categoria===categoriaAtual&&p.ativo);
-  $("produtosGarcom").innerHTML=lista.map(p=>`
+  const termo=String(pesquisaProdutoGarcom||"").trim().toLowerCase();
+
+  const lista=dados.produtos.filter(p=>{
+    if(!p.ativo)return false;
+
+    if(termo){
+      const texto=`${p.nome||""} ${p.descricao||""} ${p.categoria||""}`.toLowerCase();
+      return texto.includes(termo);
+    }
+
+    return p.categoria===categoriaAtual;
+  });
+
+  $("produtosGarcom").innerHTML=lista.length?lista.map(p=>`
     <article class="produto ${p.disponivel===false?"produto-esgotado":""}">
       <div class="icone">${icone(p.categoria)}</div>
       ${p.disponivel===false?'<span class="selo-esgotado">ESGOTADO</span>':""}
+      ${termo?`<small style="color:#999;font-weight:800">${esc(p.categoria)}</small>`:""}
       <h3>${p.nome}</h3>
       <p>${p.descricao}</p>
       <div class="produto-rodape">
         <span class="preco">${moeda(p.preco)}</span>
         <button ${p.disponivel===false?"disabled":""} onclick="abrirProdutoGarcom(${p.id})">${p.disponivel===false?"Em falta":"Adicionar"}</button>
       </div>
-    </article>`).join("");
+    </article>`).join(""):`<div class="garcom-card" style="grid-column:1/-1;text-align:center"><p>${termo?"Nenhum item encontrado para esta pesquisa.":"Nenhum produto cadastrado nesta categoria."}</p></div>`;
 }
-
 function selecionarCategoriaGarcom(c){
   categoriaAtual=c;
+  pesquisaProdutoGarcom="";
+  if($("pesquisaProdutoGarcom"))$("pesquisaProdutoGarcom").value="";
   renderAbas();
   renderProdutos();
 }
@@ -402,3 +417,29 @@ $("editarPedidoGarcom").onclick=abrirListaEditarPedido;
 $("fecharEditarPedidoGarcom").onclick=()=>$("modalEditarPedidoGarcom").classList.remove("ativo");
 $("atualizarPedidosGarcom").onclick=carregarPedidosParaEditar;
 $("modalEditarPedidoGarcom").onclick=e=>{if(e.target.id==="modalEditarPedidoGarcom")$("modalEditarPedidoGarcom").classList.remove("ativo")};
+
+
+// V8.39 - pesquisa rápida de itens no cardápio do garçom
+if($("pesquisaProdutoGarcom")){
+  $("pesquisaProdutoGarcom").addEventListener("input",e=>{
+    pesquisaProdutoGarcom=e.target.value||"";
+    renderProdutos();
+  });
+
+  $("pesquisaProdutoGarcom").addEventListener("keydown",e=>{
+    if(e.key==="Escape"){
+      e.target.value="";
+      pesquisaProdutoGarcom="";
+      renderProdutos();
+    }
+  });
+}
+
+if($("limparPesquisaGarcom")){
+  $("limparPesquisaGarcom").onclick=()=>{
+    pesquisaProdutoGarcom="";
+    $("pesquisaProdutoGarcom").value="";
+    renderProdutos();
+    $("pesquisaProdutoGarcom").focus();
+  };
+}

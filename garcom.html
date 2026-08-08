@@ -54,8 +54,32 @@
     .pedido-editar-topo{display:flex;justify-content:space-between;gap:10px;align-items:center}
     .pedido-editar-itens{font-size:13px;color:#bbb;margin:7px 0}
     .modal-editar-pedido-garcom{max-width:650px}
+  
+    .pesquisa-garcom{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      margin:14px 0;
+    }
+    .pesquisa-garcom input{
+      width:100%;
+      padding:13px 14px;
+      border-radius:12px;
+      border:1px solid #444;
+      background:#0b0b0b;
+      color:#fff;
+      font-size:16px;
+      outline:none;
+    }
+    .pesquisa-garcom input:focus{
+      border-color:#ffb800;
+      box-shadow:0 0 0 2px rgba(255,184,0,.12);
+    }
+    @media(max-width:520px){
+      .pesquisa-garcom{grid-template-columns:1fr}
+    }
   </style>
-  <script defer src="garcom.js?v=838"></script>
+  <script defer src="garcom.js?v=839"></script>
 </head>
 <body>
 <div id="loginGarcom" class="login-garcom">
@@ -119,6 +143,14 @@
           <h2>Cardápio</h2>
           <p>Escolha os itens do pedido presencial.</p>
         </div>
+        
+        <div class="pesquisa-garcom">
+          <input id="pesquisaProdutoGarcom" type="search"
+                 placeholder="🔎 Pesquisar item pelo nome..."
+                 autocomplete="off">
+          <button id="limparPesquisaGarcom" type="button" class="btn btn-escuro">Limpar</button>
+        </div>
+
         <div id="abasGarcom" class="abas"></div>
         <div id="produtosGarcom" class="grade-produtos"></div>
       </div>
