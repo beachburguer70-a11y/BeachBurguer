@@ -217,36 +217,111 @@ function atualizarPagamentoGarcom(){
   atualizarTrocoCalculadoGarcom();
 }
 
-function perguntarAdicionaisTodas(qtd){
+function criarDialogoGarcom({titulo,texto,mostrarQuantidade=false,qtd=1}){
   return new Promise(resolve=>{
-    const modal=abrirModalAdicionalSeguro("modalConfirmacaoAdicional");
-    $("textoConfirmacaoAdicional").textContent=`Aplicar os adicionais selecionados nas ${qtd} unidades?`;
-    const sim=$("confirmacaoAdicionalSim");
-    const nao=$("confirmacaoAdicionalNao");
-    const limpar=()=>{sim.onclick=null;nao.onclick=null;};
-    sim.onclick=()=>{limpar();fecharModalAdicionalSeguro(modal);resolve(true);};
-    nao.onclick=()=>{limpar();fecharModalAdicionalSeguro(modal);resolve(false);};
+    const overlay=document.createElement("div");
+    overlay.setAttribute("data-dialogo-garcom","1");
+    Object.assign(overlay.style,{
+      position:"fixed", inset:"0", zIndex:"999999",
+      background:"rgba(0,0,0,.82)", display:"flex",
+      alignItems:"center", justifyContent:"center", padding:"18px"
+    });
+
+    const box=document.createElement("div");
+    Object.assign(box.style,{
+      width:"min(430px,94vw)", background:"#111", color:"#fff",
+      border:"2px solid #ffb800", borderRadius:"16px",
+      padding:"20px", boxShadow:"0 18px 60px rgba(0,0,0,.55)",
+      textAlign:"center"
+    });
+
+    const h=document.createElement("h2");
+    h.textContent=titulo;
+    h.style.margin="0 0 10px";
+
+    const p=document.createElement("p");
+    p.textContent=texto;
+    p.style.margin="0 0 16px";
+
+    box.appendChild(h);
+    box.appendChild(p);
+
+    let input=null;
+    if(mostrarQuantidade){
+      input=document.createElement("input");
+      input.type="number";
+      input.min="0";
+      input.max=String(qtd);
+      input.value="1";
+      Object.assign(input.style,{
+        width:"100%", boxSizing:"border-box", padding:"12px",
+        borderRadius:"10px", border:"1px solid #555",
+        background:"#050505", color:"#fff", fontSize:"20px",
+        textAlign:"center", marginBottom:"14px"
+      });
+      box.appendChild(input);
+    }
+
+    const acoes=document.createElement("div");
+    Object.assign(acoes.style,{
+      display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px"
+    });
+
+    const botao=(texto,bg,fg)=>{
+      const b=document.createElement("button");
+      b.type="button";
+      b.textContent=texto;
+      Object.assign(b.style,{
+        border:"0", borderRadius:"10px", padding:"13px",
+        fontWeight:"900", fontSize:"16px", cursor:"pointer",
+        background:bg, color:fg
+      });
+      return b;
+    };
+
+    const fechar=(valor)=>{
+      overlay.remove();
+      resolve(valor);
+    };
+
+    if(!mostrarQuantidade){
+      const sim=botao("SIM","#ffb800","#111");
+      const nao=botao("NÃO","#2a2a2a","#fff");
+      sim.onclick=()=>fechar(true);
+      nao.onclick=()=>fechar(false);
+      acoes.append(sim,nao);
+    }else{
+      const confirmar=botao("CONFIRMAR","#ffb800","#111");
+      const cancelar=botao("CANCELAR","#2a2a2a","#fff");
+      confirmar.onclick=()=>{
+        let n=Math.floor(Number(input.value)||0);
+        n=Math.max(0,Math.min(qtd,n));
+        fechar(n);
+      };
+      cancelar.onclick=()=>fechar(null);
+      acoes.append(confirmar,cancelar);
+      setTimeout(()=>input.focus(),30);
+    }
+
+    box.appendChild(acoes);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
   });
 }
+
+function perguntarAdicionaisTodas(qtd){
+  return criarDialogoGarcom({
+    titulo:"Aplicar adicionais?",
+    texto:`Aplicar os adicionais selecionados nas ${qtd} unidades?`
+  });
+}
+
 function perguntarQuantidadeComAdicional(qtd){
-  return new Promise(resolve=>{
-    const modal=abrirModalAdicionalSeguro("modalQuantidadeAdicional");
-    const input=$("quantidadeComAdicional");
-    $("textoQuantidadeAdicional").textContent=`Informe quantas das ${qtd} unidades terão os adicionais selecionados.`;
-    input.min="0";
-    input.max=String(qtd);
-    input.value="1";
-    const ok=$("confirmarQuantidadeAdicional");
-    const cancelar=$("cancelarQuantidadeAdicional");
-    const limpar=()=>{ok.onclick=null;cancelar.onclick=null;};
-    ok.onclick=()=>{
-      let n=Math.floor(Number(input.value)||0);
-      n=Math.max(0,Math.min(qtd,n));
-      limpar();
-      fecharModalAdicionalSeguro(modal);
-      resolve(n);
-    };
-    cancelar.onclick=()=>{limpar();fecharModalAdicionalSeguro(modal);resolve(null);};
+  return criarDialogoGarcom({
+    titulo:"Em quantas unidades?",
+    texto:`Informe quantas das ${qtd} unidades terão os adicionais selecionados.`,
+    mostrarQuantidade:true,
+    qtd
   });
 }
 
