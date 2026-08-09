@@ -1,3 +1,4 @@
+const HISTORICO_LEGADO_ATE=new Date("2026-08-09T00:00:00-03:00");
 const TOKEN_KEY="bb_store_token";
 let token=localStorage.getItem(TOKEN_KEY)||"";
 let periodoAtual="dia";
@@ -86,16 +87,37 @@ function normTipo(t){return t||"Não informado"}
 function normPag(p){return p||"Não informado"}
 
 function agregar(lista,catalogo=[]){
-  const concluidos=lista.filter(p=>["entregue","concluido"].includes(String(p.status||"").toLowerCase()));
-  const cancelados=lista.filter(p=>String(p.status||"").toLowerCase()==="cancelado");
-  const abertos=lista.filter(p=>!["entregue","concluido","cancelado"].includes(String(p.status||"").toLowerCase()));
+  const concluidos=[];
+  const cancelados=[];
+  const abertos=[];
+
+  for(const p of lista){
+    const status=String(p.status||"").toLowerCase();
+    const criado=new Date(p.created_at);
+
+    if(status==="cancelado"){
+      cancelados.push(p);
+      continue;
+    }
+
+    // Compatibilidade histórica:
+    // pedidos criados até 08/08/2026 faziam parte do relatório mesmo quando
+    // o status final não havia sido atualizado. Mantemos isso somente para
+    // o histórico antigo, sem reintroduzir o erro nos novos expedientes.
+    const legado=criado < HISTORICO_LEGADO_ATE;
+
+    if(legado || status==="entregue" || status==="concluido"){
+      concluidos.push(p);
+    }else{
+      abertos.push(p);
+    }
+  }
 
   const faturamento=concluidos.reduce((s,p)=>s+Number(p.total||0),0);
   const taxas=concluidos.reduce((s,p)=>s+Number(p.entrega||0),0);
   const produtos=new Map(),cats=new Map(),pag=new Map(),tipos=new Map(),origens=new Map(),horas=new Map(),dias=new Map();
   let itens=0;
 
-  // Pré-carrega catálogo para que produtos com zero venda também apareçam em "Menos vendidos".
   for(const p of (catalogo||[])){
     const key=`id:${p.id}`;
     produtos.set(key,{
@@ -125,7 +147,6 @@ function agregar(lista,catalogo=[]){
       const cat=normCat(item.categoria);
       const key=id?`id:${id}`:`nome:${String(nome).trim().toLowerCase()}`;
 
-      // Prioriza o total efetivamente gravado no pedido.
       const totalSalvo=Number(item.total);
       const extras=(item.adicionais||[]).reduce((s,a)=>s+Number(a.preco||0),0);
       const calculado=(Number(item.preco||0)+extras)*qtd;
@@ -203,6 +224,7 @@ function renderResumo(a){
     <p><strong>Ticket médio:</strong> ${moeda(total?a.faturamento/total:0)}</p>
     <p><strong>Itens por pedido:</strong> ${total?(a.itens/total).toFixed(1):"0"}</p>
     <p><strong>Pedidos ainda abertos:</strong> ${numero(a.abertos.length)}</p>
+    <p><strong>Regra histórica:</strong> pedidos até 08/08/2026 são recuperados mesmo sem status final.</p>
     <p><strong>Participação delivery:</strong> ${total?((delivery/total)*100).toFixed(1):0}%</p>
     <p><strong>Horário de pico:</strong> ${maiorHora?`${maiorHora[0]} (${maiorHora[1]} pedidos)`:"—"}</p>
     <p><strong>Melhor dia:</strong> ${maiorDia?`${maiorDia[0].split("-").reverse().join("/")} (${moeda(maiorDia[1])})`:"—"}</p>
