@@ -72,6 +72,7 @@ let pagamento="A pagar";
 let pesquisaProdutoGarcom="";
 let enviando=false;
 let pedidoEditando=null;
+let itemEditandoUid=null;
 
 const $=id=>document.getElementById(id);
 const moeda=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
@@ -177,6 +178,45 @@ function selecionarCategoriaGarcom(c){
   renderProdutos();
 }
 
+
+function numeroMoedaGarcom(v){
+  const n=Number(String(v||"").replace(/\s/g,"").replace("R$","").replace(/\./g,"").replace(",","."));
+  return Number.isFinite(n)?Math.max(0,n):0;
+}
+function valorEntregaGarcom(){return numeroMoedaGarcom($("valorEntregaGarcom")?.value)}
+function ordenarCarrinhoGarcom(){
+  const ordem=new Map(CATEGORIAS.map((c,i)=>[c,i]));
+  carrinho.sort((a,b)=>(ordem.get(a.categoria)??999)-(ordem.get(b.categoria)??999));
+}
+function atualizarPagamentoGarcom(){
+  const entrega=tipoPedido==="Entrega";
+  const opcoes=entrega
+    ? [["Dinheiro","💵 Dinheiro"],["Cartão","💳 Cartão"]]
+    : [["A pagar","⏳ A pagar"],["Pago","✅ Pago"]];
+  if(!opcoes.some(x=>x[0]===pagamento))pagamento=opcoes[0][0];
+  $("pagamentoPresencial").innerHTML=opcoes.map(([v,t])=>`<button type="button" class="pg-btn ${pagamento===v?"ativo":""}" data-pagamento="${v}">${t}</button>`).join("");
+  document.querySelectorAll(".pg-btn").forEach(btn=>btn.onclick=()=>{
+    pagamento=btn.dataset.pagamento;
+    document.querySelectorAll(".pg-btn").forEach(b=>b.classList.toggle("ativo",b===btn));
+    $("campoTrocoGarcom").classList.toggle("hidden",!(tipoPedido==="Entrega"&&pagamento==="Dinheiro"));
+    if(pagamento!=="Dinheiro")$("trocoGarcom").value="";
+  });
+  $("campoTrocoGarcom").classList.toggle("hidden",!(entrega&&pagamento==="Dinheiro"));
+}
+function dividirAdicionaisPorQuantidade(qtd,adicionais,base){
+  if(qtd<=1||!adicionais.length)return [{...base,quantidade:qtd,adicionais}];
+  if(confirm(`Aplicar os adicionais selecionados nas ${qtd} unidades?`)){
+    return [{...base,quantidade:qtd,adicionais}];
+  }
+  let n=Number(prompt(`Em quantas das ${qtd} unidades deseja os adicionais?`,"1"));
+  if(!Number.isFinite(n))return null;
+  n=Math.max(0,Math.min(qtd,Math.floor(n)));
+  const partes=[];
+  if(n>0)partes.push({...base,uid:Date.now()+Math.random(),quantidade:n,adicionais});
+  if(qtd-n>0)partes.push({...base,uid:Date.now()+Math.random(),quantidade:qtd-n,adicionais:[]});
+  return partes;
+}
+
 function abrirProdutoGarcom(id){
   produtoSelecionado=dados.produtos.find(p=>p.id===id);
   if(!produtoSelecionado||produtoSelecionado.disponivel===false)return;
@@ -184,7 +224,10 @@ function abrirProdutoGarcom(id){
   $("produtoNomeGarcom").textContent=produtoSelecionado.nome;
   $("produtoDescricaoGarcom").textContent=produtoSelecionado.descricao;
   $("produtoPrecoGarcom").textContent=moeda(produtoSelecionado.preco);
+  itemEditandoUid=null;
+  $("produtoQtdGarcom").value=1;
   $("produtoObsGarcom").value="";
+  $("confirmarProdutoGarcom").textContent="Adicionar ao pedido";
 
   const aceita=!CATEGORIAS_SEM_ADICIONAIS.includes(produtoSelecionado.categoria);
   $("tituloAdicionaisGarcom").hidden=!aceita;
@@ -200,28 +243,51 @@ function abrirProdutoGarcom(id){
 
 function adicionarProduto(){
   if(!produtoSelecionado)return;
+  const qtd=Math.max(1,Math.floor(Number($("produtoQtdGarcom").value)||1));
   const adicionais=[...document.querySelectorAll(".checkAdicionalGarcom:checked")]
     .map(c=>ADICIONAIS[Number(c.dataset.i)]);
+  const base={
+    uid:itemEditandoUid||Date.now()+Math.random(),
+    id:produtoSelecionado.id,nome:produtoSelecionado.nome,categoria:produtoSelecionado.categoria,
+    preco:Number(produtoSelecionado.preco),observacao:$("produtoObsGarcom").value.trim()
+  };
 
-  carrinho.push({
-    uid:Date.now()+Math.random(),
-    id:produtoSelecionado.id,
-    nome:produtoSelecionado.nome,
-    categoria:produtoSelecionado.categoria,
-    preco:Number(produtoSelecionado.preco),
-    quantidade:1,
-    adicionais,
-    observacao:$("produtoObsGarcom").value.trim()
-  });
-
+  if(itemEditandoUid){
+    const idx=carrinho.findIndex(x=>String(x.uid)===String(itemEditandoUid));
+    if(idx>=0)carrinho.splice(idx,1);
+  }
+  const partes=dividirAdicionaisPorQuantidade(qtd,adicionais,base);
+  if(partes===null)return;
+  carrinho.push(...partes);
+  itemEditandoUid=null;
+  ordenarCarrinhoGarcom();
   $("modalProdutoGarcom").classList.remove("ativo");
   renderCarrinho();
+}
+function editarItemGarcom(uid){
+  const i=carrinho.find(x=>String(x.uid)===String(uid)); if(!i)return;
+  produtoSelecionado=dados.produtos.find(p=>Number(p.id)===Number(i.id))||{id:i.id,nome:i.nome,categoria:i.categoria,descricao:"",preco:i.preco,disponivel:true};
+  itemEditandoUid=i.uid;
+  $("produtoNomeGarcom").textContent=produtoSelecionado.nome;
+  $("produtoDescricaoGarcom").textContent=produtoSelecionado.descricao||"";
+  $("produtoPrecoGarcom").textContent=moeda(produtoSelecionado.preco);
+  $("produtoQtdGarcom").value=i.quantidade||1;
+  $("produtoObsGarcom").value=i.observacao||"";
+  const aceita=!CATEGORIAS_SEM_ADICIONAIS.includes(produtoSelecionado.categoria);
+  $("tituloAdicionaisGarcom").hidden=!aceita; $("listaAdicionaisGarcom").hidden=!aceita;
+  $("listaAdicionaisGarcom").innerHTML=aceita?ADICIONAIS.map((a,n)=>{
+    const marcado=(i.adicionais||[]).some(x=>x.nome===a.nome);
+    return `<div class="adicional"><label><input type="checkbox" class="checkAdicionalGarcom" data-i="${n}" ${marcado?"checked":""}> ${a.nome}</label><strong>+ ${moeda(a.preco)}</strong></div>`;
+  }).join(""):"";
+  $("confirmarProdutoGarcom").textContent="Salvar alteração";
+  $("modalProdutoGarcom").classList.add("ativo");
 }
 
 function valorItem(i){
   return (Number(i.preco)+(i.adicionais||[]).reduce((s,a)=>s+Number(a.preco||0),0))*Number(i.quantidade||1);
 }
-function total(){return carrinho.reduce((s,i)=>s+valorItem(i),0)}
+function subtotalGarcom(){return carrinho.reduce((s,i)=>s+valorItem(i),0)}
+function total(){return subtotalGarcom()+valorEntregaGarcom()}
 
 function alterarQtd(uid,delta){
   const i=carrinho.find(x=>String(x.uid)===String(uid));
@@ -240,6 +306,7 @@ function esc(v){
 }
 
 function renderCarrinho(){
+  ordenarCarrinhoGarcom();
   $("itensGarcom").innerHTML=carrinho.length?carrinho.map(i=>`
     <div class="cart-item">
       <div class="cart-item-top">
@@ -252,6 +319,7 @@ function renderCarrinho(){
         <button class="menos" onclick="alterarQtd('${i.uid}',-1)">−</button>
         <strong>${i.quantidade}</strong>
         <button class="mais" onclick="alterarQtd('${i.uid}',1)">+</button>
+        <button class="alterar" onclick="editarItemGarcom('${i.uid}')">Alterar</button>
         <button class="remover" onclick="remover('${i.uid}')">Remover</button>
       </div>
     </div>`).join(""):'<div class="carrinho-vazio">Nenhum item adicionado.</div>';
@@ -272,6 +340,10 @@ function novoPedido(){
   $("observacoesGarcom").value="";
   tipoPedido="Consumir no local";
   pagamento="A pagar";
+  itemEditandoUid=null;
+  $("valorEntregaGarcom").value="";
+  $("trocoGarcom").value="";
+  atualizarPagamentoGarcom();
   document.querySelectorAll(".tipo-btn").forEach(b=>b.classList.toggle("ativo",b.dataset.tipo===tipoPedido));
   document.querySelectorAll(".pg-btn").forEach(b=>b.classList.toggle("ativo",b.dataset.pagamento===pagamento));
   $("statusGarcom").textContent="";
@@ -311,8 +383,10 @@ function carregarPedidoParaEdicao(id){
   $("nomeGarcom").value=p.cliente||"";
   $("observacoesGarcom").value=p.observacoes||"";
   tipoPedido=p.tipo||"Consumir no local"; pagamento=p.pagamento||"A pagar";
+  $("valorEntregaGarcom").value=Number(p.entrega||0)?Number(p.entrega).toFixed(2).replace(".",","):"";
+  $("trocoGarcom").value=p.troco||"";
   document.querySelectorAll(".tipo-btn").forEach(b=>b.classList.toggle("ativo",b.dataset.tipo===tipoPedido));
-  document.querySelectorAll(".pg-btn").forEach(b=>b.classList.toggle("ativo",b.dataset.pagamento===pagamento));
+  atualizarPagamentoGarcom();
   $("modalEditarPedidoGarcom").classList.remove("ativo");
   $("enviarGarcom").textContent=`SALVAR ALTERAÇÃO DO PEDIDO #${p.id}`;
   let aviso=document.getElementById("avisoEdicaoGarcom");
@@ -352,14 +426,14 @@ async function enviarPedido(){
       localidade:tipoPedido,
       tipo:tipoPedido,
       pagamento,
-      troco:"",
+      troco:(tipoPedido==="Entrega"&&pagamento==="Dinheiro")?$("trocoGarcom").value.trim():"",
       observacoes:$("observacoesGarcom").value.trim(),
       itens:carrinho.map(i=>({
         id:i.id,nome:i.nome,categoria:i.categoria,quantidade:i.quantidade,
         preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:valorItem(i)
       })),
-      subtotal:total(),
-      entrega:0,
+      subtotal:subtotalGarcom(),
+      entrega:valorEntregaGarcom(),
       total:total(),
       origem:"garcom"
     };
@@ -399,6 +473,7 @@ $("enviarGarcom").onclick=enviarPedido;
 document.querySelectorAll(".tipo-btn").forEach(btn=>btn.onclick=()=>{
   tipoPedido=btn.dataset.tipo;
   document.querySelectorAll(".tipo-btn").forEach(b=>b.classList.toggle("ativo",b===btn));
+  atualizarPagamentoGarcom();
 });
 
 document.querySelectorAll(".pg-btn").forEach(btn=>btn.onclick=()=>{
@@ -410,6 +485,7 @@ window.selecionarCategoriaGarcom=selecionarCategoriaGarcom;
 window.abrirProdutoGarcom=abrirProdutoGarcom;
 window.alterarQtd=alterarQtd;
 window.remover=remover;
+window.editarItemGarcom=editarItemGarcom;
 
 if(token)entrar();
 
@@ -443,3 +519,5 @@ if($("limparPesquisaGarcom")){
     $("pesquisaProdutoGarcom").focus();
   };
 }
+
+$("valorEntregaGarcom").addEventListener("input",renderCarrinho);

@@ -417,10 +417,11 @@ export async function onRequestPost({ request, env }) {
         localidade:String(body.tipo||"Consumir no local"),
         tipo:String(body.tipo||"Consumir no local"),
         pagamento:String(body.pagamento||"A pagar"),
+        troco:String(body.troco||"").trim(),
         observacoes:String(body.observacoes||"").trim(),
         itens:body.itens,
         subtotal:Number(body.subtotal||0),
-        entrega:0,
+        entrega:Number(body.entrega||0),
         total:Number(body.total||0),
         printed:false
       };

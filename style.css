@@ -282,3 +282,7 @@ body.inicio-travado #inicio{
   margin-top:12px;
   color:#999;
 }
+
+/* V8.40 - quantidade visível no modal de produto */
+.quantidade-produto{display:grid;gap:6px;font-weight:800;margin:12px 0}
+.quantidade-produto input{width:100%;padding:12px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff;font-size:16px}

@@ -8,9 +8,9 @@
   <title>Beach Burguer | Delivery</title>
   <link rel="icon" href="assets/logo.png">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=837">
+  <link rel="stylesheet" href="style.css?v=840">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="script.js?v=837"></script>
+  <script defer src="script.js?v=840"></script>
 
 <style id="checkout-mobile-fix-v815">
 .dados-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
@@ -211,7 +211,9 @@
     <h3 id="tituloAdicionais">Adicionais</h3>
     <div id="listaAdicionais"></div>
 
-    <input id="produtoQtd" type="hidden" value="1">
+    <label class="quantidade-produto">Quantidade
+      <input id="produtoQtd" type="number" min="1" step="1" value="1">
+    </label>
 
     <label>Observação do item
       <input id="produtoObs" placeholder="Ex.: sem salada">

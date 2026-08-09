@@ -270,17 +270,30 @@ function abrirProduto(id){
 }
 
 function adicionarProduto(){
+  const qtd=Math.max(1,Math.floor(Number($("produtoQtd").value)||1));
   const adicionais=[...document.querySelectorAll(".checkAdicional:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
-  carrinho.push({
-    uid:Date.now(),id:produtoSelecionado.id,nome:produtoSelecionado.nome,categoria:produtoSelecionado.categoria,
-    preco:Number(produtoSelecionado.preco),quantidade:Math.max(1,Number($("produtoQtd").value)||1),
-    adicionais,observacao:$("produtoObs").value.trim()
-  });
+  const base={
+    id:produtoSelecionado.id,nome:produtoSelecionado.nome,categoria:produtoSelecionado.categoria,
+    preco:Number(produtoSelecionado.preco),observacao:$("produtoObs").value.trim()
+  };
+  let comAdicional=qtd;
+  if(qtd>1&&adicionais.length){
+    if(!confirm(`Aplicar os adicionais selecionados nas ${qtd} unidades?`)){
+      const resposta=prompt(`Em quantas das ${qtd} unidades deseja os adicionais?`,"1");
+      if(resposta===null)return;
+      comAdicional=Math.max(0,Math.min(qtd,Math.floor(Number(resposta)||0)));
+    }
+  }
+  if(comAdicional>0){
+    carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:comAdicional,adicionais});
+  }
+  if(qtd-comAdicional>0){
+    carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:qtd-comAdicional,adicionais:[]});
+  }
   salvarCarrinho();$("modalProduto").classList.remove("ativo");
   resetarConfirmacaoPix();
   $("modalDepoisAdicionar").classList.add("ativo");
 }
-
 function valorItem(i){return (i.preco+(i.adicionais||[]).reduce((s,a)=>s+a.preco,0))*i.quantidade}
 function subtotal(){return carrinho.reduce((s,i)=>s+valorItem(i),0)}
 function taxaAtual(){

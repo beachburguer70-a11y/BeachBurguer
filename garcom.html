@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#070707">
   <title>Beach Burguer | Garçom</title>
   <link rel="icon" href="assets/logo.png">
-  <link rel="stylesheet" href="style.css?v=830">
+  <link rel="stylesheet" href="style.css?v=840">
   <style>
     body{background:#080808}
     .garcom-topo{position:sticky;top:0;z-index:30;background:#050505;border-bottom:1px solid #262626}
@@ -78,8 +78,17 @@
     @media(max-width:520px){
       .pesquisa-garcom{grid-template-columns:1fr}
     }
+  
+    .campo-troco-garcom{display:grid;gap:6px;font-weight:800;margin-top:8px}
+    .campo-troco-garcom input,.quantidade-modal-garcom input,.entrega-manual-garcom input{
+      padding:11px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff
+    }
+    .quantidade-modal-garcom{display:grid;gap:6px;font-weight:800;margin:12px 0}
+    .entrega-manual-garcom{align-items:center}
+    .entrega-manual-garcom input{width:125px;text-align:right}
+    .cart-controls .alterar{background:#ffb800;color:#111}
   </style>
-  <script defer src="garcom.js?v=839"></script>
+  <script defer src="garcom.js?v=840"></script>
 </head>
 <body>
 <div id="loginGarcom" class="login-garcom">
@@ -120,6 +129,7 @@
         <div class="tipo-presencial">
           <button type="button" class="tipo-btn ativo" data-tipo="Consumir no local">🍽️ Consumir no local</button>
           <button type="button" class="tipo-btn" data-tipo="Para viagem">🛍️ Para viagem</button>
+          <button type="button" class="tipo-btn" data-tipo="Entrega">🛵 Entrega</button>
         </div>
 
         <div class="garcom-form">
@@ -132,10 +142,13 @@
         </div>
 
         <h3>Pagamento</h3>
-        <div class="pagamento-presencial">
+        <div id="pagamentoPresencial" class="pagamento-presencial">
           <button type="button" class="pg-btn ativo" data-pagamento="A pagar">⏳ A pagar</button>
           <button type="button" class="pg-btn" data-pagamento="Pago">✅ Pago</button>
         </div>
+        <label id="campoTrocoGarcom" class="campo-troco-garcom hidden">Troco para quanto?
+          <input id="trocoGarcom" inputmode="decimal" placeholder="Ex.: 50,00">
+        </label>
       </div>
 
       <div class="garcom-card garcom-produtos">
@@ -159,6 +172,10 @@
     <aside class="garcom-card garcom-carrinho">
       <h2>Pedido atual</h2>
       <div id="itensGarcom"></div>
+      <div class="linha-garcom entrega-manual-garcom">
+        <span>Entrega</span>
+        <input id="valorEntregaGarcom" inputmode="decimal" placeholder="R$ 0,00">
+      </div>
       <div class="linha-garcom total"><span>Total</span><strong id="totalGarcom">R$ 0,00</strong></div>
       <button id="enviarGarcom" class="btn btn-verde btn-largo">ENVIAR PEDIDO</button>
       <p id="statusGarcom" class="garcom-status"></p>
@@ -181,6 +198,10 @@
     <h2 id="produtoNomeGarcom"></h2>
     <p id="produtoDescricaoGarcom"></p>
     <div id="produtoPrecoGarcom" class="preco-modal"></div>
+
+    <label class="quantidade-modal-garcom">Quantidade
+      <input id="produtoQtdGarcom" type="number" min="1" step="1" value="1">
+    </label>
 
     <h3 id="tituloAdicionaisGarcom">Adicionais</h3>
     <div id="listaAdicionaisGarcom"></div>
