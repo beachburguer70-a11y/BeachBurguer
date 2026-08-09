@@ -190,6 +190,15 @@ async function carregarConfigHorarioGarcom(){
   try{
     const r=await api("POST",{action:"get_store_config"},true);
     storeConfigGarcom=r.store||null;
+
+    // Limpa automaticamente um modo manual antigo deixado por testes ou pelo dia anterior.
+    if(storeConfigGarcom?.manual_date &&
+       storeConfigGarcom?.now?.date &&
+       String(storeConfigGarcom.manual_date)!==String(storeConfigGarcom.now.date)){
+      const auto=await api("POST",{action:"set_store_mode",mode:"auto"},true);
+      storeConfigGarcom=auto.store||storeConfigGarcom;
+    }
+
     await verificarHorarioFechamentoGarcom();
   }catch(e){
     console.warn("Horário do garçom:",e.message);
@@ -206,26 +215,33 @@ async function verificarHorarioFechamentoGarcom(){
   const c=storeConfigGarcom;
   if(!c||!c.now)return;
 
-  // A pergunta deve aparecer somente na aba do Garçom que estiver realmente visível.
   if(document.visibilityState!=="visible")return;
 
-  // Se a decisão já foi tomada em outra página/dispositivo, apenas acompanha.
-  if(c.mode==="pickup_only"||c.mode==="closed")return;
+  const hoje=c.today;
+  if(!hoje||!hoje.enabled)return;
 
-  const fecha=c.today?.close;
+  const fecha=String(hoje.close||"").trim();
   if(!fecha)return;
 
   const chave=`${c.now.date}-${fecha}`;
+
+  // A decisão só é considerada válida para a data corrente.
+  // Estados manuais antigos de dias anteriores não bloqueiam a pergunta.
+  const estadoEhDeHoje = String(c.manual_date||"")===String(c.now.date);
+  const modoAtual = estadoEhDeHoje ? String(c.mode||"auto") : "auto";
+
+  if(modoAtual==="pickup_only"||modoAtual==="closed")return;
+
   if(c.now.time>=fecha && ultimoPromptFechamentoGarcom!==chave){
     ultimoPromptFechamentoGarcom=chave;
 
     const continuar=await dialogoFechamentoGarcom();
     if(continuar){
       await definirModoLojaGarcom("pickup_only");
-      mostrarAvisoModoGarcom("🟠 Loja aberta somente para retirada.");
+      mostrarAvisoModoGarcom(`🟠 Loja aberta somente para retirada após ${fecha}.`);
     }else{
       await definirModoLojaGarcom("closed");
-      mostrarAvisoModoGarcom("🔴 Loja fechada para novos pedidos.");
+      mostrarAvisoModoGarcom(`🔴 Loja fechada às ${fecha}.`);
     }
   }
 }
