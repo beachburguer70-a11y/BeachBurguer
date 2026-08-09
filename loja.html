@@ -23,7 +23,10 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 .login{min-height:100vh;display:grid;place-items:center}.loginbox{width:min(420px,92%);background:var(--p);border:1px solid var(--b);border-radius:18px;padding:25px}.loginbox input{width:100%;padding:13px;border-radius:10px;border:1px solid #444;background:#0d0d0d;color:white;margin:10px 0}
 .hidden{display:none!important}.empty{text-align:center;color:#aaa;padding:80px 20px;grid-column:1/-1}
 @media(max-width:1050px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
-</style>
+
+    .finalizar-expediente{background:#7b1d1d;color:#fff;border:1px solid #b93a3a}
+    .finalizar-expediente:hover{background:#982626}
+  </style>
 </head>
 <body>
 <div id="login" class="login">
@@ -41,6 +44,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small></div></div>
     <div class="controls">
       <a href="/relatorios" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
+      <button id="finalizarExpediente" class="btn finalizar-expediente">🌙 Finalizar expediente</button>
       <button id="somBtn" class="btn dark">🔔 Campainha ativada</button>
       <span class="badge">🖨️ Impressão automática pelo programa do Windows</span>
       <button id="atualizar" class="btn dark">Atualizar</button>
@@ -77,6 +81,41 @@ const dataHora=v=>new Date(v).toLocaleString("pt-BR");
 $("senha").value=token;
 $("entrar").onclick=entrar;
 $("senha").onkeydown=e=>{if(e.key==="Enter")entrar()};
+
+async function finalizarExpediente(){
+  const primeira=confirm(
+    "FINALIZAR EXPEDIENTE?\n\n"+
+    "Isso vai zerar a fila de pedidos da tela da loja para o próximo expediente.\n"+
+    "O histórico NÃO será apagado e continuará aparecendo nos Relatórios.\n\n"+
+    "Deseja continuar?"
+  );
+  if(!primeira)return;
+
+  const segunda=confirm(
+    "Confirma novamente?\n\nDepois de finalizar, os pedidos atuais sairão da tela da loja."
+  );
+  if(!segunda)return;
+
+  const btn=$("finalizarExpediente");
+  const texto=btn.textContent;
+  btn.disabled=true;
+  btn.textContent="Finalizando...";
+
+  try{
+    const r=await api("POST",{action:"finalize_shift"},true);
+    pedidos=[];
+    renderPedidos();
+    alert(r.message||"Expediente finalizado com sucesso!");
+    await carregarPedidos();
+  }catch(e){
+    alert("Não foi possível finalizar o expediente: "+e.message);
+  }finally{
+    btn.disabled=false;
+    btn.textContent=texto;
+  }
+}
+
+$("finalizarExpediente").onclick=finalizarExpediente;
 $("sair").onclick=()=>{localStorage.removeItem(TOKEN_KEY);location.reload()};
 $("atualizar").onclick=carregarPedidos;
 $("somBtn").onclick=()=>{somAtivo=!somAtivo;$("somBtn").textContent=somAtivo?"🔔 Campainha ativada":"🔕 Campainha desativada"};

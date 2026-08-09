@@ -143,6 +143,19 @@ async function enviarPushPedido(env, telefone, pedido) {
 
   return {ok:enviados>0,enviados,erros};
 }
+
+async function obterInicioExpediente(env){
+  try{
+    const rows=await supabaseRequest(
+      env,
+      "store_state?select=shift_started_at&id=eq.1&limit=1"
+    );
+    return rows?.[0]?.shift_started_at || null;
+  }catch{
+    return null;
+  }
+}
+
 export async function onRequestOptions() {
   return json({}, 204);
 }
@@ -296,13 +309,44 @@ export async function onRequestPost({ request, env }) {
     if (action === "list_orders") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
       const limit = Math.min(Number(body.limit || 100), 300);
+      const inicioExpediente=await obterInicioExpediente(env);
+      const filtroInicio=inicioExpediente
+        ? `&created_at=gte.${encodeURIComponent(inicioExpediente)}`
+        : "";
       const orders = await supabaseRequest(
         env,
-        `orders?select=*&order=created_at.desc&limit=${limit}`
+        `orders?select=*&order=created_at.desc&limit=${limit}${filtroInicio}`
       );
-      return json({ ok:true, orders:orders || [] });
+      return json({ ok:true, orders:orders || [], shift_started_at:inicioExpediente });
     }
 
+
+
+    if (action === "finalize_shift") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+
+      const agora=new Date().toISOString();
+
+      await supabaseRequest(
+        env,
+        "store_state?on_conflict=id",
+        {
+          method:"POST",
+          headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
+          body:JSON.stringify({
+            id:1,
+            shift_started_at:agora,
+            updated_at:agora
+          })
+        }
+      );
+
+      return json({
+        ok:true,
+        shift_started_at:agora,
+        message:"Expediente finalizado. A fila de pedidos foi zerada para o próximo expediente."
+      });
+    }
 
     if (action === "report_orders") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
