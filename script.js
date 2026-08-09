@@ -270,50 +270,34 @@ function abrirProduto(id){
 }
 
 
-
-function abrirModalAdicionalSeguro(id){
-  const modal=$(id);
-  if(!modal)throw new Error(`Modal ${id} não encontrado.`);
-  modal.hidden=false;
-  modal.style.display="flex";
-  modal.classList.add("ativo");
-  return modal;
-}
-function fecharModalAdicionalSeguro(modal){
-  if(!modal)return;
-  modal.classList.remove("ativo");
-  modal.style.display="";
-}
 function perguntarAdicionaisTodas(qtd){
   return new Promise(resolve=>{
-    const modal=abrirModalAdicionalSeguro("modalConfirmacaoAdicional");
+    const modal=$("modalConfirmacaoAdicional");
     $("textoConfirmacaoAdicional").textContent=`Aplicar os adicionais selecionados nas ${qtd} unidades?`;
+    modal.classList.add("ativo");
     const sim=$("confirmacaoAdicionalSim");
     const nao=$("confirmacaoAdicionalNao");
     const limpar=()=>{sim.onclick=null;nao.onclick=null;};
-    sim.onclick=()=>{limpar();fecharModalAdicionalSeguro(modal);resolve(true);};
-    nao.onclick=()=>{limpar();fecharModalAdicionalSeguro(modal);resolve(false);};
+    sim.onclick=()=>{limpar();modal.classList.remove("ativo");resolve(true);};
+    nao.onclick=()=>{limpar();modal.classList.remove("ativo");resolve(false);};
   });
 }
 function perguntarQuantidadeComAdicional(qtd){
   return new Promise(resolve=>{
-    const modal=abrirModalAdicionalSeguro("modalQuantidadeAdicional");
+    const modal=$("modalQuantidadeAdicional");
     const input=$("quantidadeComAdicional");
     $("textoQuantidadeAdicional").textContent=`Informe quantas das ${qtd} unidades terão os adicionais selecionados.`;
-    input.min="0";
-    input.max=String(qtd);
-    input.value="1";
+    input.min="0"; input.max=String(qtd); input.value="1";
+    modal.classList.add("ativo");
     const ok=$("confirmarQuantidadeAdicional");
     const cancelar=$("cancelarQuantidadeAdicional");
     const limpar=()=>{ok.onclick=null;cancelar.onclick=null;};
     ok.onclick=()=>{
       let n=Math.floor(Number(input.value)||0);
       n=Math.max(0,Math.min(qtd,n));
-      limpar();
-      fecharModalAdicionalSeguro(modal);
-      resolve(n);
+      limpar(); modal.classList.remove("ativo"); resolve(n);
     };
-    cancelar.onclick=()=>{limpar();fecharModalAdicionalSeguro(modal);resolve(null);};
+    cancelar.onclick=()=>{limpar();modal.classList.remove("ativo");resolve(null);};
   });
 }
 
@@ -833,7 +817,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=842",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=837",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }
