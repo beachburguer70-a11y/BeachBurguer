@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070707">
+  <title>Beach Burguer | Relatórios</title>
+  <link rel="icon" href="assets/logo.png">
+  <style>
+    *{box-sizing:border-box}
+    :root{--bg:#070707;--card:#111;--card2:#171717;--line:#2b2b2b;--yellow:#ffb800;--text:#fff;--muted:#aaa;--good:#39d98a;--bad:#ff6262}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    .hidden{display:none!important}
+    .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .loginbox{width:min(420px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:900;font-size:22px}.brand img{width:62px;height:62px;object-fit:contain}.brand span{color:var(--yellow)}
+    input,select,button{font:inherit}
+    input,select{width:100%;padding:12px 13px;border:1px solid #444;background:#0a0a0a;color:#fff;border-radius:10px}
+    .btn{border:0;border-radius:10px;padding:11px 14px;font-weight:900;cursor:pointer}.yellow{background:var(--yellow);color:#111}.dark{background:#272727;color:#fff}.green{background:#198754;color:#fff}
+    header{position:sticky;top:0;z-index:20;background:#080808ee;backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+    .container{width:min(1240px,94%);margin:auto}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0}.controls{display:flex;gap:8px;flex-wrap:wrap}
+    main{padding:22px 0 50px}
+    .filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+    .periodos{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.periodo{background:#222;color:#fff;border:1px solid #333}.periodo.ativo{background:var(--yellow);color:#111;border-color:var(--yellow)}
+    .range{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:18px}
+    .grid-kpi{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.kpi{background:linear-gradient(145deg,#151515,#0d0d0d);border:1px solid var(--line);border-radius:15px;padding:16px}.kpi small{color:var(--muted);display:block;margin-bottom:8px}.kpi strong{font-size:23px}.kpi .delta{font-size:12px;margin-top:6px}.up{color:var(--good)}.down{color:var(--bad)}
+    .dashboard{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:16px;overflow:hidden}.card h2,.card h3{margin:0 0 14px}
+    .bars{display:grid;gap:9px}.bar-row{display:grid;grid-template-columns:minmax(110px,1fr) 2fr auto;gap:10px;align-items:center}.bar-bg{height:12px;background:#292929;border-radius:999px;overflow:hidden}.bar-fill{height:100%;background:var(--yellow);border-radius:999px}
+    table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid #292929}th{color:#bbb;font-size:12px;text-transform:uppercase}td:last-child,th:last-child{text-align:right}
+    .rank{font-weight:900;color:var(--yellow)}
+    .section-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.muted{color:var(--muted)}
+    .full{grid-column:1/-1}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .linechart{display:flex;align-items:flex-end;gap:5px;height:180px;border-bottom:1px solid #333;padding-top:12px}.col{flex:1;min-width:7px;background:var(--yellow);border-radius:5px 5px 0 0;position:relative}.col:hover:after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#000;padding:6px;border-radius:6px;white-space:nowrap;font-size:11px;z-index:5}
+    .legend{display:flex;justify-content:space-between;color:#888;font-size:11px;margin-top:7px}
+    .empty{padding:25px;text-align:center;color:#aaa}.loading{opacity:.6;pointer-events:none}
+    @media(max-width:1000px){.grid-kpi{grid-template-columns:repeat(3,1fr)}.dashboard{grid-template-columns:1fr}.three{grid-template-columns:1fr 1fr}.filters{grid-template-columns:1fr 1fr}}
+    @media(max-width:650px){.top{align-items:flex-start;flex-direction:column}.grid-kpi{grid-template-columns:1fr 1fr}.three,.two{grid-template-columns:1fr}.range{grid-template-columns:1fr}.bar-row{grid-template-columns:90px 1fr auto}.controls{width:100%}.controls .btn{flex:1}.brand{font-size:18px}.kpi strong{font-size:19px}}
+  </style>
+</head>
+<body>
+<div id="login" class="login">
+  <div class="loginbox">
+    <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>RELATÓRIOS</small></div></div>
+    <h2>Acesso gerencial</h2>
+    <input id="senha" type="password" placeholder="Senha da loja">
+    <button id="entrar" class="btn yellow" style="width:100%;margin-top:10px">ABRIR RELATÓRIOS</button>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+<header>
+  <div class="container top">
+    <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Painel de vendas</small></div></div>
+    <div class="controls">
+      <a href="/loja" class="btn dark" style="text-decoration:none">← Pedidos</a>
+      <button id="atualizar" class="btn yellow">↻ Atualizar</button>
+      <button id="sair" class="btn dark">Sair</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <div class="periodos">
+    <button class="btn periodo ativo" data-periodo="dia">Hoje</button>
+    <button class="btn periodo" data-periodo="semana">Semana</button>
+    <button class="btn periodo" data-periodo="mes">Mês</button>
+    <button class="btn periodo" data-periodo="ano">Ano</button>
+  </div>
+
+  <div class="range">
+    <label>De<input id="dataInicio" type="date"></label>
+    <label>Até<input id="dataFim" type="date"></label>
+    <button id="aplicarPeriodo" class="btn dark">Aplicar período</button>
+  </div>
+
+  <div id="conteudo">
+    <section class="grid-kpi">
+      <div class="kpi"><small>Faturamento</small><strong id="fat">R$ 0,00</strong><div id="fatDelta" class="delta"></div></div>
+      <div class="kpi"><small>Pedidos</small><strong id="pedidos">0</strong><div id="pedDelta" class="delta"></div></div>
+      <div class="kpi"><small>Itens vendidos</small><strong id="itens">0</strong><div id="itensDelta" class="delta"></div></div>
+      <div class="kpi"><small>Ticket médio</small><strong id="ticket">R$ 0,00</strong></div>
+      <div class="kpi"><small>Taxas de entrega</small><strong id="taxas">R$ 0,00</strong></div>
+      <div class="kpi"><small>Cancelados</small><strong id="cancelados">0</strong></div>
+    </section>
+
+    <section class="dashboard">
+      <div class="card">
+        <div class="section-title"><h2>📈 Faturamento no período</h2><span id="periodoLabel" class="muted"></span></div>
+        <div id="graficoFaturamento" class="linechart"></div>
+        <div id="graficoLegenda" class="legend"></div>
+      </div>
+      <div class="card">
+        <h2>🏆 Top produtos</h2>
+        <div id="topProdutos" class="bars"></div>
+      </div>
+    </section>
+
+    <section class="two">
+      <div class="card">
+        <h2>🔥 Mais vendidos</h2>
+        <div style="overflow:auto"><table><thead><tr><th>#</th><th>Produto</th><th>Qtd.</th><th>Faturamento</th></tr></thead><tbody id="maisVendidos"></tbody></table></div>
+      </div>
+      <div class="card">
+        <h2>🧊 Menos vendidos</h2>
+        <div style="overflow:auto"><table><thead><tr><th>#</th><th>Produto</th><th>Qtd.</th><th>Faturamento</th></tr></thead><tbody id="menosVendidos"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="three">
+      <div class="card"><h3>🍔 Vendas por categoria</h3><div id="porCategoria" class="bars"></div></div>
+      <div class="card"><h3>💳 Formas de pagamento</h3><div id="porPagamento" class="bars"></div></div>
+      <div class="card"><h3>🛵 Tipo do pedido</h3><div id="porTipo" class="bars"></div></div>
+    </section>
+
+    <section class="three">
+      <div class="card"><h3>🌐 Origem dos pedidos</h3><div id="porOrigem" class="bars"></div></div>
+      <div class="card"><h3>⏰ Horários mais fortes</h3><div id="porHora" class="bars"></div></div>
+      <div class="card"><h3>📊 Resumo operacional</h3><div id="resumoOperacional"></div></div>
+    </section>
+
+    <section class="card" style="margin-top:12px">
+      <div class="section-title"><h2>📦 Todos os produtos vendidos</h2><span class="muted">Quantidade e receita estimada por item</span></div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>Produto</th><th>Categoria</th><th>Unidades</th><th>Participação</th><th>Faturamento</th></tr></thead>
+          <tbody id="tabelaProdutos"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+</div>
+<script src="relatorios.js?v=846"></script>
+</body>
+</html>

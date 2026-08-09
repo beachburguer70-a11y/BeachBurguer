@@ -303,6 +303,41 @@ export async function onRequestPost({ request, env }) {
       return json({ ok:true, orders:orders || [] });
     }
 
+
+    if (action === "report_orders") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+
+      const from=String(body.from||"").trim();
+      const to=String(body.to||"").trim();
+      if(!from||!to) return json({ok:false,error:"Período inválido."},400);
+
+      const pageSize=1000;
+      const maxRows=20000;
+      let offset=0;
+      let all=[];
+
+      while(offset<maxRows){
+        const path=
+          `orders?select=id,created_at,status,cliente,telefone,tipo,pagamento,subtotal,entrega,total,itens,origem`+
+          `&created_at=gte.${encodeURIComponent(from)}`+
+          `&created_at=lte.${encodeURIComponent(to)}`+
+          `&order=created_at.asc&limit=${pageSize}&offset=${offset}`;
+
+        const rows=await supabaseRequest(env,path);
+        const batch=Array.isArray(rows)?rows:[];
+        all.push(...batch);
+
+        if(batch.length<pageSize)break;
+        offset+=pageSize;
+      }
+
+      return json({
+        ok:true,
+        orders:all,
+        truncated:all.length>=maxRows
+      });
+    }
+
     if (action === "list_products") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
       const catalog = await supabaseRequest(
