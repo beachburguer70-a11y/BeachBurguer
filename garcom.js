@@ -217,19 +217,6 @@ function atualizarPagamentoGarcom(){
   atualizarTrocoCalculadoGarcom();
 }
 
-function abrirModalAdicionalSeguro(id){
-  const modal=$(id);
-  if(!modal)throw new Error(`Modal ${id} não encontrado.`);
-  modal.hidden=false;
-  modal.style.display="flex";
-  modal.classList.add("ativo");
-  return modal;
-}
-function fecharModalAdicionalSeguro(modal){
-  if(!modal)return;
-  modal.classList.remove("ativo");
-  modal.style.display="";
-}
 function perguntarAdicionaisTodas(qtd){
   return new Promise(resolve=>{
     const modal=abrirModalAdicionalSeguro("modalConfirmacaoAdicional");
@@ -264,16 +251,29 @@ function perguntarQuantidadeComAdicional(qtd){
 }
 
 async function dividirAdicionaisPorQuantidade(qtd,adicionais,base){
-  if(qtd<=1||!adicionais.length)return [{...base,quantidade:qtd,adicionais}];
+  if(qtd<=1||!adicionais.length){
+    return [{...base,quantidade:qtd,adicionais}];
+  }
+
   const aplicarTodas=await perguntarAdicionaisTodas(qtd);
-  if(aplicarTodas)return [{...base,quantidade:qtd,adicionais}];
-  const n=await perguntarQuantidadeComAdicional(qtd);
-  if(n===null)return null;
+
+  if(aplicarTodas){
+    return [{...base,quantidade:qtd,adicionais}];
+  }
+
+  const resposta=await perguntarQuantidadeComAdicional(qtd);
+  if(resposta===null)return null;
+
   const partes=[];
-  if(n>0)partes.push({...base,uid:Date.now()+Math.random(),quantidade:n,adicionais});
-  if(qtd-n>0)partes.push({...base,uid:Date.now()+Math.random(),quantidade:qtd-n,adicionais:[]});
+  if(resposta>0){
+    partes.push({...base,uid:Date.now()+Math.random(),quantidade:resposta,adicionais});
+  }
+  if(qtd-resposta>0){
+    partes.push({...base,uid:Date.now()+Math.random(),quantidade:qtd-resposta,adicionais:[]});
+  }
   return partes;
 }
+
 function abrirProdutoGarcom(id){
   produtoSelecionado=dados.produtos.find(p=>p.id===id);
   if(!produtoSelecionado||produtoSelecionado.disponivel===false)return;

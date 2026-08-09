@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#070707">
   <title>Beach Burguer | Garçom</title>
   <link rel="icon" href="assets/logo.png">
-  <link rel="stylesheet" href="style.css?v=843">
+  <link rel="stylesheet" href="style.css?v=844">
   <style>
     body{background:#080808}
     .garcom-topo{position:sticky;top:0;z-index:30;background:#050505;border-bottom:1px solid #262626}
@@ -102,8 +102,26 @@
       justify-content:center !important;
       z-index:10050 !important;
     }
+  
+    /* V8.44 GARCOM DIALOGO ADICIONAL */
+    #modalConfirmacaoAdicional.ativo,
+    #modalQuantidadeAdicional.ativo{
+      display:flex !important;
+      position:fixed !important;
+      inset:0 !important;
+      align-items:center !important;
+      justify-content:center !important;
+      background:rgba(0,0,0,.78) !important;
+      z-index:30000 !important;
+    }
+    #modalConfirmacaoAdicional .modal-box,
+    #modalQuantidadeAdicional .modal-box{
+      width:min(92vw,430px) !important;
+      max-width:430px !important;
+      z-index:30001 !important;
+    }
   </style>
-  <script defer src="garcom.js?v=843"></script>
+  <script defer src="garcom.js?v=844"></script>
 </head>
 <body>
 <div id="loginGarcom" class="login-garcom">
