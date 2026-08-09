@@ -125,7 +125,6 @@ async function carregarConfigLoja(){
   const r=await api("POST",{action:"get_store_config"});
   storeConfig=r.store;
   atualizarStatusLoja();
-  verificarHorarioFechamento();
   return storeConfig;
 }
 function atualizarStatusLoja(){
@@ -166,21 +165,8 @@ async function definirModoLoja(mode){
   storeConfig=r.store; atualizarStatusLoja();
 }
 async function verificarHorarioFechamento(){
-  if(!storeConfig?.today||storeConfig.mode==="pickup_only")return;
-  const agora=storeConfig.now;
-  const fecha=storeConfig.today.close;
-  const chave=`${agora.date}-${fecha}`;
-  if(agora.time>=fecha && ultimoPromptFechamento!==chave){
-    ultimoPromptFechamento=chave;
-    const continuar=confirm("Horário de funcionamento encerrado.\n\nDeseja continuar aberto somente para RETIRADA?");
-    if(continuar){
-      await definirModoLoja("pickup_only");
-      alert("Loja mantida aberta somente para retirada.");
-    }else{
-      await definirModoLoja("closed");
-      alert("Loja fechada para novos pedidos.");
-    }
-  }
+  // V8.52: a decisão do horário de fechamento é feita somente na página do Garçom.
+  return;
 }
 
 async function finalizarExpediente(){

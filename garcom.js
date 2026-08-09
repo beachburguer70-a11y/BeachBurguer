@@ -206,7 +206,10 @@ async function verificarHorarioFechamentoGarcom(){
   const c=storeConfigGarcom;
   if(!c||!c.now)return;
 
-  // Não pergunta novamente se a loja já está em modo manual de retirada/fechada.
+  // A pergunta deve aparecer somente na aba do Garçom que estiver realmente visível.
+  if(document.visibilityState!=="visible")return;
+
+  // Se a decisão já foi tomada em outra página/dispositivo, apenas acompanha.
   if(c.mode==="pickup_only"||c.mode==="closed")return;
 
   const fecha=c.today?.close;
@@ -219,12 +222,31 @@ async function verificarHorarioFechamentoGarcom(){
     const continuar=await dialogoFechamentoGarcom();
     if(continuar){
       await definirModoLojaGarcom("pickup_only");
-      alert("A loja continuará aberta somente para retirada.");
+      mostrarAvisoModoGarcom("🟠 Loja aberta somente para retirada.");
     }else{
       await definirModoLojaGarcom("closed");
-      alert("A loja foi fechada para novos pedidos.");
+      mostrarAvisoModoGarcom("🔴 Loja fechada para novos pedidos.");
     }
   }
+}
+
+function mostrarAvisoModoGarcom(texto){
+  let box=document.getElementById("avisoModoLojaGarcom");
+  if(!box){
+    box=document.createElement("div");
+    box.id="avisoModoLojaGarcom";
+    Object.assign(box.style,{
+      position:"fixed",left:"50%",top:"18px",transform:"translateX(-50%)",
+      zIndex:"1000001",background:"#111",color:"#fff",
+      border:"2px solid #ffb800",padding:"12px 18px",
+      borderRadius:"12px",fontWeight:"900",
+      boxShadow:"0 8px 30px rgba(0,0,0,.45)"
+    });
+    document.body.appendChild(box);
+  }
+  box.textContent=texto;
+  clearTimeout(window.__modoLojaGarcomTimer);
+  window.__modoLojaGarcomTimer=setTimeout(()=>box?.remove(),5000);
 }
 
 function iniciarMonitorHorarioGarcom(){
@@ -827,3 +849,9 @@ if($("limparPesquisaGarcom")){
 
 $("valorEntregaGarcom").addEventListener("input",()=>{renderCarrinho();atualizarTrocoCalculadoGarcom()});
 $("trocoGarcom").addEventListener("input",atualizarTrocoCalculadoGarcom);
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"&&token){
+    carregarConfigHorarioGarcom();
+  }
+});
