@@ -216,6 +216,53 @@ function atualizarPagamentoGarcom(){
   $("campoTrocoGarcom").classList.toggle("hidden",!(entrega&&pagamento==="Dinheiro"));
   atualizarTrocoCalculadoGarcom();
 }
+
+function abrirModalAdicionalSeguro(id){
+  const modal=$(id);
+  if(!modal)throw new Error(`Modal ${id} não encontrado.`);
+  modal.hidden=false;
+  modal.style.display="flex";
+  modal.classList.add("ativo");
+  return modal;
+}
+function fecharModalAdicionalSeguro(modal){
+  if(!modal)return;
+  modal.classList.remove("ativo");
+  modal.style.display="";
+}
+function perguntarAdicionaisTodas(qtd){
+  return new Promise(resolve=>{
+    const modal=abrirModalAdicionalSeguro("modalConfirmacaoAdicional");
+    $("textoConfirmacaoAdicional").textContent=`Aplicar os adicionais selecionados nas ${qtd} unidades?`;
+    const sim=$("confirmacaoAdicionalSim");
+    const nao=$("confirmacaoAdicionalNao");
+    const limpar=()=>{sim.onclick=null;nao.onclick=null;};
+    sim.onclick=()=>{limpar();fecharModalAdicionalSeguro(modal);resolve(true);};
+    nao.onclick=()=>{limpar();fecharModalAdicionalSeguro(modal);resolve(false);};
+  });
+}
+function perguntarQuantidadeComAdicional(qtd){
+  return new Promise(resolve=>{
+    const modal=abrirModalAdicionalSeguro("modalQuantidadeAdicional");
+    const input=$("quantidadeComAdicional");
+    $("textoQuantidadeAdicional").textContent=`Informe quantas das ${qtd} unidades terão os adicionais selecionados.`;
+    input.min="0";
+    input.max=String(qtd);
+    input.value="1";
+    const ok=$("confirmarQuantidadeAdicional");
+    const cancelar=$("cancelarQuantidadeAdicional");
+    const limpar=()=>{ok.onclick=null;cancelar.onclick=null;};
+    ok.onclick=()=>{
+      let n=Math.floor(Number(input.value)||0);
+      n=Math.max(0,Math.min(qtd,n));
+      limpar();
+      fecharModalAdicionalSeguro(modal);
+      resolve(n);
+    };
+    cancelar.onclick=()=>{limpar();fecharModalAdicionalSeguro(modal);resolve(null);};
+  });
+}
+
 async function dividirAdicionaisPorQuantidade(qtd,adicionais,base){
   if(qtd<=1||!adicionais.length)return [{...base,quantidade:qtd,adicionais}];
   const aplicarTodas=await perguntarAdicionaisTodas(qtd);
@@ -251,7 +298,7 @@ function abrirProdutoGarcom(id){
   $("modalProdutoGarcom").classList.add("ativo");
 }
 
-async function adicionarProduto(){
+async async function adicionarProduto(){
   if(!produtoSelecionado)return;
   const qtd=Math.max(1,Math.floor(Number($("produtoQtdGarcom").value)||1));
   const adicionais=[...document.querySelectorAll(".checkAdicionalGarcom:checked")]
