@@ -103,8 +103,7 @@ async function finalizarExpediente(){
 
   try{
     const r=await api("POST",{action:"finalize_shift"},true);
-    pedidos=[];
-    renderPedidos();
+    render([]);
     alert(r.message||"Expediente finalizado com sucesso!");
     await carregarPedidos();
   }catch(e){
