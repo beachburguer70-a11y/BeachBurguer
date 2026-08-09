@@ -73,6 +73,10 @@ let pesquisaProdutoGarcom="";
 let pedidosConhecidosGarcom=new Set();
 let primeiraMonitoracaoGarcom=true;
 let monitorPedidosGarcom=null;
+let monitorHorarioGarcom=null;
+let storeConfigGarcom=null;
+let ultimoPromptFechamentoGarcom="";
+
 
 let enviando=false;
 let pedidoEditando=null;
@@ -116,6 +120,7 @@ async function entrar(){
     await carregarDisponibilidade();
     renderTudo();
     iniciarMonitorPedidosGarcom();
+    iniciarMonitorHorarioGarcom();
   }catch(e){
     alert("Senha incorreta ou conexão indisponível.");
   }
@@ -138,6 +143,95 @@ async function carregarDisponibilidade(){
   }catch(e){console.warn(e)}
 }
 
+
+
+function dialogoFechamentoGarcom(){
+  return new Promise(resolve=>{
+    const existente=document.getElementById("dialogoFechamentoGarcom");
+    if(existente)existente.remove();
+
+    const overlay=document.createElement("div");
+    overlay.id="dialogoFechamentoGarcom";
+    Object.assign(overlay.style,{
+      position:"fixed",inset:"0",zIndex:"1000000",
+      background:"rgba(0,0,0,.84)",display:"flex",
+      alignItems:"center",justifyContent:"center",padding:"18px"
+    });
+
+    const box=document.createElement("div");
+    Object.assign(box.style,{
+      width:"min(460px,94vw)",background:"#111",color:"#fff",
+      border:"2px solid #ffb800",borderRadius:"16px",
+      padding:"22px",textAlign:"center",
+      boxShadow:"0 20px 70px rgba(0,0,0,.65)"
+    });
+
+    box.innerHTML=`
+      <h2 style="margin:0 0 12px">🕚 Horário encerrado</h2>
+      <p style="margin:0 0 18px;font-size:17px">
+        Deseja continuar com a loja aberta <strong>somente para retirada</strong>?
+      </p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <button id="fechamentoGarcomSim" type="button" style="border:0;border-radius:10px;padding:14px;background:#ffb800;color:#111;font-weight:900;font-size:16px;cursor:pointer">SIM</button>
+        <button id="fechamentoGarcomNao" type="button" style="border:0;border-radius:10px;padding:14px;background:#7b1d1d;color:#fff;font-weight:900;font-size:16px;cursor:pointer">NÃO</button>
+      </div>`;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const concluir=v=>{overlay.remove();resolve(v)};
+    box.querySelector("#fechamentoGarcomSim").onclick=()=>concluir(true);
+    box.querySelector("#fechamentoGarcomNao").onclick=()=>concluir(false);
+  });
+}
+
+async function carregarConfigHorarioGarcom(){
+  if(!token)return;
+  try{
+    const r=await api("POST",{action:"get_store_config"},true);
+    storeConfigGarcom=r.store||null;
+    await verificarHorarioFechamentoGarcom();
+  }catch(e){
+    console.warn("Horário do garçom:",e.message);
+  }
+}
+
+async function definirModoLojaGarcom(mode){
+  const r=await api("POST",{action:"set_store_mode",mode},true);
+  storeConfigGarcom=r.store||storeConfigGarcom;
+  return storeConfigGarcom;
+}
+
+async function verificarHorarioFechamentoGarcom(){
+  const c=storeConfigGarcom;
+  if(!c||!c.now)return;
+
+  // Não pergunta novamente se a loja já está em modo manual de retirada/fechada.
+  if(c.mode==="pickup_only"||c.mode==="closed")return;
+
+  const fecha=c.today?.close;
+  if(!fecha)return;
+
+  const chave=`${c.now.date}-${fecha}`;
+  if(c.now.time>=fecha && ultimoPromptFechamentoGarcom!==chave){
+    ultimoPromptFechamentoGarcom=chave;
+
+    const continuar=await dialogoFechamentoGarcom();
+    if(continuar){
+      await definirModoLojaGarcom("pickup_only");
+      alert("A loja continuará aberta somente para retirada.");
+    }else{
+      await definirModoLojaGarcom("closed");
+      alert("A loja foi fechada para novos pedidos.");
+    }
+  }
+}
+
+function iniciarMonitorHorarioGarcom(){
+  if(monitorHorarioGarcom)clearInterval(monitorHorarioGarcom);
+  carregarConfigHorarioGarcom();
+  monitorHorarioGarcom=setInterval(carregarConfigHorarioGarcom,30000);
+}
 
 function tocarCampainhaGarcom(){
   if(document.visibilityState!=="visible")return;
@@ -669,7 +763,12 @@ async function enviarPedido(){
 $("senhaGarcom").value=token;
 $("entrarGarcom").onclick=entrar;
 $("senhaGarcom").onkeydown=e=>{if(e.key==="Enter")entrar()};
-$("sairGarcom").onclick=()=>{localStorage.removeItem(TOKEN_KEY);location.reload()};
+$("sairGarcom").onclick=()=>{
+  if(monitorHorarioGarcom)clearInterval(monitorHorarioGarcom);
+  if(monitorPedidosGarcom)clearInterval(monitorPedidosGarcom);
+  localStorage.removeItem(TOKEN_KEY);
+  location.reload();
+};
 $("novoPedido").onclick=()=>{if(!carrinho.length||confirm("Limpar o pedido atual e começar outro?"))novoPedido()};
 $("fecharProdutoGarcom").onclick=()=>$("modalProdutoGarcom").classList.remove("ativo");
 $("modalProdutoGarcom").onclick=e=>{if(e.target.id==="modalProdutoGarcom")$("modalProdutoGarcom").classList.remove("ativo")};
