@@ -188,10 +188,21 @@ function ordenarCarrinhoGarcom(){
   const ordem=new Map(CATEGORIAS.map((c,i)=>[c,i]));
   carrinho.sort((a,b)=>(ordem.get(a.categoria)??999)-(ordem.get(b.categoria)??999));
 }
+function atualizarTrocoCalculadoGarcom(){
+  const el=$("valorTrocoCalculadoGarcom");
+  if(!el)return;
+  if(!(tipoPedido==="Entrega"&&pagamento==="Dinheiro")){el.textContent="";return;}
+  const recebido=numeroMoedaGarcom($("trocoGarcom").value);
+  const valorTotal=total();
+  if(!recebido){el.textContent="";return;}
+  const troco=recebido-valorTotal;
+  el.textContent=troco<0?`Valor insuficiente: faltam ${moeda(Math.abs(troco))}`:`Troco a dar: ${moeda(troco)}`;
+}
+
 function atualizarPagamentoGarcom(){
   const entrega=tipoPedido==="Entrega";
   const opcoes=entrega
-    ? [["Dinheiro","💵 Dinheiro"],["Cartão","💳 Cartão"]]
+    ? [["Dinheiro","💵 Dinheiro"],["Cartão","💳 Cartão"],["Pago","✅ Pago"]]
     : [["A pagar","⏳ A pagar"],["Pago","✅ Pago"]];
   if(!opcoes.some(x=>x[0]===pagamento))pagamento=opcoes[0][0];
   $("pagamentoPresencial").innerHTML=opcoes.map(([v,t])=>`<button type="button" class="pg-btn ${pagamento===v?"ativo":""}" data-pagamento="${v}">${t}</button>`).join("");
@@ -200,23 +211,22 @@ function atualizarPagamentoGarcom(){
     document.querySelectorAll(".pg-btn").forEach(b=>b.classList.toggle("ativo",b===btn));
     $("campoTrocoGarcom").classList.toggle("hidden",!(tipoPedido==="Entrega"&&pagamento==="Dinheiro"));
     if(pagamento!=="Dinheiro")$("trocoGarcom").value="";
+    atualizarTrocoCalculadoGarcom();
   });
   $("campoTrocoGarcom").classList.toggle("hidden",!(entrega&&pagamento==="Dinheiro"));
+  atualizarTrocoCalculadoGarcom();
 }
-function dividirAdicionaisPorQuantidade(qtd,adicionais,base){
+async function dividirAdicionaisPorQuantidade(qtd,adicionais,base){
   if(qtd<=1||!adicionais.length)return [{...base,quantidade:qtd,adicionais}];
-  if(confirm(`Aplicar os adicionais selecionados nas ${qtd} unidades?`)){
-    return [{...base,quantidade:qtd,adicionais}];
-  }
-  let n=Number(prompt(`Em quantas das ${qtd} unidades deseja os adicionais?`,"1"));
-  if(!Number.isFinite(n))return null;
-  n=Math.max(0,Math.min(qtd,Math.floor(n)));
+  const aplicarTodas=await perguntarAdicionaisTodas(qtd);
+  if(aplicarTodas)return [{...base,quantidade:qtd,adicionais}];
+  const n=await perguntarQuantidadeComAdicional(qtd);
+  if(n===null)return null;
   const partes=[];
   if(n>0)partes.push({...base,uid:Date.now()+Math.random(),quantidade:n,adicionais});
   if(qtd-n>0)partes.push({...base,uid:Date.now()+Math.random(),quantidade:qtd-n,adicionais:[]});
   return partes;
 }
-
 function abrirProdutoGarcom(id){
   produtoSelecionado=dados.produtos.find(p=>p.id===id);
   if(!produtoSelecionado||produtoSelecionado.disponivel===false)return;
@@ -241,7 +251,7 @@ function abrirProdutoGarcom(id){
   $("modalProdutoGarcom").classList.add("ativo");
 }
 
-function adicionarProduto(){
+async function adicionarProduto(){
   if(!produtoSelecionado)return;
   const qtd=Math.max(1,Math.floor(Number($("produtoQtdGarcom").value)||1));
   const adicionais=[...document.querySelectorAll(".checkAdicionalGarcom:checked")]
@@ -256,7 +266,7 @@ function adicionarProduto(){
     const idx=carrinho.findIndex(x=>String(x.uid)===String(itemEditandoUid));
     if(idx>=0)carrinho.splice(idx,1);
   }
-  const partes=dividirAdicionaisPorQuantidade(qtd,adicionais,base);
+  const partes=await dividirAdicionaisPorQuantidade(qtd,adicionais,base);
   if(partes===null)return;
   carrinho.push(...partes);
   itemEditandoUid=null;
@@ -325,6 +335,7 @@ function renderCarrinho(){
     </div>`).join(""):'<div class="carrinho-vazio">Nenhum item adicionado.</div>';
 
   $("totalGarcom").textContent=moeda(total());
+  atualizarTrocoCalculadoGarcom();
 }
 
 function renderTudo(){
@@ -520,4 +531,5 @@ if($("limparPesquisaGarcom")){
   };
 }
 
-$("valorEntregaGarcom").addEventListener("input",renderCarrinho);
+$("valorEntregaGarcom").addEventListener("input",()=>{renderCarrinho();atualizarTrocoCalculadoGarcom()});
+$("trocoGarcom").addEventListener("input",atualizarTrocoCalculadoGarcom);

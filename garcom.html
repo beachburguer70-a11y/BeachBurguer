@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#070707">
   <title>Beach Burguer | Garçom</title>
   <link rel="icon" href="assets/logo.png">
-  <link rel="stylesheet" href="style.css?v=840">
+  <link rel="stylesheet" href="style.css?v=841">
   <style>
     body{background:#080808}
     .garcom-topo{position:sticky;top:0;z-index:30;background:#050505;border-bottom:1px solid #262626}
@@ -87,8 +87,14 @@
     .entrega-manual-garcom{align-items:center}
     .entrega-manual-garcom input{width:125px;text-align:right}
     .cart-controls .alterar{background:#ffb800;color:#111}
+  
+    .modal-confirmacao-adicional{max-width:430px;text-align:center}
+    .acoes-confirmacao-adicional{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+    #quantidadeComAdicional{width:100%;margin:10px 0;padding:12px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff;font-size:18px;text-align:center}
+  
+    .troco-calculado-garcom{display:block;color:#ffcf4a;margin-top:6px;font-size:16px}
   </style>
-  <script defer src="garcom.js?v=840"></script>
+  <script defer src="garcom.js?v=841"></script>
 </head>
 <body>
 <div id="loginGarcom" class="login-garcom">
@@ -148,6 +154,7 @@
         </div>
         <label id="campoTrocoGarcom" class="campo-troco-garcom hidden">Troco para quanto?
           <input id="trocoGarcom" inputmode="decimal" placeholder="Ex.: 50,00">
+          <strong id="valorTrocoCalculadoGarcom" class="troco-calculado-garcom"></strong>
         </label>
       </div>
 
@@ -214,5 +221,28 @@
   </div>
 </div>
 </div>
+
+<div id="modalConfirmacaoAdicional" class="modal">
+  <div class="modal-box modal-confirmacao-adicional">
+    <h2>Aplicar adicionais?</h2>
+    <p id="textoConfirmacaoAdicional"></p>
+    <div class="acoes-confirmacao-adicional">
+      <button id="confirmacaoAdicionalSim" type="button" class="btn btn-amarelo">SIM</button>
+      <button id="confirmacaoAdicionalNao" type="button" class="btn btn-escuro">NÃO</button>
+    </div>
+  </div>
+</div>
+<div id="modalQuantidadeAdicional" class="modal">
+  <div class="modal-box modal-confirmacao-adicional">
+    <h2>Em quantas unidades?</h2>
+    <p id="textoQuantidadeAdicional"></p>
+    <input id="quantidadeComAdicional" type="number" min="0" step="1" value="1">
+    <div class="acoes-confirmacao-adicional">
+      <button id="confirmarQuantidadeAdicional" type="button" class="btn btn-amarelo">CONFIRMAR</button>
+      <button id="cancelarQuantidadeAdicional" type="button" class="btn btn-escuro">CANCELAR</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

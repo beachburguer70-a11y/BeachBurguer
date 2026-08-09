@@ -8,9 +8,9 @@
   <title>Beach Burguer | Delivery</title>
   <link rel="icon" href="assets/logo.png">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=840">
+  <link rel="stylesheet" href="style.css?v=841">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="script.js?v=840"></script>
+  <script defer src="script.js?v=841"></script>
 
 <style id="checkout-mobile-fix-v815">
 .dados-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
@@ -376,6 +376,29 @@
   window.syncCheckoutBeach = syncCheckout;
 })();
 </script>
+
+
+<div id="modalConfirmacaoAdicional" class="modal">
+  <div class="modal-box modal-confirmacao-adicional">
+    <h2>Aplicar adicionais?</h2>
+    <p id="textoConfirmacaoAdicional"></p>
+    <div class="acoes-confirmacao-adicional">
+      <button id="confirmacaoAdicionalSim" type="button" class="btn btn-amarelo">SIM</button>
+      <button id="confirmacaoAdicionalNao" type="button" class="btn btn-escuro">NÃO</button>
+    </div>
+  </div>
+</div>
+<div id="modalQuantidadeAdicional" class="modal">
+  <div class="modal-box modal-confirmacao-adicional">
+    <h2>Em quantas unidades?</h2>
+    <p id="textoQuantidadeAdicional"></p>
+    <input id="quantidadeComAdicional" type="number" min="0" step="1" value="1">
+    <div class="acoes-confirmacao-adicional">
+      <button id="confirmarQuantidadeAdicional" type="button" class="btn btn-amarelo">CONFIRMAR</button>
+      <button id="cancelarQuantidadeAdicional" type="button" class="btn btn-escuro">CANCELAR</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

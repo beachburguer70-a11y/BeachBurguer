@@ -269,27 +269,53 @@ function abrirProduto(id){
   $("modalProduto").classList.add("ativo");
 }
 
-function adicionarProduto(){
+
+function perguntarAdicionaisTodas(qtd){
+  return new Promise(resolve=>{
+    const modal=$("modalConfirmacaoAdicional");
+    $("textoConfirmacaoAdicional").textContent=`Aplicar os adicionais selecionados nas ${qtd} unidades?`;
+    modal.classList.add("ativo");
+    const sim=$("confirmacaoAdicionalSim");
+    const nao=$("confirmacaoAdicionalNao");
+    const limpar=()=>{sim.onclick=null;nao.onclick=null;};
+    sim.onclick=()=>{limpar();modal.classList.remove("ativo");resolve(true);};
+    nao.onclick=()=>{limpar();modal.classList.remove("ativo");resolve(false);};
+  });
+}
+function perguntarQuantidadeComAdicional(qtd){
+  return new Promise(resolve=>{
+    const modal=$("modalQuantidadeAdicional");
+    const input=$("quantidadeComAdicional");
+    $("textoQuantidadeAdicional").textContent=`Informe quantas das ${qtd} unidades terão os adicionais selecionados.`;
+    input.min="0"; input.max=String(qtd); input.value="1";
+    modal.classList.add("ativo");
+    const ok=$("confirmarQuantidadeAdicional");
+    const cancelar=$("cancelarQuantidadeAdicional");
+    const limpar=()=>{ok.onclick=null;cancelar.onclick=null;};
+    ok.onclick=()=>{
+      let n=Math.floor(Number(input.value)||0);
+      n=Math.max(0,Math.min(qtd,n));
+      limpar(); modal.classList.remove("ativo"); resolve(n);
+    };
+    cancelar.onclick=()=>{limpar();modal.classList.remove("ativo");resolve(null);};
+  });
+}
+
+async function adicionarProduto(){
   const qtd=Math.max(1,Math.floor(Number($("produtoQtd").value)||1));
   const adicionais=[...document.querySelectorAll(".checkAdicional:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
-  const base={
-    id:produtoSelecionado.id,nome:produtoSelecionado.nome,categoria:produtoSelecionado.categoria,
-    preco:Number(produtoSelecionado.preco),observacao:$("produtoObs").value.trim()
-  };
+  const base={id:produtoSelecionado.id,nome:produtoSelecionado.nome,categoria:produtoSelecionado.categoria,preco:Number(produtoSelecionado.preco),observacao:$("produtoObs").value.trim()};
   let comAdicional=qtd;
   if(qtd>1&&adicionais.length){
-    if(!confirm(`Aplicar os adicionais selecionados nas ${qtd} unidades?`)){
-      const resposta=prompt(`Em quantas das ${qtd} unidades deseja os adicionais?`,"1");
+    const aplicarTodas=await perguntarAdicionaisTodas(qtd);
+    if(!aplicarTodas){
+      const resposta=await perguntarQuantidadeComAdicional(qtd);
       if(resposta===null)return;
-      comAdicional=Math.max(0,Math.min(qtd,Math.floor(Number(resposta)||0)));
+      comAdicional=resposta;
     }
   }
-  if(comAdicional>0){
-    carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:comAdicional,adicionais});
-  }
-  if(qtd-comAdicional>0){
-    carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:qtd-comAdicional,adicionais:[]});
-  }
+  if(comAdicional>0)carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:comAdicional,adicionais});
+  if(qtd-comAdicional>0)carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:qtd-comAdicional,adicionais:[]});
   salvarCarrinho();$("modalProduto").classList.remove("ativo");
   resetarConfirmacaoPix();
   $("modalDepoisAdicionar").classList.add("ativo");

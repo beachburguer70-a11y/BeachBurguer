@@ -286,3 +286,8 @@ body.inicio-travado #inicio{
 /* V8.40 - quantidade visível no modal de produto */
 .quantidade-produto{display:grid;gap:6px;font-weight:800;margin:12px 0}
 .quantidade-produto input{width:100%;padding:12px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff;font-size:16px}
+
+/* V8.41 - diálogo adicional SIM / NÃO */
+.modal-confirmacao-adicional{max-width:430px;text-align:center}
+.acoes-confirmacao-adicional{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+#quantidadeComAdicional{width:100%;margin:10px 0;padding:12px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff;font-size:18px;text-align:center}
