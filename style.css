@@ -291,3 +291,17 @@ body.inicio-travado #inicio{
 .modal-confirmacao-adicional{max-width:430px;text-align:center}
 .acoes-confirmacao-adicional{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
 #quantidadeComAdicional{width:100%;margin:10px 0;padding:12px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff;font-size:18px;text-align:center}
+
+/* V8.42 modal adicionais */
+#modalConfirmacaoAdicional.ativo,
+#modalQuantidadeAdicional.ativo{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  z-index:10050 !important;
+}
+#modalConfirmacaoAdicional .modal-box,
+#modalQuantidadeAdicional .modal-box{
+  position:relative;
+  z-index:10051;
+}
