@@ -225,24 +225,20 @@ async function verificarHorarioFechamentoGarcom(){
 
   const chave=`${c.now.date}-${fecha}`;
 
-  // A decisão só é considerada válida para a data corrente.
-  // Estados manuais antigos de dias anteriores não bloqueiam a pergunta.
-  const estadoEhDeHoje = String(c.manual_date||"")===String(c.now.date);
-  const modoAtual = estadoEhDeHoje ? String(c.mode||"auto") : "auto";
+  // Só pergunta quando o servidor sinaliza que chegou ao horário
+  // e ainda está aguardando a decisão.
+  if(c.mode!=="awaiting_close_decision")return;
 
-  if(modoAtual==="pickup_only"||modoAtual==="closed")return;
+  if(ultimoPromptFechamentoGarcom===chave)return;
+  ultimoPromptFechamentoGarcom=chave;
 
-  if(c.now.time>=fecha && ultimoPromptFechamentoGarcom!==chave){
-    ultimoPromptFechamentoGarcom=chave;
-
-    const continuar=await dialogoFechamentoGarcom();
-    if(continuar){
-      await definirModoLojaGarcom("pickup_only");
-      mostrarAvisoModoGarcom(`🟠 Loja aberta somente para retirada após ${fecha}.`);
-    }else{
-      await definirModoLojaGarcom("closed");
-      mostrarAvisoModoGarcom(`🔴 Loja fechada às ${fecha}.`);
-    }
+  const continuar=await dialogoFechamentoGarcom();
+  if(continuar){
+    await definirModoLojaGarcom("pickup_only");
+    mostrarAvisoModoGarcom(`🟠 Loja aberta somente para retirada após ${fecha}.`);
+  }else{
+    await definirModoLojaGarcom("closed");
+    mostrarAvisoModoGarcom(`🔴 Loja fechada às ${fecha}.`);
   }
 }
 
@@ -268,7 +264,7 @@ function mostrarAvisoModoGarcom(texto){
 function iniciarMonitorHorarioGarcom(){
   if(monitorHorarioGarcom)clearInterval(monitorHorarioGarcom);
   carregarConfigHorarioGarcom();
-  monitorHorarioGarcom=setInterval(carregarConfigHorarioGarcom,30000);
+  monitorHorarioGarcom=setInterval(carregarConfigHorarioGarcom,5000);
 }
 
 function tocarCampainhaGarcom(){

@@ -176,16 +176,29 @@ function calcularStatusLoja(state){
   const manualDate=state?.manual_date||null;
   const manualMode=(manualDate===agora.date)?String(state?.manual_mode||"auto"):"auto";
 
-  if(manualMode==="closed")return {mode:"closed",open:false,pickup_only:false,now:agora,hours};
-  if(manualMode==="pickup_only")return {mode:"pickup_only",open:true,pickup_only:true,now:agora,hours};
-  if(manualMode==="open")return {mode:"open",open:true,pickup_only:false,now:agora,hours};
+  if(manualMode==="closed")return {mode:"closed",open:false,pickup_only:false,now:agora,hours,manual_date:state?.manual_date||null};
+  if(manualMode==="pickup_only")return {mode:"pickup_only",open:true,pickup_only:true,now:agora,hours,manual_date:state?.manual_date||null};
+  if(manualMode==="open")return {mode:"open",open:true,pickup_only:false,now:agora,hours,manual_date:state?.manual_date||null};
 
   const cfg=hours[String(agora.day)]||DEFAULT_OPENING_HOURS[String(agora.day)];
-  if(!cfg?.enabled)return {mode:"closed",open:false,pickup_only:false,now:agora,hours};
+  if(!cfg?.enabled)return {mode:"closed",open:false,pickup_only:false,now:agora,hours,today:cfg,manual_date:state?.manual_date||null};
 
   const atual=minutos(agora.time),ini=minutos(cfg.open),fim=minutos(cfg.close);
-  const aberto=fim>ini ? (atual>=ini&&atual<fim) : (atual>=ini||atual<fim);
-  return {mode:aberto?"open":"closed",open:aberto,pickup_only:false,now:agora,hours,today:cfg};
+
+  // Durante o horário normal: aberto.
+  const dentroHorario=fim>ini ? (atual>=ini&&atual<fim) : (atual>=ini||atual<fim);
+  if(dentroHorario){
+    return {mode:"open",open:true,pickup_only:false,now:agora,hours,today:cfg,manual_date:state?.manual_date||null};
+  }
+
+  // Ao atingir o horário de fechamento, não fecha imediatamente:
+  // aguarda a decisão da página Garçom.
+  const passouFechamento=fim>ini ? (atual>=fim) : (atual>=fim&&atual<ini);
+  if(passouFechamento){
+    return {mode:"awaiting_close_decision",open:true,pickup_only:false,now:agora,hours,today:cfg,manual_date:state?.manual_date||null};
+  }
+
+  return {mode:"closed",open:false,pickup_only:false,now:agora,hours,today:cfg,manual_date:state?.manual_date||null};
 }
 async function obterEstadoLoja(env){
   try{
@@ -382,10 +395,17 @@ export async function onRequestPost({ request, env }) {
       const hours=body.opening_hours;
       if(!hours||typeof hours!=="object")return json({ok:false,error:"Horários inválidos."},400);
       const agora=new Date().toISOString();
+      const sp=horarioSaoPaulo();
       await supabaseRequest(env,"store_state?on_conflict=id",{
         method:"POST",
         headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
-        body:JSON.stringify({id:1,opening_hours:hours,updated_at:agora})
+        body:JSON.stringify({
+          id:1,
+          opening_hours:hours,
+          manual_mode:"auto",
+          manual_date:sp.date,
+          updated_at:agora
+        })
       });
       return json({ok:true,store:await obterEstadoLoja(env)});
     }

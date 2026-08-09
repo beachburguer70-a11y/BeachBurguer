@@ -158,7 +158,9 @@ async function salvarHorarios(){
     };
   }
   const r=await api("POST",{action:"save_opening_hours",opening_hours:hours});
-  storeConfig=r.store; atualizarStatusLoja(); alert("Horários salvos.");
+  storeConfig=r.store;
+  atualizarStatusLoja();
+  alert("Horários salvos. O sistema voltou automaticamente ao horário configurado.");
 }
 async function definirModoLoja(mode){
   const r=await api("POST",{action:"set_store_mode",mode});
