@@ -85,37 +85,64 @@ function normCat(c){return c||"Sem categoria"}
 function normTipo(t){return t||"Não informado"}
 function normPag(p){return p||"Não informado"}
 
-function agregar(lista){
-  const validos=lista.filter(p=>String(p.status||"")!=="cancelado");
-  const cancelados=lista.filter(p=>String(p.status||"")==="cancelado");
-  const faturamento=validos.reduce((s,p)=>s+Number(p.total||0),0);
-  const taxas=validos.reduce((s,p)=>s+Number(p.entrega||0),0);
+function agregar(lista,catalogo=[]){
+  const concluidos=lista.filter(p=>["entregue","concluido"].includes(String(p.status||"").toLowerCase()));
+  const cancelados=lista.filter(p=>String(p.status||"").toLowerCase()==="cancelado");
+  const abertos=lista.filter(p=>!["entregue","concluido","cancelado"].includes(String(p.status||"").toLowerCase()));
+
+  const faturamento=concluidos.reduce((s,p)=>s+Number(p.total||0),0);
+  const taxas=concluidos.reduce((s,p)=>s+Number(p.entrega||0),0);
   const produtos=new Map(),cats=new Map(),pag=new Map(),tipos=new Map(),origens=new Map(),horas=new Map(),dias=new Map();
   let itens=0;
 
-  for(const p of validos){
+  // Pré-carrega catálogo para que produtos com zero venda também apareçam em "Menos vendidos".
+  for(const p of (catalogo||[])){
+    const key=`id:${p.id}`;
+    produtos.set(key,{
+      id:Number(p.id),
+      nome:p.name||"Produto",
+      categoria:normCat(p.category),
+      qtd:0,
+      receita:0
+    });
+  }
+
+  for(const p of concluidos){
     inc(pag,normPag(p.pagamento),1);
     inc(tipos,normTipo(p.tipo),1);
     inc(origens,String(p.origem||"cliente")==="garcom"?"Garçom":"Cliente/Delivery",1);
+
     const d=new Date(p.created_at);
     inc(horas,`${pad(d.getHours())}:00`,1);
-    const dk=dataInput(d);
-    inc(dias,dk,Number(p.total||0));
+    inc(dias,dataInput(d),Number(p.total||0));
 
     for(const item of (p.itens||[])){
-      const qtd=Number(item.quantidade||1);
-      const extras=(item.adicionais||[]).reduce((s,a)=>s+Number(a.preco||0),0);
-      const receita=(Number(item.preco||0)+extras)*qtd;
+      const qtd=Math.max(0,Number(item.quantidade||1));
       itens+=qtd;
+
+      const id=Number(item.id||0);
       const nome=item.nome||"Produto";
       const cat=normCat(item.categoria);
-      const atual=produtos.get(nome)||{nome,categoria:cat,qtd:0,receita:0};
-      atual.qtd+=qtd; atual.receita+=receita; produtos.set(nome,atual);
+      const key=id?`id:${id}`:`nome:${String(nome).trim().toLowerCase()}`;
+
+      // Prioriza o total efetivamente gravado no pedido.
+      const totalSalvo=Number(item.total);
+      const extras=(item.adicionais||[]).reduce((s,a)=>s+Number(a.preco||0),0);
+      const calculado=(Number(item.preco||0)+extras)*qtd;
+      const receita=Number.isFinite(totalSalvo)&&totalSalvo>=0 ? totalSalvo : calculado;
+
+      const atual=produtos.get(key)||{id:id||null,nome,categoria:cat,qtd:0,receita:0};
+      atual.nome=nome;
+      atual.categoria=cat;
+      atual.qtd+=qtd;
+      atual.receita+=receita;
+      produtos.set(key,atual);
+
       inc(cats,cat,qtd);
     }
   }
 
-  return {validos,cancelados,faturamento,taxas,itens,produtos,cats,pag,tipos,origens,horas,dias};
+  return {validos:concluidos,concluidos,cancelados,abertos,faturamento,taxas,itens,produtos,cats,pag,tipos,origens,horas,dias};
 }
 function inc(map,k,v){map.set(k,(map.get(k)||0)+v)}
 
@@ -175,6 +202,7 @@ function renderResumo(a){
   $("resumoOperacional").innerHTML=`
     <p><strong>Ticket médio:</strong> ${moeda(total?a.faturamento/total:0)}</p>
     <p><strong>Itens por pedido:</strong> ${total?(a.itens/total).toFixed(1):"0"}</p>
+    <p><strong>Pedidos ainda abertos:</strong> ${numero(a.abertos.length)}</p>
     <p><strong>Participação delivery:</strong> ${total?((delivery/total)*100).toFixed(1):0}%</p>
     <p><strong>Horário de pico:</strong> ${maiorHora?`${maiorHora[0]} (${maiorHora[1]} pedidos)`:"—"}</p>
     <p><strong>Melhor dia:</strong> ${maiorDia?`${maiorDia[0].split("-").reverse().join("/")} (${moeda(maiorDia[1])})`:"—"}</p>
@@ -190,10 +218,14 @@ async function carregar(){
   $("conteudo").classList.add("loading");
 
   try{
-    const r=await api({action:"report_orders",from:prev.inicio.toISOString(),to:datas.fim.toISOString()});
+    const [r,catResp]=await Promise.all([
+      api({action:"report_orders",from:prev.inicio.toISOString(),to:datas.fim.toISOString()}),
+      api({action:"list_products"})
+    ]);
+    const catalogo=catResp.catalog||[];
     const atualLista=r.orders.filter(p=>{const d=new Date(p.created_at);return d>=datas.inicio&&d<datas.fim});
     const anteriorLista=r.orders.filter(p=>{const d=new Date(p.created_at);return d>=prev.inicio&&d<prev.fim});
-    const a=agregar(atualLista),b=agregar(anteriorLista);
+    const a=agregar(atualLista,catalogo),b=agregar(anteriorLista,catalogo);
 
     $("fat").textContent=moeda(a.faturamento);
     $("pedidos").textContent=numero(a.validos.length);

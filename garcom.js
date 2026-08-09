@@ -70,6 +70,10 @@ let produtoSelecionado=null;
 let tipoPedido="Consumir no local";
 let pagamento="A pagar";
 let pesquisaProdutoGarcom="";
+let pedidosConhecidosGarcom=new Set();
+let primeiraMonitoracaoGarcom=true;
+let monitorPedidosGarcom=null;
+
 let enviando=false;
 let pedidoEditando=null;
 let itemEditandoUid=null;
@@ -111,6 +115,7 @@ async function entrar(){
     $("appGarcom").classList.remove("hidden");
     await carregarDisponibilidade();
     renderTudo();
+    iniciarMonitorPedidosGarcom();
   }catch(e){
     alert("Senha incorreta ou conexão indisponível.");
   }
@@ -131,6 +136,69 @@ async function carregarDisponibilidade(){
       if(p)p.disponivel=st.available!==false;
     });
   }catch(e){console.warn(e)}
+}
+
+
+function tocarCampainhaGarcom(){
+  if(document.visibilityState!=="visible")return;
+  try{
+    const audio=new Audio("assets/campainha-pedido.mp3?v=850");
+    audio.volume=1;
+    audio.play().catch(e=>console.warn("Campainha do garçom bloqueada:",e));
+  }catch(e){console.warn(e)}
+}
+
+function mostrarAvisoNovoPedidoGarcom(pedido){
+  let box=document.getElementById("avisoNovoPedidoGarcom");
+  if(!box){
+    box=document.createElement("div");
+    box.id="avisoNovoPedidoGarcom";
+    Object.assign(box.style,{
+      position:"fixed",right:"18px",top:"18px",zIndex:"999999",
+      background:"#ffb800",color:"#111",padding:"15px 18px",
+      borderRadius:"12px",fontWeight:"900",boxShadow:"0 8px 30px rgba(0,0,0,.45)",
+      maxWidth:"340px",cursor:"pointer"
+    });
+    box.onclick=()=>box.remove();
+    document.body.appendChild(box);
+  }
+  box.textContent=`🔔 Novo pedido recebido — Pedido #${pedido.id}${pedido.cliente?` — ${pedido.cliente}`:""}`;
+  clearTimeout(window.__avisoNovoPedidoTimer);
+  window.__avisoNovoPedidoTimer=setTimeout(()=>box?.remove(),7000);
+}
+
+async function monitorarNovosPedidosGarcom(){
+  if(!token)return;
+  try{
+    const r=await api("POST",{action:"list_orders",limit:100},true);
+    const lista=r.orders||[];
+
+    if(primeiraMonitoracaoGarcom){
+      lista.forEach(p=>pedidosConhecidosGarcom.add(Number(p.id)));
+      primeiraMonitoracaoGarcom=false;
+      return;
+    }
+
+    const novos=lista
+      .filter(p=>p.status==="novo"&&!pedidosConhecidosGarcom.has(Number(p.id)))
+      .sort((a,b)=>Number(a.id)-Number(b.id));
+
+    lista.forEach(p=>pedidosConhecidosGarcom.add(Number(p.id)));
+
+    if(novos.length && document.visibilityState==="visible"){
+      tocarCampainhaGarcom();
+      mostrarAvisoNovoPedidoGarcom(novos[novos.length-1]);
+    }
+  }catch(e){
+    console.warn("Monitor de pedidos do garçom:",e.message);
+  }
+}
+
+function iniciarMonitorPedidosGarcom(){
+  if(monitorPedidosGarcom)clearInterval(monitorPedidosGarcom);
+  primeiraMonitoracaoGarcom=true;
+  monitorarNovosPedidosGarcom();
+  monitorPedidosGarcom=setInterval(monitorarNovosPedidosGarcom,3000);
 }
 
 function icone(c){
@@ -580,6 +648,11 @@ async function enviarPedido(){
     }else{
       const r=await api("POST",body,false);
       const id=r.order?.id||"";
+      if(id){
+        pedidosConhecidosGarcom.add(Number(id));
+        tocarCampainhaGarcom();
+        mostrarAvisoNovoPedidoGarcom(r.order||{id,cliente:body.cliente});
+      }
       alert(`Pedido ${id?"#"+id+" ":""}enviado para a cozinha!`);
       novoPedido();
     }

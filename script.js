@@ -65,6 +65,7 @@ let dados=carregarDadosLocais();
 let carrinho=JSON.parse(localStorage.getItem("bb_carrinho")||"[]");
 let categoriaAtual="Artesanais";
 let produtoSelecionado=null;
+let itemEditandoClienteUid=null;
 let pagamento="Pix";
 let pixConfirmado=false;
 let pixPaymentId=null;
@@ -283,7 +284,9 @@ function abrirProduto(id){
   $("produtoNome").textContent=produtoSelecionado.nome;
   $("produtoDescricao").textContent=produtoSelecionado.descricao;
   $("produtoPreco").textContent=moeda(produtoSelecionado.preco);
+  itemEditandoClienteUid=null;
   $("produtoQtd").value=1;$("produtoObs").value="";
+  if($("confirmarProduto"))$("confirmarProduto").textContent="Adicionar ao pedido";
 
   const aceitaAdicionais=!CATEGORIAS_SEM_ADICIONAIS.includes(produtoSelecionado.categoria);
   $("tituloAdicionais").hidden=!aceitaAdicionais;
@@ -348,7 +351,14 @@ function perguntarQuantidadeComAdicional(qtd){
 async function adicionarProduto(){
   const qtd=Math.max(1,Math.floor(Number($("produtoQtd").value)||1));
   const adicionais=[...document.querySelectorAll(".checkAdicional:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
-  const base={id:produtoSelecionado.id,nome:produtoSelecionado.nome,categoria:produtoSelecionado.categoria,preco:Number(produtoSelecionado.preco),observacao:$("produtoObs").value.trim()};
+  const base={
+    id:produtoSelecionado.id,
+    nome:produtoSelecionado.nome,
+    categoria:produtoSelecionado.categoria,
+    preco:Number(produtoSelecionado.preco),
+    observacao:$("produtoObs").value.trim()
+  };
+
   let comAdicional=qtd;
   if(qtd>1&&adicionais.length){
     const aplicarTodas=await perguntarAdicionaisTodas(qtd);
@@ -358,12 +368,57 @@ async function adicionarProduto(){
       comAdicional=resposta;
     }
   }
-  if(comAdicional>0)carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:comAdicional,adicionais});
-  if(qtd-comAdicional>0)carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:qtd-comAdicional,adicionais:[]});
-  salvarCarrinho();$("modalProduto").classList.remove("ativo");
+
+  if(itemEditandoClienteUid!==null){
+    carrinho=carrinho.filter(x=>String(x.uid)!==String(itemEditandoClienteUid));
+  }
+
+  if(comAdicional>0){
+    carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:comAdicional,adicionais});
+  }
+  if(qtd-comAdicional>0){
+    carrinho.push({...base,uid:Date.now()+Math.random(),quantidade:qtd-comAdicional,adicionais:[]});
+  }
+
+  itemEditandoClienteUid=null;
+  salvarCarrinho();
+  $("modalProduto").classList.remove("ativo");
   resetarConfirmacaoPix();
+
+  if($("confirmarProduto"))$("confirmarProduto").textContent="Adicionar ao pedido";
   $("modalDepoisAdicionar").classList.add("ativo");
 }
+
+function editarItemCliente(uid){
+  const item=carrinho.find(x=>String(x.uid)===String(uid));
+  if(!item)return;
+
+  produtoSelecionado=dados.produtos.find(p=>Number(p.id)===Number(item.id)) || {
+    id:item.id,nome:item.nome,categoria:item.categoria,descricao:"",preco:item.preco,disponivel:true
+  };
+  itemEditandoClienteUid=item.uid;
+
+  $("produtoNome").textContent=produtoSelecionado.nome;
+  $("produtoDescricao").textContent=produtoSelecionado.descricao||"";
+  $("produtoPreco").textContent=moeda(produtoSelecionado.preco);
+  $("produtoQtd").value=item.quantidade||1;
+  $("produtoObs").value=item.observacao||"";
+
+  const aceitaAdicionais=!CATEGORIAS_SEM_ADICIONAIS.includes(produtoSelecionado.categoria);
+  $("tituloAdicionais").hidden=!aceitaAdicionais;
+  $("listaAdicionais").hidden=!aceitaAdicionais;
+  $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>{
+    const marcado=(item.adicionais||[]).some(x=>x.nome===a.nome);
+    return `<div class="adicional">
+      <label><input type="checkbox" class="checkAdicional" data-i="${i}" ${marcado?"checked":""}> ${a.nome}</label>
+      <strong>+ ${moeda(a.preco)}</strong>
+    </div>`;
+  }).join(""):"";
+
+  if($("confirmarProduto"))$("confirmarProduto").textContent="Salvar alteração";
+  $("modalProduto").classList.add("ativo");
+}
+
 function valorItem(i){return (i.preco+(i.adicionais||[]).reduce((s,a)=>s+a.preco,0))*i.quantidade}
 function subtotal(){return carrinho.reduce((s,i)=>s+valorItem(i),0)}
 function taxaAtual(){
@@ -380,7 +435,7 @@ function renderCarrinho(){
       ${(i.adicionais||[]).length?`<small><br>+ ${i.adicionais.map(a=>a.nome).join(", ")}</small>`:""}
       ${i.observacao?`<small><br>Obs.: ${i.observacao}</small>`:""}
       <div class="controles"><button onclick="alterarQtd(${i.uid},-1)">−</button><span>${i.quantidade}</span>
-      <button onclick="alterarQtd(${i.uid},1)">+</button><button onclick="removerItem(${i.uid})">🗑️</button></div></div>
+      <button onclick="alterarQtd(${i.uid},1)">+</button><button onclick="editarItemCliente(${i.uid})">Alterar</button><button onclick="removerItem(${i.uid})">🗑️</button></div></div>
       <strong>${moeda(valorItem(i))}</strong>
     </div>`).join(""):'<div class="vazio">Seu carrinho está vazio.</div>';
   const sub=subtotal(),taxa=taxaAtual();
@@ -1103,3 +1158,5 @@ if($("verCardapio")){
 }
 
 setInterval(()=>carregarDisponibilidade().then(()=>aplicarStatusLojaCliente()).catch(()=>{}),30000);
+
+window.editarItemCliente=editarItemCliente;

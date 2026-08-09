@@ -255,7 +255,7 @@ async function carregarPedidos(){
 
   const novos=data.orders.filter(p=>p.status==="novo"&&!conhecidos.has(p.id));
   if(!primeiraCarga&&novos.length){
-    if(somAtivo)tocarSom();
+    if(somAtivo&&document.visibilityState==="visible")tocarSom();
 
   }
   data.orders.forEach(p=>conhecidos.add(p.id));

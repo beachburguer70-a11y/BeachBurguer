@@ -1,4 +1,4 @@
-const CACHE = "beach-burguer-v8-49";
+const CACHE = "beach-burguer-v8-50";
 const STATIC_FILES = [
   "./assets/logo.png",
   "./manifest.json"

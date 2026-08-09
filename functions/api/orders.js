@@ -423,7 +423,26 @@ export async function onRequestPost({ request, env }) {
     if (action === "finalize_shift") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
 
+      const inicioExpediente=await obterInicioExpediente(env);
       const agora=new Date().toISOString();
+
+      // Ao encerrar, qualquer pedido ainda aberto é considerado concluído.
+      // Isso evita que pedidos esquecidos em Novo/Preparo/Pronto fiquem fora
+      // dos relatórios de vendas concluídas.
+      let filtroPendentes="status=in.(novo,preparo,pronto)";
+      if(inicioExpediente){
+        filtroPendentes+=`&created_at=gte.${encodeURIComponent(inicioExpediente)}`;
+      }
+
+      await supabaseRequest(
+        env,
+        `orders?${filtroPendentes}`,
+        {
+          method:"PATCH",
+          headers:{Prefer:"return=minimal"},
+          body:JSON.stringify({status:"entregue"})
+        }
+      );
 
       await supabaseRequest(
         env,
@@ -442,7 +461,7 @@ export async function onRequestPost({ request, env }) {
       return json({
         ok:true,
         shift_started_at:agora,
-        message:"Expediente finalizado. A fila de pedidos foi zerada para o próximo expediente."
+        message:"Expediente finalizado. Pedidos pendentes foram marcados como concluídos e a fila foi zerada."
       });
     }
 
