@@ -8,9 +8,9 @@
   <title>Beach Burguer | Delivery</title>
   <link rel="icon" href="assets/logo.png">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=842">
+  <link rel="stylesheet" href="style.css?v=849">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="script.js?v=842"></script>
+  <script defer src="script.js?v=849"></script>
 
 <style id="checkout-mobile-fix-v815">
 .dados-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
@@ -23,7 +23,11 @@
   font:inherit
 }
 .tipo-rapido.ativo{background:#ffb800;color:#111;border-color:#ffb800}
-</style>
+
+.status-loja-cliente{position:sticky;top:0;z-index:50;text-align:center;padding:10px 14px;font-weight:900;background:#16803c;color:#fff}
+.status-loja-cliente.fechada{background:#8d1c1c}
+.status-loja-cliente.retirada{background:#b36b00}
+  </style>
 
 </head>
 <body>
@@ -43,6 +47,7 @@
   </div>
 </header>
 
+<div id="statusLojaCliente" class="status-loja-cliente"></div>
 <main>
   <section id="inicio" class="hero">
     <div class="container hero-grid">

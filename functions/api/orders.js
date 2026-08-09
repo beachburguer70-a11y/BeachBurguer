@@ -144,6 +144,59 @@ async function enviarPushPedido(env, telefone, pedido) {
   return {ok:enviados>0,enviados,erros};
 }
 
+
+const DEFAULT_OPENING_HOURS={
+  "0":{enabled:true,open:"19:00",close:"23:00"},
+  "1":{enabled:false,open:"19:00",close:"23:00"},
+  "2":{enabled:false,open:"19:00",close:"23:00"},
+  "3":{enabled:true,open:"19:00",close:"23:00"},
+  "4":{enabled:true,open:"19:00",close:"23:00"},
+  "5":{enabled:true,open:"19:00",close:"23:00"},
+  "6":{enabled:true,open:"19:00",close:"23:00"}
+};
+
+function horarioSaoPaulo(){
+  const parts=new Intl.DateTimeFormat("en-CA",{
+    timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",hourCycle:"h23",weekday:"short"
+  }).formatToParts(new Date());
+  const obj=Object.fromEntries(parts.map(p=>[p.type,p.value]));
+  const map={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
+  return {
+    date:`${obj.year}-${obj.month}-${obj.day}`,
+    day:map[obj.weekday],
+    time:`${obj.hour}:${obj.minute}`
+  };
+}
+function minutos(h){const [a,b]=String(h||"00:00").split(":").map(Number);return a*60+b}
+function calcularStatusLoja(state){
+  const agora=horarioSaoPaulo();
+  let hours=state?.opening_hours||DEFAULT_OPENING_HOURS;
+  if(typeof hours==="string"){try{hours=JSON.parse(hours)}catch{hours=DEFAULT_OPENING_HOURS}}
+  const manualDate=state?.manual_date||null;
+  const manualMode=(manualDate===agora.date)?String(state?.manual_mode||"auto"):"auto";
+
+  if(manualMode==="closed")return {mode:"closed",open:false,pickup_only:false,now:agora,hours};
+  if(manualMode==="pickup_only")return {mode:"pickup_only",open:true,pickup_only:true,now:agora,hours};
+  if(manualMode==="open")return {mode:"open",open:true,pickup_only:false,now:agora,hours};
+
+  const cfg=hours[String(agora.day)]||DEFAULT_OPENING_HOURS[String(agora.day)];
+  if(!cfg?.enabled)return {mode:"closed",open:false,pickup_only:false,now:agora,hours};
+
+  const atual=minutos(agora.time),ini=minutos(cfg.open),fim=minutos(cfg.close);
+  const aberto=fim>ini ? (atual>=ini&&atual<fim) : (atual>=ini||atual<fim);
+  return {mode:aberto?"open":"closed",open:aberto,pickup_only:false,now:agora,hours,today:cfg};
+}
+async function obterEstadoLoja(env){
+  try{
+    const rows=await supabaseRequest(env,"store_state?select=id,shift_started_at,opening_hours,manual_mode,manual_date,updated_at&id=eq.1&limit=1");
+    const row=rows?.[0]||{};
+    return {...row,...calcularStatusLoja(row)};
+  }catch{
+    return calcularStatusLoja({});
+  }
+}
+
 async function obterInicioExpediente(env){
   try{
     const rows=await supabaseRequest(
@@ -180,14 +233,16 @@ export async function onRequestGet({ request, env }) {
         env,
         "products?select=id,category,name,description,price,active,available,sort_order&order=sort_order.asc,id.asc"
       );
-      return json({ ok:true, catalog:catalog || [], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})) });
+      const store=await obterEstadoLoja(env);
+      return json({ ok:true, catalog:catalog || [], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})), store });
     } catch {
       // Compatibilidade caso a migração V8.24 ainda não tenha sido executada.
       const products = await supabaseRequest(
         env,
         "product_availability?select=product_id,available,updated_at&order=product_id.asc"
       );
-      return json({ ok:true, products:products || [] });
+      const store=await obterEstadoLoja(env);
+      return json({ ok:true, products:products || [], store });
     }
   } catch (error) {
     console.error(error);
@@ -202,6 +257,15 @@ export async function onRequestPost({ request, env }) {
 
     if (action === "create") {
       const isGarcom = String(body.origem || "").toLowerCase() === "garcom";
+      if(!isGarcom){
+        const store=await obterEstadoLoja(env);
+        if(!store.open){
+          return json({ok:false,error:"A loja está fechada no momento. Consulte o horário de funcionamento."},403);
+        }
+        if(store.pickup_only && String(body.tipo)!=="Retirada"){
+          return json({ok:false,error:"Neste momento estamos aceitando pedidos somente para retirada no local."},403);
+        }
+      }
       const required = isGarcom ? ["cliente","itens","total","pagamento","tipo"] : ["cliente","telefone","itens","total","pagamento","tipo"];
       for (const field of required) {
         if (body[field] === undefined || body[field] === "" || body[field] === null) {
@@ -304,6 +368,40 @@ export async function onRequestPost({ request, env }) {
 
 
       return json({ ok:true, order:saved });
+    }
+
+
+    if (action === "get_store_config") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+      const store=await obterEstadoLoja(env);
+      return json({ok:true,store});
+    }
+
+    if (action === "save_opening_hours") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+      const hours=body.opening_hours;
+      if(!hours||typeof hours!=="object")return json({ok:false,error:"Horários inválidos."},400);
+      const agora=new Date().toISOString();
+      await supabaseRequest(env,"store_state?on_conflict=id",{
+        method:"POST",
+        headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
+        body:JSON.stringify({id:1,opening_hours:hours,updated_at:agora})
+      });
+      return json({ok:true,store:await obterEstadoLoja(env)});
+    }
+
+    if (action === "set_store_mode") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+      const mode=String(body.mode||"auto");
+      if(!["auto","open","closed","pickup_only"].includes(mode))return json({ok:false,error:"Modo inválido."},400);
+      const sp=horarioSaoPaulo();
+      const agora=new Date().toISOString();
+      await supabaseRequest(env,"store_state?on_conflict=id",{
+        method:"POST",
+        headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
+        body:JSON.stringify({id:1,manual_mode:mode,manual_date:sp.date,updated_at:agora})
+      });
+      return json({ok:true,store:await obterEstadoLoja(env)});
     }
 
     if (action === "list_orders") {

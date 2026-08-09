@@ -26,6 +26,14 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 
     .finalizar-expediente{background:#7b1d1d;color:#fff;border:1px solid #b93a3a}
     .finalizar-expediente:hover{background:#982626}
+  
+    .modal-store{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px}
+    .modal-store-box{background:#111;border:1px solid #444;border-radius:16px;padding:20px;width:min(680px,96vw);max-height:90vh;overflow:auto;position:relative}
+    .modal-x{position:absolute;right:12px;top:10px;border:0;background:transparent;color:#fff;font-size:28px;cursor:pointer}
+    .horario-row{display:grid;grid-template-columns:130px 90px 1fr 1fr;gap:8px;align-items:center;margin:8px 0}
+    .horario-row input[type=time]{padding:9px;border-radius:8px;border:1px solid #444;background:#080808;color:#fff}
+    .manual-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.manual-actions .btn{flex:1}
+    @media(max-width:650px){.horario-row{grid-template-columns:1fr 80px 1fr 1fr;font-size:13px}}
   </style>
 </head>
 <body>
@@ -44,6 +52,8 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small></div></div>
     <div class="controls">
       <a href="/relatorios" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
+      <button id="horariosBtn" class="btn dark">🕒 Horários</button>
+      <button id="fecharLojaBtn" class="btn red hidden">🔴 Fechar loja</button>
       <button id="finalizarExpediente" class="btn finalizar-expediente">🌙 Finalizar expediente</button>
       <button id="somBtn" class="btn dark">🔔 Campainha ativada</button>
       <span class="badge">🖨️ Impressão automática pelo programa do Windows</span>
@@ -64,6 +74,23 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 </main>
 </div>
 
+
+<div id="modalHorarios" class="modal-store hidden">
+  <div class="modal-store-box">
+    <button id="fecharModalHorarios" class="modal-x">×</button>
+    <h2>🕒 Horário de funcionamento</h2>
+    <p class="muted">Configure os dias e horários. Fora do horário, o cliente pode ver o cardápio, mas não consegue finalizar pedidos.</p>
+    <div id="gradeHorarios"></div>
+    <button id="salvarHorarios" class="btn yellow" style="width:100%;margin-top:12px">Salvar horários</button>
+    <div class="manual-actions">
+      <button id="abrirHoje" class="btn green">Abrir excepcionalmente hoje</button>
+      <button id="fecharHoje" class="btn red">Fechar hoje</button>
+      <button id="automaticoHoje" class="btn dark">Voltar ao horário automático</button>
+    </div>
+    <p id="statusHorarioLoja" class="muted"></p>
+  </div>
+</div>
+
 <script>
 const TOKEN_KEY="bb_store_token";
 let token=localStorage.getItem(TOKEN_KEY)||"";
@@ -81,6 +108,80 @@ const dataHora=v=>new Date(v).toLocaleString("pt-BR");
 $("senha").value=token;
 $("entrar").onclick=entrar;
 $("senha").onkeydown=e=>{if(e.key==="Enter")entrar()};
+$("horariosBtn").onclick=async()=>{await carregarConfigLoja();abrirModalHorarios()};
+$("fecharModalHorarios").onclick=()=>$("modalHorarios").classList.add("hidden");
+$("salvarHorarios").onclick=salvarHorarios;
+$("abrirHoje").onclick=async()=>{await definirModoLoja("open");alert("Loja aberta excepcionalmente hoje.")};
+$("fecharHoje").onclick=async()=>{await definirModoLoja("closed");alert("Loja fechada para hoje.")};
+$("automaticoHoje").onclick=async()=>{await definirModoLoja("auto");alert("Horário automático restaurado.")};
+$("fecharLojaBtn").onclick=async()=>{if(confirm("Fechar a loja por completo agora?")){await definirModoLoja("closed");alert("Loja fechada.")}};
+
+
+const NOMES_DIAS=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+let storeConfig=null;
+let ultimoPromptFechamento="";
+
+async function carregarConfigLoja(){
+  const r=await api("POST",{action:"get_store_config"});
+  storeConfig=r.store;
+  atualizarStatusLoja();
+  verificarHorarioFechamento();
+  return storeConfig;
+}
+function atualizarStatusLoja(){
+  if(!storeConfig)return;
+  const modo=storeConfig.mode;
+  const txt=modo==="pickup_only"?"ABERTO SOMENTE PARA RETIRADA":modo==="open"?"LOJA ABERTA":"LOJA FECHADA";
+  $("fecharLojaBtn").classList.toggle("hidden",modo!=="pickup_only");
+  if($("statusHorarioLoja"))$("statusHorarioLoja").textContent=`Status atual: ${txt}`;
+}
+function abrirModalHorarios(){
+  const h=storeConfig?.hours||{};
+  $("gradeHorarios").innerHTML=NOMES_DIAS.map((nome,i)=>{
+    const c=h[String(i)]||{enabled:false,open:"19:00",close:"23:00"};
+    return `<div class="horario-row">
+      <strong>${nome}</strong>
+      <label><input type="checkbox" class="diaAtivo" data-dia="${i}" ${c.enabled?"checked":""}> Aberto</label>
+      <input type="time" class="horaAbre" data-dia="${i}" value="${c.open||"19:00"}">
+      <input type="time" class="horaFecha" data-dia="${i}" value="${c.close||"23:00"}">
+    </div>`;
+  }).join("");
+  $("modalHorarios").classList.remove("hidden");
+  atualizarStatusLoja();
+}
+async function salvarHorarios(){
+  const hours={};
+  for(let i=0;i<7;i++){
+    hours[String(i)]={
+      enabled:document.querySelector(`.diaAtivo[data-dia="${i}"]`).checked,
+      open:document.querySelector(`.horaAbre[data-dia="${i}"]`).value||"19:00",
+      close:document.querySelector(`.horaFecha[data-dia="${i}"]`).value||"23:00"
+    };
+  }
+  const r=await api("POST",{action:"save_opening_hours",opening_hours:hours});
+  storeConfig=r.store; atualizarStatusLoja(); alert("Horários salvos.");
+}
+async function definirModoLoja(mode){
+  const r=await api("POST",{action:"set_store_mode",mode});
+  storeConfig=r.store; atualizarStatusLoja();
+}
+async function verificarHorarioFechamento(){
+  if(!storeConfig?.today||storeConfig.mode==="pickup_only")return;
+  const agora=storeConfig.now;
+  const fecha=storeConfig.today.close;
+  const chave=`${agora.date}-${fecha}`;
+  if(agora.time>=fecha && ultimoPromptFechamento!==chave){
+    ultimoPromptFechamento=chave;
+    const continuar=confirm("Horário de funcionamento encerrado.\n\nDeseja continuar aberto somente para RETIRADA?");
+    if(continuar){
+      await definirModoLoja("pickup_only");
+      alert("Loja mantida aberta somente para retirada.");
+    }else{
+      await definirModoLoja("closed");
+      alert("Loja fechada para novos pedidos.");
+    }
+  }
+}
 
 async function finalizarExpediente(){
   const primeira=confirm(
@@ -133,7 +234,9 @@ async function entrar(){
     $("login").classList.add("hidden");
     $("app").classList.remove("hidden");
     if(intervalo)clearInterval(intervalo);
+    await carregarConfigLoja();
     intervalo=setInterval(carregarPedidos,3000);
+    setInterval(carregarConfigLoja,30000);
   }catch(e){alert("Senha incorreta ou conexão indisponível.");}
 }
 

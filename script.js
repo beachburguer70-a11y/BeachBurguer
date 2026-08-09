@@ -75,6 +75,7 @@ let pixPollingStartedAt=0;
 let pixFinalizacaoAutomaticaIniciada=false;
 let adminToken="";
 
+let estadoLojaCliente={open:true,pickup_only:false,mode:"open"};
 const $=id=>document.getElementById(id);
 const moeda=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
@@ -143,8 +144,10 @@ async function carregarDisponibilidade(){
         id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",
         preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false
       }));
+      if(resultado.store){estadoLojaCliente=resultado.store;aplicarStatusLojaCliente();}
       return;
     }
+    if(resultado.store){estadoLojaCliente=resultado.store;aplicarStatusLojaCliente();}
     if(Array.isArray(resultado.products)){
       resultado.products.forEach(status=>{
         const produto=dados.produtos.find(p=>p.id===Number(status.product_id));
@@ -213,6 +216,31 @@ configurarPaginaInicial();
 renderProdutos();renderCarrinho();atualizarCamposEntrega();atualizarBotaoPedido();
 window.addEventListener("pageshow",()=>setTimeout(atualizarCamposEntrega,0));
 setTimeout(atualizarCamposEntrega,100);
+}
+
+
+function aplicarStatusLojaCliente(){
+  const box=$("statusLojaCliente");
+  if(!box)return;
+  if(!estadoLojaCliente.open){
+    box.className="status-loja-cliente fechada";
+    box.textContent="🔴 Loja fechada no momento — você pode consultar o cardápio, mas novos pedidos estão pausados.";
+  }else if(estadoLojaCliente.pickup_only){
+    box.className="status-loja-cliente retirada";
+    box.textContent="🟠 Estamos abertos somente para RETIRADA no local.";
+    if($("tipoPedido").value!=="Retirada")$("tipoPedido").value="Retirada";
+    document.querySelectorAll(".tipo-rapido").forEach(b=>{
+      const permitido=b.dataset.tipoRapido==="Retirada";
+      b.disabled=!permitido;
+      b.classList.toggle("ativo",permitido);
+    });
+    atualizarCamposEntrega();
+  }else{
+    box.className="status-loja-cliente";
+    box.textContent="🟢 Loja aberta — faça seu pedido.";
+    document.querySelectorAll(".tipo-rapido").forEach(b=>b.disabled=false);
+  }
+  atualizarBotaoPedido();
 }
 
 function renderTaxas(){
@@ -367,10 +395,15 @@ function removerItem(uid){carrinho=carrinho.filter(x=>x.uid!==uid);resetarConfir
 function atualizarBotaoPedido(){
   const botao=$("enviarPedido");
   if(!botao)return;
-  const bloqueado=pagamento==="Pix"&&!pixConfirmado;
+  const fechado=!estadoLojaCliente.open;
+  const somenteRetirada=estadoLojaCliente.pickup_only && $("tipoPedido")?.value!=="Retirada";
+  const aguardandoPix=pagamento==="Pix"&&!pixConfirmado;
+  const bloqueado=fechado||somenteRetirada||aguardandoPix;
   botao.disabled=bloqueado;
-  botao.title=bloqueado?"O Mercado Pago ainda não confirmou o Pix.":"";
-  botao.textContent=bloqueado?"Aguardando pagamento Pix":"Fazer pedido";
+  if(fechado){botao.title="A loja está fechada.";botao.textContent="Loja fechada";}
+  else if(somenteRetirada){botao.title="Somente retirada disponível.";botao.textContent="Somente retirada";}
+  else if(aguardandoPix){botao.title="O Mercado Pago ainda não confirmou o Pix.";botao.textContent="Aguardando pagamento Pix";}
+  else{botao.title="";botao.textContent="Fazer pedido";}
 }
 
 function pararPollingPix(){
@@ -581,6 +614,7 @@ function atualizarCamposEntrega(){
 }
 
 function selecionarTipoPedido(tipo){
+  if(estadoLojaCliente.pickup_only&&tipo!=="Retirada"){alert("Neste momento estamos aceitando somente retirada no local.");return}
   $("tipoPedido").value=tipo;
   atualizarCamposEntrega();
   resetarConfirmacaoPix();
@@ -590,6 +624,8 @@ function selecionarTipoPedido(tipo){
 }
 
 function validar(){
+  if(!estadoLojaCliente.open){alert("A loja está fechada no momento.");return false}
+  if(estadoLojaCliente.pickup_only&&$("tipoPedido").value!=="Retirada"){alert("Neste momento estamos aceitando somente retirada no local.");return false}
   if(!validarLancheObrigatorio())return false;
   if(pagamento==="Pix"&&!pixConfirmado){alert("O Pix ainda não foi confirmado pelo Mercado Pago.");return false}
   if(!carrinho.length){alert("Adicione pelo menos um produto.");return false}
@@ -1065,3 +1101,5 @@ if($("verCardapio")){
     mostrarAvisoNotificacaoCardapio();
   });
 }
+
+setInterval(()=>carregarDisponibilidade().then(()=>aplicarStatusLojaCliente()).catch(()=>{}),30000);
