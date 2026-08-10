@@ -388,6 +388,12 @@ async function enviarPedido(){
   finally{enviando=false}
 }
 async function gerarPix(){
+  await carregarEstadoLojaCheckoutV16();
+  if(estadoLojaCheckoutV16 && estadoLojaCheckoutV16.open===false){
+    alert("A loja está fechada. O Pix não pode ser gerado.");
+    location.href="/cardapio.html";
+    return;
+  }
   $("modalRevisaoCheckout").classList.remove("ativo");
   const d=dadosPedido();
   mostrarEtapa("etapaPix");

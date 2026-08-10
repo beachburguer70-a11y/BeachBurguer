@@ -59,6 +59,26 @@ function validarItemPrincipalV15(){
 
 let estadoLojaV16={open:true,pickup_only:false,mode:"open"};
 
+
+function lojaFechadaV18(){
+  return estadoLojaV16 && estadoLojaV16.open===false;
+}
+
+function avisarLojaFechadaV18(){
+  alert("A Beach Burguer está fechada no momento. Não é possível continuar ou finalizar o pedido.");
+}
+
+function atualizarBotoesItemAdicionadoV18(){
+  const fechada=lojaFechadaV18();
+  ["continuarComprandoV7","finalizarPedidoV7"].forEach(id=>{
+    const b=$(id);
+    if(!b)return;
+    b.classList.toggle("bloqueado-loja-v18",fechada);
+    b.setAttribute("aria-disabled",fechada?"true":"false");
+    b.title=fechada?"Loja fechada no momento":"";
+  });
+}
+
 function aplicarEstadoLojaCardapioV16(){
   if(estadoLojaV16.pickup_only){
     tipoPedido="Retirada";
@@ -75,6 +95,8 @@ function aplicarEstadoLojaCardapioV16(){
       b.disabled=false;b.classList.remove("bloqueada-v16");b.title="";
     });
   }
+  atualizarBotoesItemAdicionadoV18();
+  if(typeof renderProdutos==="function") renderProdutos();
 }
 
 let categoriaAtual="Artesanais";
@@ -165,12 +187,18 @@ function renderProdutos(){
       <p>${p.descricao||""}</p>
       <footer>
         <span class="preco">${moeda(p.preco)}</span>
-        <button ${p.disponivel===false?"disabled":""} data-id="${p.id}">${p.disponivel===false?"Esgotado":"Adicionar"}</button>
+        <button ${(p.disponivel===false||lojaFechadaV18())?"disabled":""} data-id="${p.id}">
+          ${p.disponivel===false?"Esgotado":lojaFechadaV18()?"Loja fechada":"Adicionar"}
+        </button>
       </footer>
     </article>`).join("");
   $("produtosV7").querySelectorAll("button[data-id]").forEach(b=>b.onclick=()=>abrirProduto(Number(b.dataset.id)));
 }
 function abrirProduto(id,uid=null){
+  if(lojaFechadaV18()){
+    avisarLojaFechadaV18();
+    return;
+  }
   const item=uid?carrinho.find(x=>String(x.uid)===String(uid)):null;
   produtoSelecionado=dados.produtos.find(p=>Number(p.id)===Number(item?.id||id));
   if(!produtoSelecionado)return;
@@ -197,6 +225,11 @@ function abrirProduto(id,uid=null){
   $("modalProdutoV7").classList.add("ativo");
 }
 function confirmarProduto(){
+  if(lojaFechadaV18()){
+    avisarLojaFechadaV18();
+    $("modalProdutoV7")?.classList.remove("ativo");
+    return;
+  }
   const qtd=Math.max(1,Number($("produtoQtdV7").value||1));
   const adicionais=[...document.querySelectorAll(".addV7:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
   const novo={
@@ -264,11 +297,20 @@ function renderCarrinhoModal(){
 $("confirmarProdutoV7").onclick=confirmarProduto;
 $("fecharProdutoV7").onclick=()=>$("modalProdutoV7").classList.remove("ativo");
 $("continuarComprandoV7").onclick=()=>$("modalDepoisAdicionarV7").classList.remove("ativo");
-$("finalizarPedidoV7").onclick=()=>{if(!validarItemPrincipalV15())return;localStorage.setItem("bb_tipo_pedido",tipoPedido);location.href="/checkout.html"};
+$("finalizarPedidoV7").onclick=()=>{
+  if(lojaFechadaV18()){avisarLojaFechadaV18();return}
+  if(!validarItemPrincipalV15())return;
+  localStorage.setItem("bb_tipo_pedido",tipoPedido);
+  location.href="/checkout.html";
+};
 $("verPedidoV7").onclick=()=>{renderCarrinhoModal();$("modalCarrinhoV7").classList.add("ativo")};
 $("fecharCarrinhoV7").onclick=()=>$("modalCarrinhoV7").classList.remove("ativo");
 $("continuarCarrinhoV7").onclick=()=>$("modalCarrinhoV7").classList.remove("ativo");
-$("finalizarCarrinhoV7").onclick=()=>{if(!validarItemPrincipalV15())return;location.href="/checkout.html"};
+$("finalizarCarrinhoV7").onclick=()=>{
+  if(lojaFechadaV18()){avisarLojaFechadaV18();return}
+  if(!validarItemPrincipalV15())return;
+  location.href="/checkout.html";
+};
 $("limparCarrinhoV7").onclick=()=>{
   if(carrinho.length&&confirm("Limpar todo o carrinho?")){
     carrinho=[];salvarCarrinho();renderCarrinhoModal();
