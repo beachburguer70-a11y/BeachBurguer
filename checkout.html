@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Finalizar pedido • Beach Burguer</title>
+<link rel="stylesheet" href="style.css?v=dev3">
+<style>
+.checkout-flow-page{min-height:100vh;background:#090909;color:#fff;padding-bottom:80px}
+.checkout-flow-top{position:sticky;top:0;z-index:20;background:rgba(7,7,7,.94);backdrop-filter:blur(12px);border-bottom:1px solid #222}
+.checkout-flow-top .container{height:72px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.checkout-flow-brand{display:flex;align-items:center;gap:10px;font-weight:900}.checkout-flow-brand img{width:44px;height:44px;object-fit:contain}
+.checkout-back{border:1px solid #333;background:#141414;color:#fff;border-radius:999px;padding:9px 13px;text-decoration:none;font-weight:800}
+.checkout-flow-wrap{width:min(100% - 28px,900px);margin:0 auto;padding:32px 0}
+.checkout-progress{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:24px}
+.checkout-progress div{background:#121212;border:1px solid #292929;border-radius:12px;padding:11px 12px;color:#777;font-size:12px;font-weight:900;text-align:center}
+.checkout-progress div.ativo{background:#ffb800;color:#111;border-color:#ffb800}
+.flow-card{background:#121212;border:1px solid #292929;border-radius:20px;padding:22px;margin-bottom:16px}
+.flow-card h1,.flow-card h2{margin-top:0}.flow-sub{color:#999;margin-top:-8px}
+.flow-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.flow-card label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#aaa;font-weight:800}
+.flow-card input,.flow-card select,.flow-card textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #343434;background:#090909;color:#fff}
+.flow-card textarea{min-height:88px;resize:vertical}
+.flow-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.flow-btn{border:0;border-radius:12px;padding:13px 18px;font-weight:900;cursor:pointer}
+.flow-btn.primary{background:#ffb800;color:#111}.flow-btn.dark{background:#232323;color:#fff}.flow-btn.danger{background:#7c2020;color:#fff}
+.hidden{display:none!important}
+.tipo-resumo{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border-radius:999px;background:#201a09;color:#ffcf49;font-size:12px;font-weight:900;margin-bottom:14px}
+.payment-options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.payment-option{border:1px solid #333;background:#101010;color:#fff;border-radius:14px;padding:16px 10px;text-align:center;font-weight:900;cursor:pointer}
+.payment-option.ativo{background:#ffb800;color:#111;border-color:#ffb800}
+.order-summary{display:grid;gap:9px}
+.order-item{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #252525;padding:9px 0}
+.order-item small{color:#888;display:block;margin-top:4px}
+.total-line{display:flex;justify-content:space-between;font-size:18px;font-weight:900;padding-top:10px}
+.review-grid{display:grid;gap:12px}
+.review-box{background:#0c0c0c;border:1px solid #292929;border-radius:13px;padding:13px}
+.review-box strong{display:block;color:#ffb800;margin-bottom:6px}
+.pix-area{text-align:center}.pix-code{word-break:break-all;background:#050505;border:1px dashed #555;border-radius:10px;padding:12px;font-size:11px;margin:10px 0}
+.pix-qr{width:210px;height:210px;background:#fff;margin:14px auto;border-radius:12px;padding:10px;display:grid;place-items:center;color:#111;font-weight:900}
+.pix-status{font-weight:900;margin-top:10px}.pix-status.ok{color:#7ee59c}
+
+@media(max-width:650px){.flow-actions-dados{display:grid;grid-template-columns:1fr 1fr}.flow-actions-dados .flow-btn{width:100%;padding-inline:10px}.flow-grid,.payment-options{grid-template-columns:1fr}.checkout-flow-wrap{padding-top:20px}.flow-card{padding:17px}.checkout-progress div{font-size:10px;padding:9px 5px}}
+
+.calculo-troco-v10{margin-top:8px;padding:11px 12px;border-radius:10px;background:#0b0b0b;border:1px solid #2f2f2f;color:#aaa;font-size:12px;font-weight:800}
+.calculo-troco-v10.ok{background:#0b2112;border-color:#245f35;color:#91e3a8}
+.calculo-troco-v10.aviso{background:#261313;border-color:#6a2f2f;color:#ffb0b0}
+.calculo-troco-v10.sem-troco{background:#201a09;border-color:#665313;color:#ffd85f}
+
+.modalidade-checkout-v11{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.alterar-tipo-checkout-v11{border:1px solid #3a3a3a;background:#171717;color:#fff;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:900;cursor:pointer}
+.alterar-tipo-checkout-v11:hover{border-color:#ffb800;color:#ffcf49}
+.tipo-opcoes-checkout-v11{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.tipo-opcao-checkout-v11{border:1px solid #323232;background:#101010;color:#fff;border-radius:15px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer}
+.tipo-opcao-checkout-v11:hover,.tipo-opcao-checkout-v11.ativa{border-color:#ffb800;background:#211a08}
+.tipo-opcao-checkout-v11 span{font-size:26px}.tipo-opcao-checkout-v11 strong{font-size:13px}.tipo-opcao-checkout-v11 small{font-size:10px;color:#888;text-align:center}
+.troco-resumo-v11 strong{color:#9ee6ae}
+@media(max-width:560px){.tipo-opcoes-checkout-v11{grid-template-columns:1fr}}
+
+
+.resumo-dinheiro-v13{background:#15120a;border-radius:8px;padding:9px 8px!important;margin-top:4px}
+.resumo-dinheiro-v13 strong{color:#ffd45b}
+.resumo-troco-v13{background:#0d1b11;border-radius:8px;padding:10px 8px!important;margin-top:7px;border-bottom:0!important}
+.resumo-troco-v13 strong{color:#9ee6ae;font-size:18px}
+
+.modalidade-checkout-v14{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+
+.tipo-opcao-checkout-v11.bloqueada-v16,.tipo-opcao-checkout-v11:disabled{opacity:.35;cursor:not-allowed;filter:grayscale(1)}
+</style>
+</head>
+<body class="checkout-flow-page">
+<header class="checkout-flow-top">
+  <div class="container">
+    <div class="checkout-flow-brand"><img src="assets/logo.png" alt=""><span>BEACH BURGUER</span></div>
+    
+  </div>
+</header>
+
+<main class="checkout-flow-wrap">
+  <div class="checkout-progress">
+    <div id="progDados" class="ativo">1 • Seus dados</div>
+    <div id="progPagamento">2 • Pagamento</div>
+    <div id="progRevisao">3 • Revisão</div>
+  </div>
+
+  <section id="etapaDados" class="flow-card">
+    <div class="modalidade-checkout-v14">
+      <span id="tipoResumo" class="tipo-resumo"></span>
+      <button id="alterarTipoCheckoutV14" type="button" class="alterar-tipo-checkout-v11">Alterar</button>
+    </div>
+    <h1>Seus dados</h1>
+    <p class="flow-sub">Preencha as informações para continuar.</p>
+    <div class="flow-grid">
+      <label>Nome
+        <input id="nomeCheckout" autocomplete="name" placeholder="Seu nome">
+      </label>
+      <label>Telefone com DDD
+        <input id="telefoneCheckout" inputmode="tel" placeholder="(22) 99999-9999">
+      </label>
+    </div>
+
+    <div id="camposEntregaCheckout" class="hidden" style="margin-top:12px">
+      <div class="flow-grid">
+        <label>Endereço
+          <input id="enderecoCheckout" placeholder="Rua, número">
+        </label>
+        <label>Bairro / Localidade
+          <select id="bairroCheckout">
+            <option value="">Selecione</option>
+            <option value="Atafona" data-taxa="0">Atafona — grátis</option>
+            <option value="São João da Barra" data-taxa="5">São João da Barra — R$ 5,00</option>
+            <option value="Chapéu do Sol" data-taxa="5">Chapéu do Sol — R$ 5,00</option>
+          </select>
+        </label>
+      </div>
+      <label style="margin-top:12px">Referência
+        <input id="referenciaCheckout" placeholder="Ponto de referência (opcional)">
+      </label>
+    </div>
+
+    <label style="margin-top:12px">Observações gerais
+      <textarea id="observacoesCheckout" placeholder="Alguma observação para a loja?"></textarea>
+    </label>
+
+    <div class="flow-card" style="padding:14px;margin-top:16px;margin-bottom:0">
+      <h3 style="margin-top:0">Resumo do carrinho</h3>
+      <div id="resumoCarrinhoDados" class="order-summary"></div>
+    </div>
+
+    <div class="flow-actions flow-actions-dados">
+      <button id="voltarCardapioDados" class="flow-btn dark">← Voltar ao cardápio</button>
+      <button id="avancarPagamento" class="flow-btn primary">Avançar →</button>
+    </div>
+  </section>
+
+  <section id="etapaPagamento" class="flow-card hidden">
+    <div class="modalidade-checkout-v11">
+      <span id="tipoResumo2" class="tipo-resumo"></span>
+      <button id="alterarTipoPagamentoV12" type="button" class="alterar-tipo-checkout-v11">Alterar</button>
+    </div>
+    <h2>Pagamento</h2>
+    <p class="flow-sub">Escolha como deseja pagar.</p>
+
+    <div class="payment-options">
+      <button class="payment-option ativo" data-pagamento="Pix">PIX</button>
+      <button class="payment-option" data-pagamento="Cartão">CARTÃO</button>
+      <button class="payment-option" data-pagamento="Dinheiro">DINHEIRO</button>
+    </div>
+
+    <div id="trocoWrap" class="hidden" style="margin-top:14px">
+      <label>Vai pagar com quanto?
+        <input id="trocoCheckout" inputmode="decimal" placeholder="Ex.: 50,00">
+      </label>
+      <div id="calculoTrocoV10" class="calculo-troco-v10">
+        Digite o valor que será entregue em dinheiro.
+      </div>
+    </div>
+
+    <div class="flow-card" style="padding:14px;margin-top:16px;margin-bottom:0">
+      <div id="resumoPagamento" class="order-summary"></div>
+    </div>
+
+    <div class="flow-actions">
+      <button id="voltarDados" class="flow-btn dark">← Voltar</button>
+      <button id="acaoPagamento" class="flow-btn primary">Gerar QR Code</button>
+    </div>
+  </section>
+
+  <section id="etapaPix" class="flow-card hidden pix-area">
+    <h2>Pagamento Pix</h2>
+    <p class="flow-sub">Após o pagamento confirmado, o pedido será enviado automaticamente.</p>
+    <div class="pix-qr" id="pixQrBox"><img id="pixQrImagem" alt="QR Code Pix" style="width:100%;height:100%;object-fit:contain;display:none"></div>
+    <div id="pixCopiaCheckout" class="pix-code"></div>
+    <button id="copiarPixCheckout" class="flow-btn dark">Copiar código Pix</button>
+    <div id="pixStatusCheckout" class="pix-status">Aguardando pagamento...</div>
+  </section>
+
+  <section id="etapaSucesso" class="flow-card hidden" style="text-align:center">
+    <div style="font-size:52px">✅</div>
+    <h2>Pedido realizado!</h2>
+    <p id="textoSucesso" class="flow-sub"></p>
+    <a href="/" class="flow-btn primary" style="display:inline-block;text-decoration:none">Voltar ao início</a>
+  </section>
+</main>
+
+<div id="modalRevisaoCheckout" class="modal">
+  <div class="modal-box" style="max-width:620px">
+    <button id="fecharRevisaoCheckout" class="fechar" type="button">×</button>
+    <h2>Revise seu pedido</h2>
+    <p>Confira tudo antes de confirmar.</p>
+    <div id="conteudoRevisaoCheckout" class="review-grid"></div>
+    <div class="flow-actions">
+      <button id="voltarRevisaoCheckout" class="flow-btn dark">Voltar e corrigir</button>
+      <button id="confirmarRevisaoCheckout" class="flow-btn primary">Finalizar pedido</button>
+    </div>
+  </div>
+</div>
+
+
+
+<div id="modalTipoCheckoutV11" class="modal">
+  <div class="modal-box" style="max-width:520px">
+    <button id="fecharTipoCheckoutV11" class="fechar" type="button">×</button>
+    <h2>Alterar modalidade</h2>
+    <p>Como você deseja receber seu pedido?</p>
+    <div class="tipo-opcoes-checkout-v11">
+      <button type="button" class="tipo-opcao-checkout-v11" data-tipo="Retirada">
+        <span>🛍️</span><strong>Retirada</strong><small>Retirar na Beach Burguer</small>
+      </button>
+      <button type="button" class="tipo-opcao-checkout-v11" data-tipo="Consumir no local">
+        <span>🍽️</span><strong>Consumir no local</strong><small>Comer no local</small>
+      </button>
+      <button type="button" class="tipo-opcao-checkout-v11" data-tipo="Entrega">
+        <span>🛵</span><strong>Entrega</strong><small>Receber no endereço</small>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="modalTaxaCartaoAtafona" class="modal">
+  <div class="modal-box" style="max-width:460px;text-align:center">
+    <button id="fecharTaxaCartaoAtafona" class="fechar" type="button">×</button>
+    <div style="font-size:44px;margin-bottom:6px">💳</div>
+    <h2 style="margin-bottom:8px">Pagamento no cartão</h2>
+    <p style="color:#bdbdbd;line-height:1.55">
+      Em <strong>Atafona</strong>, a entrega é <strong>grátis somente no Pix e no Dinheiro</strong>.
+    </p>
+    <div style="margin:16px 0;padding:14px;border-radius:12px;background:#211a08;border:1px solid rgba(255,184,0,.28)">
+      No <strong>Cartão</strong> será cobrada uma taxa de entrega de
+      <strong style="color:#ffb800;font-size:20px">R$ 2,00</strong>.
+    </div>
+    <button id="entendiTaxaCartaoAtafona" class="flow-btn primary" type="button">Entendi</button>
+  </div>
+</div>
+<script src="checkout.js?v=17"></script>
+</body>
+</html>

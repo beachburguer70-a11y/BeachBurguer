@@ -80,6 +80,47 @@ let estadoLojaCliente={open:true,pickup_only:false,mode:"open"};
 const $=id=>document.getElementById(id);
 const moeda=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
+
+function aplicarModoCardapioV6(){
+  const card=document.getElementById("cardapio");
+  const ocultar=[
+    document.getElementById("homeTopoV6"),
+    document.getElementById("statusLojaCliente"),
+    document.getElementById("homeBeneficiosV6"),
+    document.getElementById("homeHeroV6"),
+    document.getElementById("finalizar")
+  ].filter(Boolean);
+
+  ocultar.forEach(el=>el.style.setProperty("display","none","important"));
+
+  if(card){
+    card.style.setProperty("display","block","important");
+    card.style.setProperty("min-height","100vh","important");
+  }
+
+  document.body.classList.remove("inicio-travado");
+  document.body.classList.add("modo-cardapio-v4","modo-cardapio-v6");
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
+}
+
+function sairModoCardapioV6(){
+  const restaurar=[
+    document.getElementById("homeTopoV6"),
+    document.getElementById("statusLojaCliente"),
+    document.getElementById("homeBeneficiosV6"),
+    document.getElementById("homeHeroV6")
+  ].filter(Boolean);
+
+  restaurar.forEach(el=>el.style.removeProperty("display"));
+  const card=document.getElementById("cardapio");
+  if(card)card.style.removeProperty("display");
+
+  document.body.classList.remove("modo-cardapio-v4","modo-cardapio-v6");
+  document.body.classList.add("inicio-travado");
+  window.scrollTo(0,0);
+}
+
 function carregarDadosLocais(){
   const salvo=JSON.parse(localStorage.getItem("bb_dados_v5")||"null");
   if(!salvo) return structuredClone(PADRAO);
@@ -176,41 +217,55 @@ function liberarConteudo(destino="#cardapio"){
 }
 
 function configurarPaginaInicial(){
-  const hash=location.hash;
-  const abrirDireto=hash==="#cardapio"||hash==="#finalizar";
-  if(!abrirDireto){
+  const params=new URLSearchParams(location.search);
+  const tipoSalvo=localStorage.getItem("bb_tipo_pedido");
+  const abrirCardapio=params.get("cardapio")==="1" || location.hash==="#cardapio";
+
+  function entrarNoCardapio(tipo){
+    if(tipo){
+      $("tipoPedido").value=tipo;
+      localStorage.setItem("bb_tipo_pedido",tipo);
+      atualizarCamposEntrega();
+    }
+    aplicarModoCardapioV6();
+    const badge=$("tipoPedidoCardapioV4");
+    if(badge)badge.textContent=`📍 ${$("tipoPedido").value||tipoSalvo||"Retirada"}`;
+    requestAnimationFrame(()=>{
+      window.scrollTo(0,0);
+      $("cardapio")?.scrollIntoView({behavior:"auto",block:"start"});
+    });
+  }
+
+  if(abrirCardapio && tipoSalvo){
+    entrarNoCardapio(tipoSalvo);
+  }else{
     document.body.classList.add("inicio-travado");
+    document.body.classList.remove("modo-cardapio-v4");
     window.scrollTo(0,0);
   }
 
-  const btnVer=$("verCardapio");
-  if(btnVer){
-    btnVer.onclick=()=>liberarConteudo("#cardapio");
+  function abrirModalTipo(e){
+    if(e){e.preventDefault();e.stopPropagation();}
+    $("modalTipoPedido").classList.add("ativo");
   }
 
+  [$("verCardapio"),$("verCardapioPainel"),$("menuCardapio")].filter(Boolean).forEach(el=>{
+    el.onclick=abrirModalTipo;
+    el.addEventListener("click",abrirModalTipo,true);
+  });
+
   document.querySelectorAll('a[href="#cardapio"]').forEach(a=>{
-    a.addEventListener("click",e=>{
-      if(document.body.classList.contains("inicio-travado")){
-        e.preventDefault();
-        liberarConteudo("#cardapio");
-      }
-    });
+    a.addEventListener("click",abrirModalTipo,true);
   });
 
   document.querySelectorAll('a[href="#finalizar"]').forEach(a=>{
     a.addEventListener("click",e=>{
-      if(document.body.classList.contains("inicio-travado")){
-        e.preventDefault();
-        liberarConteudo("#finalizar");
-      }
-    });
+      e.preventDefault();
+      window.location.href="/checkout.html";
+    },true);
   });
 
-  window.addEventListener("hashchange",()=>{
-    if(location.hash==="#cardapio"||location.hash==="#finalizar"){
-      document.body.classList.remove("inicio-travado");
-    }
-  });
+  window.entrarNoCardapioV5=entrarNoCardapio;
 }
 
 configurarPaginaInicial();
@@ -224,11 +279,17 @@ function aplicarStatusLojaCliente(){
   const box=$("statusLojaCliente");
   if(!box)return;
   if(!estadoLojaCliente.open){
+    localStorage.setItem("bb_store_state",JSON.stringify(estadoLojaCliente));
     box.className="status-loja-cliente fechada";
     box.textContent="🔴 Loja fechada no momento — você pode consultar o cardápio, mas novos pedidos estão pausados.";
   }else if(estadoLojaCliente.pickup_only){
     box.className="status-loja-cliente retirada";
     box.textContent="🟠 Estamos abertos somente para RETIRADA no local.";
+    localStorage.setItem("bb_store_state",JSON.stringify(estadoLojaCliente));
+    if(sessionStorage.getItem("bb_aviso_somente_retirada")!=="1"){
+      sessionStorage.setItem("bb_aviso_somente_retirada","1");
+      setTimeout(()=>alert("No momento estamos atendendo SOMENTE PARA RETIRADA no local. As opções Entrega e Consumir no local estão temporariamente bloqueadas."),100);
+    }
     if($("tipoPedido").value!=="Retirada")$("tipoPedido").value="Retirada";
     document.querySelectorAll(".tipo-rapido").forEach(b=>{
       const permitido=b.dataset.tipoRapido==="Retirada";
@@ -237,6 +298,7 @@ function aplicarStatusLojaCliente(){
     });
     atualizarCamposEntrega();
   }else{
+    localStorage.setItem("bb_store_state",JSON.stringify(estadoLojaCliente));
     box.className="status-loja-cliente";
     box.textContent="🟢 Loja aberta — faça seu pedido.";
     document.querySelectorAll(".tipo-rapido").forEach(b=>b.disabled=false);
@@ -669,13 +731,13 @@ function atualizarCamposEntrega(){
 }
 
 function selecionarTipoPedido(tipo){
-  if(estadoLojaCliente.pickup_only&&tipo!=="Retirada"){alert("Neste momento estamos aceitando somente retirada no local.");return}
-  $("tipoPedido").value=tipo;
-  atualizarCamposEntrega();
-  resetarConfirmacaoPix();
-  renderCarrinho();
+  if(estadoLojaCliente.pickup_only&&tipo!=="Retirada"){
+    alert("Neste momento estamos aceitando somente retirada no local.");
+    return;
+  }
+  localStorage.setItem("bb_tipo_pedido",tipo);
   $("modalTipoPedido").classList.remove("ativo");
-  $("cardapio").scrollIntoView({behavior:"smooth"});
+  window.location.href="/cardapio.html";
 }
 
 function validar(){
@@ -860,7 +922,106 @@ async function salvarAdmin(){
 
 $("gerarPix").onclick=gerarPixAutomatico;
 
-$("verCardapio").onclick=()=>$("modalTipoPedido").classList.add("ativo");
+
+
+
+
+if($("voltarInicioCardapio")){
+  $("voltarInicioCardapio").onclick=()=>{
+    history.replaceState(null,"","/");
+    sairModoCardapioV6();
+  };
+}
+
+
+function renderCarrinhoModalV5(){
+  const box=$("listaCarrinhoV5");
+  if(!box)return;
+
+  const tipo=localStorage.getItem("bb_tipo_pedido")||$("tipoPedido")?.value||"Retirada";
+  $("tipoPedidoCarrinhoV5").textContent=`📍 ${tipo}`;
+  $("totalCarrinhoV5").textContent=moeda(subtotal());
+
+  if(!carrinho.length){
+    box.innerHTML=`<div class="carrinho-vazio-v5">Seu carrinho está vazio.</div>`;
+    $("finalizarCarrinhoV5").disabled=true;
+    $("limparCarrinhoV5").disabled=true;
+    return;
+  }
+
+  $("finalizarCarrinhoV5").disabled=false;
+  $("limparCarrinhoV5").disabled=false;
+
+  box.innerHTML=carrinho.map(item=>`
+    <article class="item-carrinho-v5">
+      <div class="item-carrinho-v5-info">
+        <strong>${item.quantidade||1}x ${item.nome}</strong>
+        ${(item.adicionais||[]).length?`<small>Adicionais: ${(item.adicionais||[]).map(a=>a.nome).join(", ")}</small>`:""}
+        ${item.observacao?`<small>Obs.: ${item.observacao}</small>`:""}
+        <span>${moeda(valorItem(item))}</span>
+      </div>
+      <div class="item-carrinho-v5-acoes">
+        <button type="button" class="alterar-item-v5" data-uid="${item.uid}">✏️ Alterar</button>
+        <button type="button" class="excluir-item-v5" data-uid="${item.uid}">🗑 Excluir</button>
+      </div>
+    </article>
+  `).join("");
+
+  box.querySelectorAll(".alterar-item-v5").forEach(btn=>{
+    btn.onclick=()=>{
+      $("modalCarrinhoV5").classList.remove("ativo");
+      editarItemCliente(btn.dataset.uid);
+    };
+  });
+
+  box.querySelectorAll(".excluir-item-v5").forEach(btn=>{
+    btn.onclick=()=>{
+      const uid=btn.dataset.uid;
+      const item=carrinho.find(x=>String(x.uid)===String(uid));
+      if(!item)return;
+      if(!confirm(`Excluir ${item.nome} do carrinho?`))return;
+      carrinho=carrinho.filter(x=>String(x.uid)!==String(uid));
+      resetarConfirmacaoPix();
+      salvarCarrinho();
+      renderCarrinhoModalV5();
+    };
+  });
+}
+
+function abrirCarrinhoModalV5(){
+  renderCarrinhoModalV5();
+  $("modalCarrinhoV5").classList.add("ativo");
+}
+
+
+if($("carrinhoFlutuante")){
+  $("carrinhoFlutuante").onclick=e=>{
+    e.preventDefault();
+    abrirCarrinhoModalV5();
+  };
+}
+$("fecharCarrinhoV5").onclick=()=>$("modalCarrinhoV5").classList.remove("ativo");
+$("continuarCarrinhoV5").onclick=()=>{
+  $("modalCarrinhoV5").classList.remove("ativo");
+  $("cardapio")?.scrollIntoView({behavior:"smooth",block:"start"});
+};
+$("finalizarCarrinhoV5").onclick=()=>{
+  if(!carrinho.length)return;
+  localStorage.setItem("bb_tipo_pedido",$("tipoPedido").value||localStorage.getItem("bb_tipo_pedido")||"Retirada");
+  window.location.href="/checkout.html";
+};
+$("limparCarrinhoV5").onclick=()=>{
+  if(!carrinho.length)return;
+  if(!confirm("Tem certeza que deseja limpar todo o carrinho?"))return;
+  carrinho=[];
+  resetarConfirmacaoPix();
+  salvarCarrinho();
+  renderCarrinhoModalV5();
+};
+$("modalCarrinhoV5").onclick=e=>{
+  if(e.target===$("modalCarrinhoV5"))$("modalCarrinhoV5").classList.remove("ativo");
+};
+
 $("fecharTipoPedido").onclick=()=>$("modalTipoPedido").classList.remove("ativo");
 $("modalTipoPedido").onclick=e=>{if(e.target===$("modalTipoPedido"))$("modalTipoPedido").classList.remove("ativo")};
 document.querySelectorAll(".opcao-pedido").forEach(btn=>btn.addEventListener("click",()=>selecionarTipoPedido(btn.dataset.tipo)));
@@ -874,11 +1035,13 @@ document.querySelectorAll(".tipo-rapido").forEach(btn=>btn.addEventListener("cli
 
 $("continuarComprando").onclick=()=>{
   $("modalDepoisAdicionar").classList.remove("ativo");
-  $("cardapio").scrollIntoView({behavior:"smooth"});
+  document.body.classList.add("modo-cardapio-v4");
+  $("cardapio").scrollIntoView({behavior:"smooth",block:"start"});
 };
 $("irFinalizar").onclick=()=>{
   $("modalDepoisAdicionar").classList.remove("ativo");
-  $("finalizar").scrollIntoView({behavior:"smooth"});
+  localStorage.setItem("bb_tipo_pedido",$("tipoPedido").value||localStorage.getItem("bb_tipo_pedido")||"Retirada");
+  window.location.href="/checkout.html";
 };
 
 $("telefone").addEventListener("input",e=>e.target.value=formatarTelefone(e.target.value));
@@ -1160,3 +1323,15 @@ if($("verCardapio")){
 setInterval(()=>carregarDisponibilidade().then(()=>aplicarStatusLojaCliente()).catch(()=>{}),30000);
 
 window.editarItemCliente=editarItemCliente;
+
+
+
+window.addEventListener("pageshow",()=>{
+  const p=new URLSearchParams(location.search);
+  if(p.get("cardapio")==="1" && localStorage.getItem("bb_tipo_pedido")){
+    aplicarModoCardapioV6();
+    const badge=document.getElementById("tipoPedidoCardapioV4");
+    if(badge)badge.textContent=`📍 ${localStorage.getItem("bb_tipo_pedido")}`;
+    setTimeout(()=>document.getElementById("cardapio")?.scrollIntoView({block:"start"}),30);
+  }
+});

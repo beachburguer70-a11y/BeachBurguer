@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cardápio • Beach Burguer</title>
+<link rel="stylesheet" href="style.css?v=cardapio7">
+<style>
+body.cardapio-page-v7{background:#080808;color:#fff;min-height:100vh;padding-bottom:90px}
+.cardapio-top-v7{position:sticky;top:0;z-index:60;background:rgba(5,5,5,.96);backdrop-filter:blur(12px);border-bottom:1px solid #232323}
+.cardapio-top-v7 .container{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.cardapio-brand-v7{display:flex;align-items:center;gap:10px;font-weight:900}
+.cardapio-brand-v7 img{width:44px;height:44px;object-fit:contain}
+.cardapio-actions-top-v7{display:flex;align-items:center;gap:8px}
+.cardapio-tipo-v7{display:inline-flex;align-items:center;gap:6px;background:#201a09;border:1px solid rgba(255,184,0,.24);color:#ffd45b;border-radius:999px;padding:8px 11px;font-size:12px;font-weight:900}
+.modalidade-atual-v10{display:flex;align-items:center;gap:6px}
+.alterar-tipo-v10{border:1px solid #3b3b3b;background:#171717;color:#fff;border-radius:999px;padding:8px 11px;font-size:11px;font-weight:900;cursor:pointer}
+.alterar-tipo-v10:hover{border-color:#ffb800;color:#ffcf49}
+.cardapio-voltar-v7{border:1px solid #333;background:#161616;color:#fff;border-radius:999px;padding:9px 12px;font-weight:800;text-decoration:none}
+.cardapio-main-v7{width:min(100% - 28px,1160px);margin:0 auto;padding:22px 0}
+.cardapio-title-v7{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:18px}
+.cardapio-title-v7 h1{font-size:clamp(32px,5vw,52px);margin:0 0 4px}
+.cardapio-title-v7 p{margin:0;color:#949494}
+.abas-v7{position:sticky;top:69px;z-index:50;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 0;background:#080808;border-bottom:1px solid #202020}
+.abas-v7 button{width:100%;min-width:0;border:1px solid #313131;background:#151515;color:#fff;border-radius:999px;padding:10px 8px;font-weight:800;white-space:normal;text-align:center}
+.abas-v7 button.ativa{background:#ffb800;color:#111;border-color:#ffb800}
+.grade-v7{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.produto-v7{background:linear-gradient(180deg,#151515,#0f0f0f);border:1px solid #2b2b2b;border-radius:18px;padding:18px;display:flex;flex-direction:column;min-height:220px}
+.produto-v7.esgotado{opacity:.55}
+.produto-v7 .icone{font-size:30px}
+.produto-v7 h3{font-size:20px;margin:10px 0 6px}
+.produto-v7 p{font-size:13px;color:#999;line-height:1.45;flex:1}
+.produto-v7 footer{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid #282828;padding-top:12px}
+.produto-v7 .preco{color:#ffb800;font-size:20px;font-weight:900}
+.produto-v7 button{border:0;background:#ffb800;color:#111;border-radius:999px;padding:10px 14px;font-weight:900;cursor:pointer}
+.produto-v7 button:disabled{background:#333;color:#888}
+.carrinho-flutuante-v7{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:70;display:none;align-items:center;gap:10px;border:0;background:#ffb800;color:#111;border-radius:999px;padding:11px 18px;font-weight:900;box-shadow:0 15px 45px rgba(0,0,0,.5);cursor:pointer}
+.carrinho-flutuante-v7.visivel{display:flex}
+.modal-cardapio-v7{width:min(94vw,760px);max-height:88vh;overflow:auto}
+.lista-carrinho-v7{display:grid;gap:10px;max-height:48vh;overflow:auto}
+.item-carrinho-v7{display:grid;grid-template-columns:1fr auto;gap:12px;background:#0c0c0c;border:1px solid #292929;border-radius:14px;padding:14px}
+.item-carrinho-v7-info{display:flex;flex-direction:column;gap:4px}
+.item-carrinho-v7-info small{color:#919191}
+.item-carrinho-v7-info span{color:#ffb800;font-weight:900;margin-top:4px}
+.item-carrinho-v7-acoes{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.item-carrinho-v7-acoes button{border:1px solid #343434;background:#191919;color:#fff;border-radius:9px;padding:8px 10px;font-size:11px;font-weight:800}
+.item-carrinho-v7-acoes .excluir{background:#2a1111;border-color:#5b2727;color:#ffb3b3}
+.resumo-v7{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #2b2b2b;margin-top:14px;padding-top:14px;font-size:18px;font-weight:900}
+.resumo-v7 strong{font-size:22px;color:#ffb800}
+.acoes-v7{display:flex;justify-content:space-between;gap:10px;margin-top:16px;flex-wrap:wrap}
+.acoes-v7-direita{display:flex;gap:8px}
+.btn-v7{border:0;border-radius:11px;padding:11px 14px;font-weight:900;cursor:pointer}
+.btn-v7.amarelo{background:#ffb800;color:#111}.btn-v7.escuro{background:#242424;color:#fff}.btn-v7.perigo{background:#431616;color:#ffc1c1}
+
+@media(max-width:800px){.grade-v7{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){
+  .grade-v7{grid-template-columns:1fr}
+  .cardapio-top-v7 .container{padding:8px 0;align-items:flex-start}
+  .cardapio-actions-top-v7{flex-direction:column;align-items:flex-end}
+  .abas-v7{top:84px;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .abas-v7 button{padding:9px 4px;font-size:11px;line-height:1.15}
+  .item-carrinho-v7{grid-template-columns:1fr}
+  .acoes-v7{display:grid;grid-template-columns:1fr}
+  .acoes-v7-direita{display:grid;grid-template-columns:1fr 1fr}
+  .acoes-v7 button{width:100%}
+  .cardapio-flutuante-v7{max-width:calc(100vw - 30px)}
+}
+
+.tipo-opcoes-v10{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.tipo-opcao-v10{border:1px solid #323232;background:#101010;color:#fff;border-radius:15px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer}
+.tipo-opcao-v10:hover,.tipo-opcao-v10.ativa{border-color:#ffb800;background:#211a08}
+.tipo-opcao-v10 span{font-size:26px}.tipo-opcao-v10 strong{font-size:13px}.tipo-opcao-v10 small{font-size:10px;color:#888;text-align:center}
+@media(max-width:560px){.tipo-opcoes-v10{grid-template-columns:1fr}.modalidade-atual-v10{flex-wrap:wrap;justify-content:flex-end}}
+
+
+.categoria-vazia-v15{grid-column:1/-1;text-align:center;padding:40px 20px;border:1px dashed #333;border-radius:16px;color:#999;background:#0d0d0d}
+.categoria-vazia-v15 strong{display:block;margin-top:10px;color:#bbb}
+
+.tipo-opcao-v10.bloqueada-v16,.tipo-opcao-v10:disabled{opacity:.35;cursor:not-allowed;filter:grayscale(1)}
+</style>
+</head>
+<body class="cardapio-page-v7">
+<header class="cardapio-top-v7">
+  <div class="container">
+    <div class="cardapio-brand-v7">
+      <img src="assets/logo.png" alt="Beach Burguer">
+      <span>BEACH BURGUER</span>
+    </div>
+    <div class="cardapio-actions-top-v7">
+      <div class="modalidade-atual-v10">
+        <span id="tipoPedidoBadgeV7" class="cardapio-tipo-v7"></span>
+        <button id="alterarTipoPedidoV10" type="button" class="alterar-tipo-v10">Alterar</button>
+      </div>
+      <a href="/" class="cardapio-voltar-v7">← Início</a>
+    </div>
+  </div>
+</header>
+
+<main class="cardapio-main-v7">
+  <div class="cardapio-title-v7">
+    <div>
+      <span class="eyebrow">CARDÁPIO</span>
+      <h1>Escolha seu pedido</h1>
+      <p>Adicione, personalize e continue comprando.</p>
+    </div>
+  </div>
+
+  <div id="abasV7" class="abas-v7"></div>
+  <div id="produtosV7" class="grade-v7"></div>
+</main>
+
+<button id="verPedidoV7" class="carrinho-flutuante-v7" type="button">
+  🛒 <span><strong>Ver pedido</strong><br><small id="resumoCarrinhoV7">0 itens • R$ 0,00</small></span>
+</button>
+
+<div id="modalProdutoV7" class="modal">
+  <div class="modal-box">
+    <button id="fecharProdutoV7" class="fechar" type="button">×</button>
+    <h2 id="produtoNomeV7"></h2>
+    <p id="produtoDescricaoV7"></p>
+    <strong id="produtoPrecoV7"></strong>
+
+    <label style="margin-top:14px">Quantidade
+      <input id="produtoQtdV7" type="number" min="1" step="1" value="1">
+    </label>
+
+    <h3 id="tituloAdicionaisV7" style="margin-top:16px">Adicionais</h3>
+    <div id="listaAdicionaisV7"></div>
+
+    <label style="margin-top:14px">Observação do item
+      <textarea id="produtoObsV7" placeholder="Ex.: sem salada"></textarea>
+    </label>
+
+    <div class="acoes-v7" style="justify-content:flex-end">
+      <button id="confirmarProdutoV7" class="btn-v7 amarelo">Adicionar ao pedido</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalDepoisAdicionarV7" class="modal">
+  <div class="modal-box" style="max-width:430px;text-align:center">
+    <h2>Item adicionado!</h2>
+    <p>O que deseja fazer agora?</p>
+    <div class="acoes-v7" style="justify-content:center">
+      <button id="continuarComprandoV7" class="btn-v7 escuro">Continuar comprando</button>
+      <button id="finalizarPedidoV7" class="btn-v7 amarelo">Finalizar pedido</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalCarrinhoV7" class="modal">
+  <div class="modal-box modal-cardapio-v7">
+    <button id="fecharCarrinhoV7" class="fechar" type="button">×</button>
+    <h2>Seu pedido</h2>
+    <p>Altere, exclua ou limpe os itens antes de finalizar.</p>
+    <div id="listaCarrinhoV7" class="lista-carrinho-v7"></div>
+    <div class="resumo-v7"><span>Total</span><strong id="totalCarrinhoV7">R$ 0,00</strong></div>
+    <div class="acoes-v7">
+      <button id="limparCarrinhoV7" class="btn-v7 perigo">🗑 Limpar carrinho</button>
+      <div class="acoes-v7-direita">
+        <button id="continuarCarrinhoV7" class="btn-v7 escuro">Continuar comprando</button>
+        <button id="finalizarCarrinhoV7" class="btn-v7 amarelo">Finalizar pedido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div id="modalTipoPedidoV10" class="modal">
+  <div class="modal-box" style="max-width:520px">
+    <button id="fecharTipoPedidoV10" class="fechar" type="button">×</button>
+    <h2>Alterar modalidade</h2>
+    <p>Como você deseja receber seu pedido?</p>
+
+    <div class="tipo-opcoes-v10">
+      <button type="button" class="tipo-opcao-v10" data-tipo="Retirada">
+        <span>🛍️</span>
+        <strong>Retirada</strong>
+        <small>Retirar na Beach Burguer</small>
+      </button>
+      <button type="button" class="tipo-opcao-v10" data-tipo="Consumir no local">
+        <span>🍽️</span>
+        <strong>Consumir no local</strong>
+        <small>Comer no local</small>
+      </button>
+      <button type="button" class="tipo-opcao-v10" data-tipo="Entrega">
+        <span>🛵</span>
+        <strong>Entrega</strong>
+        <small>Receber no endereço</small>
+      </button>
+    </div>
+  </div>
+</div>
+<script src="cardapio.js?v=17"></script>
+</body>
+</html>

@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css?v=850">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="script.js?v=850"></script>
+  <script defer src="script.js?v=17"></script>
 
 <style id="checkout-mobile-fix-v815">
 .dados-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
@@ -30,8 +30,8 @@
   </style>
 
 </head>
-<body>
-<header class="topo">
+<body class="dev-fluxo-v4">
+<header id="homeTopoV6" class="topo home-only-v6">
   <div class="container barra">
     <a href="#inicio" class="marca">
       <img src="assets/logo.png" alt="Logo Beach Burguer">
@@ -39,7 +39,7 @@
     </a>
     <nav>
       <a href="#inicio">Início</a>
-      <a href="#cardapio">Cardápio</a>
+      <a href="#cardapio" id="menuCardapio">Cardápio</a>
       <button id="abrirMeusPedidos" class="link-admin">Meus Pedidos</button>
       <button id="abrirAdmin" class="link-admin">Admin</button>
     </nav>
@@ -47,32 +47,62 @@
   </div>
 </header>
 
-<div id="statusLojaCliente" class="status-loja-cliente"></div>
+<div id="statusLojaCliente" class="status-loja-cliente home-only-v6"></div><div id="homeBeneficiosV6" class="delivery-beneficios home-only-v6">
+  <div class="container delivery-beneficios-grid">
+    <div><span>⚡</span><strong>Pedido rápido</strong><small>Monte em poucos passos</small></div>
+    <div><span>🍔</span><strong>Personalize</strong><small>Adicionais e observações</small></div>
+    <div><span>🔔</span><strong>Acompanhe</strong><small>Status em Meus Pedidos</small></div>
+  </div>
+</div>
 <main>
   <section id="inicio" class="hero">
     <div class="container hero-grid">
       <div>
-        <span class="selo">DELIVERY EM ATAFONA — SJB</span>
-        <h1>Seu lanche favorito em poucos cliques.</h1>
-        <p>Escolha, personalize e faça seu pedido diretamente pelo site da Beach Burguer.</p>
+        <span class="selo">🍔 BEACH BURGUER DELIVERY • ATAFONA — SJB</span>
+        <h1>Seu Beach Burguer, do seu jeito.</h1>
+        <p>Escolha seu lanche, personalize os adicionais e finalize o pedido direto pelo celular.</p>
         <div class="acoes">
-          <button id="verCardapio" class="btn btn-amarelo">Ver cardápio</button>
-          <a href="#finalizar" class="btn btn-escuro">Ver carrinho</a>
+          <button id="verCardapio" class="btn btn-amarelo btn-hero-principal">🍔 Fazer meu pedido</button>
+          <button id="abrirMeusPedidosHero" class="btn btn-escuro">📦 Acompanhar pedido</button>
+        </div>
+        <div class="hero-confianças">
+          <span>✓ Pedido direto com a loja</span>
+          <span>✓ Pix, cartão ou dinheiro</span>
+          <span>✓ Retirada ou entrega</span>
         </div>
       </div>
       <div class="painel-destaque">
-        <img src="assets/logo.png" alt="Beach Burguer">
+        <div class="hero-logo-wrap"><img src="assets/logo.png" alt="Beach Burguer"></div>
+        <span class="painel-mini-selo">🔥 FEITO NA HORA</span>
         <h2>Seu momento, nosso sabor.</h2>
-        <p>Quarta a domingo, das 19h às 23h.</p>
+        <p>Escolha o tipo do pedido e veja o cardápio completo.</p>
+        <button id="verCardapioPainel" class="btn btn-amarelo btn-largo">Ver cardápio</button>
       </div>
     </div>
   </section>
 
   <section id="cardapio" class="secao conteudo-pos-inicio">
     <div class="container">
-      <div class="titulo">
-        <h2>Cardápio</h2>
-        <p>Escolha uma categoria.</p>
+      <div class="cardapio-toolbar-v4">
+        <button id="voltarInicioCardapio" type="button" class="btn btn-escuro">← Voltar ao início</button>
+        <span id="tipoPedidoCardapioV4" class="tipo-pedido-cardapio-v4"></span>
+      </div>
+
+      <div class="destaques-delivery">
+        <div class="destaques-cabecalho">
+          <div>
+            <span class="eyebrow">ESCOLHAS DA BEACH</span>
+            <h2>Destaques do cardápio</h2>
+            <p>Algumas opções para decidir mais rápido.</p>
+          </div>
+        </div>
+        <div id="destaquesProdutos" class="destaques-grid"></div>
+      </div>
+
+      <div class="titulo titulo-cardapio">
+        <span class="eyebrow">CARDÁPIO COMPLETO</span>
+        <h2>O que você quer hoje?</h2>
+        <p>Escolha uma categoria e adicione ao pedido.</p>
       </div>
 
       <div id="abas" class="abas"></div>
@@ -80,11 +110,18 @@
     </div>
   </section>
 
-  <section id="finalizar" class="secao secao-clara conteudo-pos-inicio">
+  <section id="finalizar" class="secao secao-clara conteudo-pos-inicio"><div class="dev-v4-hide-old-checkout" aria-hidden="true">
     <div class="container">
       <div class="titulo">
+        <span class="eyebrow">ÚLTIMA ETAPA</span>
         <h2>Finalizar pedido</h2>
-        <p>Confira seu carrinho e preencha seus dados.</p>
+        <p>Confira os itens, seus dados e o pagamento.</p>
+      </div>
+      <div class="checkout-etapas" aria-label="Etapas do pedido">
+        <div class="feito"><span>1</span><strong>Itens</strong></div>
+        <div class="ativo"><span>2</span><strong>Dados</strong></div>
+        <div><span>3</span><strong>Pagamento</strong></div>
+        <div><span>4</span><strong>Confirmar</strong></div>
       </div>
 
       <div class="checkout">
@@ -165,7 +202,7 @@
         </aside>
       </div>
     </div>
-  </section>
+  </div></section>
 </main>
 
 <footer>
@@ -179,6 +216,10 @@
   </div>
 </footer>
 
+<button id="carrinhoFlutuante" class="carrinho-flutuante" type="button" aria-label="Abrir pedido">
+  <span class="cart-ico">🛒</span>
+  <span class="cart-copy"><strong>Ver pedido</strong><small id="carrinhoFlutuanteResumo">0 itens • R$ 0,00</small></span>
+</button>
 <a id="whatsappFlutuante" class="whatsapp-flutuante" target="_blank">💬<span id="contador">0</span></a>
 
 
@@ -405,5 +446,36 @@
   </div>
 </div>
 
+
+
+<div id="modalCarrinhoV5" class="modal">
+  <div class="modal-box modal-carrinho-v5">
+    <button id="fecharCarrinhoV5" class="fechar" type="button">×</button>
+    <div class="modal-carrinho-v5-top">
+      <div>
+        <span class="eyebrow">SEU PEDIDO</span>
+        <h2>Confira seu carrinho</h2>
+        <p>Você pode alterar, excluir ou limpar os itens antes de continuar.</p>
+      </div>
+      <span id="tipoPedidoCarrinhoV5" class="tipo-pedido-cardapio-v4"></span>
+    </div>
+
+    <div id="listaCarrinhoV5" class="lista-carrinho-v5"></div>
+
+    <div class="resumo-carrinho-v5">
+      <span>Total</span>
+      <strong id="totalCarrinhoV5">R$ 0,00</strong>
+    </div>
+
+    <div class="acoes-carrinho-v5">
+      <button id="limparCarrinhoV5" type="button" class="btn btn-perigo-v5">🗑 Limpar carrinho</button>
+      <div class="acoes-carrinho-v5-direita">
+        <button id="continuarCarrinhoV5" type="button" class="btn btn-escuro">Continuar comprando</button>
+        <button id="finalizarCarrinhoV5" type="button" class="btn btn-amarelo">Finalizar pedido</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="redesign-dev.js?v=17"></script>
 </body>
 </html>

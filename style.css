@@ -305,3 +305,365 @@ body.inicio-travado #inicio{
   position:relative;
   z-index:10051;
 }
+
+
+/* =========================================================
+   DEV LOCAL V2 — REMODELAÇÃO DA PÁGINA DO CLIENTE
+   ========================================================= */
+body{background:#080808}
+.topo{background:rgba(5,5,5,.92);border-bottom:1px solid rgba(255,183,0,.12)}
+.barra{min-height:68px}
+.marca img{width:50px;height:50px}
+.topo nav{gap:16px}
+.topo nav a,.topo .link-admin{font-size:14px;opacity:.9}
+#whatsappTopo{border-radius:999px;padding:11px 18px}
+
+.delivery-beneficios{background:#0e0e0e;border-bottom:1px solid #242424}
+.delivery-beneficios-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#242424}
+.delivery-beneficios-grid>div{background:#0e0e0e;padding:12px 18px;display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center}
+.delivery-beneficios-grid span{grid-row:1/3;font-size:23px}
+.delivery-beneficios-grid strong{font-size:13px;color:#fff}
+.delivery-beneficios-grid small{font-size:11px;color:#969696}
+
+.hero{padding:54px 0 64px;background:
+  radial-gradient(circle at 82% 24%,rgba(255,183,0,.20),transparent 28%),
+  radial-gradient(circle at 18% 110%,rgba(255,183,0,.08),transparent 34%),
+  linear-gradient(135deg,#070707,#121212)}
+.hero-grid{grid-template-columns:1.12fr .88fr;gap:48px}
+.hero h1{max-width:760px;font-size:clamp(48px,6vw,78px);letter-spacing:-2.5px}
+.hero p{max-width:690px;color:#bcbcbc;font-size:18px}
+.hero .selo{background:rgba(255,183,0,.10);border:1px solid rgba(255,183,0,.28)}
+.btn-hero-principal{padding-inline:24px}
+.hero-confianças{display:flex;flex-wrap:wrap;gap:14px;margin-top:22px;color:#aaa;font-size:12px;font-weight:700}
+.hero-confianças span{display:inline-flex;align-items:center;gap:5px}
+.painel-destaque{overflow:hidden;padding:24px 28px 28px;background:linear-gradient(180deg,#111,#0c0c0c);border-color:rgba(255,183,0,.23)}
+.hero-logo-wrap{background:#060606;border-radius:22px;padding:18px;margin-bottom:18px}
+.painel-destaque img{width:190px}
+.painel-mini-selo{display:inline-block;color:#111;background:var(--amarelo);border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900}
+.painel-destaque h2{font-size:26px;margin-bottom:8px}
+.painel-destaque p{font-size:14px;margin-top:0}
+
+.eyebrow{display:inline-block;color:var(--amarelo);font-size:11px;font-weight:900;letter-spacing:1.4px;margin-bottom:8px}
+.destaques-delivery{margin-bottom:46px}
+.destaques-cabecalho{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:18px}
+.destaques-cabecalho h2{font-size:32px;margin:0 0 7px}
+.destaques-cabecalho p{margin:0;color:#999}
+.destaques-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+.destaque-produto{position:relative;overflow:hidden;background:linear-gradient(160deg,#171717,#101010);border:1px solid #2d2d2d;border-radius:18px;padding:18px;min-height:185px;display:flex;flex-direction:column}
+.destaque-produto::after{content:"";position:absolute;width:100px;height:100px;border-radius:50%;right:-38px;top:-38px;background:rgba(255,183,0,.08)}
+.destaque-produto .dest-icone{font-size:30px}
+.destaque-produto h3{font-size:18px;margin:11px 0 6px;color:#fff}
+.destaque-produto p{font-size:12px;line-height:1.45;color:#929292;flex:1;margin:0}
+.destaque-produto footer{padding:14px 0 0;background:none;border:0;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.destaque-produto .dest-preco{font-size:18px;font-weight:900;color:var(--amarelo)}
+.destaque-produto button{border:0;border-radius:9px;background:#2a2a2a;color:#fff;padding:9px 11px;font-weight:800}
+.destaque-produto button:hover{background:var(--amarelo);color:#111}
+.titulo-cardapio{text-align:left;margin-bottom:18px}
+.titulo-cardapio h2{font-size:36px}
+
+.abas{
+  position:sticky!important;top:112px!important;z-index:35!important;
+  display:flex!important;grid-template-columns:none!important;
+  flex-wrap:nowrap!important;justify-content:flex-start!important;
+  overflow-x:auto!important;scrollbar-width:none!important;
+  margin:0 -8px 22px!important;padding:9px 8px!important;
+  background:rgba(8,8,8,.92)!important;backdrop-filter:blur(12px);
+  border-top:1px solid #202020;border-bottom:1px solid #202020
+}
+.abas::-webkit-scrollbar{display:none}
+.abas button{width:auto!important;min-width:max-content!important;white-space:nowrap!important;padding:10px 15px!important;font-size:13px!important}
+
+.grade-produtos{grid-template-columns:repeat(3,1fr);gap:14px}
+.produto{min-height:230px;padding:18px;border-radius:16px;box-shadow:none;transition:.18s;background:linear-gradient(180deg,#151515,#101010)}
+.produto:hover{transform:translateY(-3px);border-color:#4a3c11;box-shadow:0 16px 34px rgba(0,0,0,.25)}
+.produto .icone{font-size:31px}
+.produto h3{font-size:20px;margin:10px 0 6px}
+.produto p{font-size:13px;color:#999}
+.produto-rodape{padding-top:12px;border-top:1px solid #252525}
+.produto button{border-radius:999px;padding:10px 15px}
+
+.secao-clara{background:#0d0d0d}
+.checkout-etapas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:720px;margin:-8px auto 30px}
+.checkout-etapas>div{position:relative;display:flex;gap:8px;align-items:center;justify-content:center;color:#666;font-size:12px;font-weight:800}
+.checkout-etapas span{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;border:1px solid #3b3b3b;background:#111}
+.checkout-etapas .feito,.checkout-etapas .ativo{color:#ddd}
+.checkout-etapas .feito span{background:#252525;color:#bbb}
+.checkout-etapas .ativo span{background:var(--amarelo);border-color:var(--amarelo);color:#111}
+.checkout{gap:16px}
+.card{border-radius:18px;box-shadow:none;background:#131313}
+.carrinho{position:sticky;top:178px;height:max-content}
+input,select,textarea{background:#0a0a0a;border-color:#333}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 3px rgba(255,183,0,.08)}
+.tipo-rapido{font-size:12px;padding:8px 11px}
+.pagamento{border-radius:10px}
+
+.carrinho-flutuante{
+  position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+  z-index:75;min-width:270px;max-width:calc(100vw - 120px);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:var(--amarelo);color:#111;border-radius:999px;padding:10px 18px;
+  box-shadow:0 15px 45px rgba(0,0,0,.5);font-weight:900;
+  opacity:0;pointer-events:none;transition:.2s
+}
+.carrinho-flutuante.visivel{opacity:1;pointer-events:auto}
+.cart-ico{font-size:20px}.cart-copy{display:flex;flex-direction:column;line-height:1.05}
+.cart-copy strong{font-size:13px}.cart-copy small{font-size:10px;opacity:.72;margin-top:4px}
+.whatsapp-flutuante{width:52px;height:52px;font-size:23px;bottom:17px}
+
+@media(max-width:900px){
+  .delivery-beneficios-grid{grid-template-columns:1fr}
+  .delivery-beneficios-grid>div:nth-child(n+2){display:none}
+  .hero{padding:38px 0 48px}
+  .hero-grid{gap:24px}
+  .painel-destaque{display:none}
+  .hero h1{font-size:52px;letter-spacing:-1.8px}
+  .hero-confianças{gap:9px}
+  .destaques-grid{grid-template-columns:repeat(2,1fr)}
+  .grade-produtos{grid-template-columns:repeat(2,1fr)}
+  .abas{top:126px!important}
+  .carrinho{position:static}
+}
+@media(max-width:600px){
+  .container{width:min(100% - 28px,1160px)}
+  .hero h1{font-size:42px;line-height:.98}
+  .hero p{font-size:15px}
+  .hero .acoes{display:grid;grid-template-columns:1fr}
+  .hero .acoes .btn{width:100%}
+  .hero-confianças{display:grid;grid-template-columns:1fr}
+  .destaques-delivery{margin-bottom:34px}
+  .destaques-cabecalho h2{font-size:27px}
+  .destaques-grid{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin-right:-14px;padding-right:14px}
+  .destaque-produto{min-width:76vw;scroll-snap-align:start}
+  .titulo-cardapio h2{font-size:30px}
+  .grade-produtos{grid-template-columns:1fr}
+  .produto{min-height:unset}
+  .produto-rodape{align-items:center}
+  .checkout-etapas{gap:3px}
+  .checkout-etapas>div{font-size:10px;gap:4px}
+  .checkout-etapas span{width:23px;height:23px}
+  .carrinho-flutuante{bottom:16px;min-width:230px;max-width:calc(100vw - 90px)}
+  .whatsapp-flutuante{right:10px;width:46px;height:46px}
+}
+
+
+/* =========================================================
+   DEV LOCAL V4 — FLUXO EM TELAS SEPARADAS
+   ========================================================= */
+.dev-v4-hide-old-checkout{display:none!important}
+
+.cardapio-toolbar-v4{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:18px;
+}
+.tipo-pedido-cardapio-v4{
+  display:inline-flex;
+  align-items:center;
+  min-height:38px;
+  padding:8px 12px;
+  border-radius:999px;
+  background:#201a09;
+  color:#ffcf49;
+  font-size:12px;
+  font-weight:900;
+  border:1px solid rgba(255,183,0,.22);
+}
+
+/* Quando entra no cardápio, somente ele fica visível.
+   Isso impede rolar para dados/pagamento ou voltar à hero sem botão. */
+body.modo-cardapio-v4 > header,
+body.modo-cardapio-v4 > .status-loja-cliente,
+body.modo-cardapio-v4 > .delivery-beneficios,
+body.modo-cardapio-v4 > .hero,
+body.modo-cardapio-v4 > section:not(#cardapio),
+body.modo-cardapio-v4 > footer{
+  display:none!important;
+}
+body.modo-cardapio-v4 #cardapio{
+  display:block!important;
+  padding-top:24px!important;
+  min-height:100vh;
+}
+body.modo-cardapio-v4 .abas{
+  top:0!important;
+}
+body.modo-cardapio-v4 .carrinho-flutuante{
+  display:flex;
+}
+body.modo-cardapio-v4 #whatsappFlutuante{
+  display:none!important;
+}
+
+/* Home: impede que cardápio/checkout apareçam antes da escolha. */
+body.inicio-travado #cardapio,
+body.inicio-travado #finalizar{
+  display:none!important;
+}
+
+@media(max-width:600px){
+  .cardapio-toolbar-v4{
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:#080808;
+    padding:8px 0;
+    margin-bottom:10px;
+  }
+  .cardapio-toolbar-v4 .btn{padding:9px 11px;font-size:12px}
+  .tipo-pedido-cardapio-v4{font-size:11px;padding:7px 9px}
+  body.modo-cardapio-v4 #cardapio{padding-top:8px!important}
+}
+
+
+/* =========================================================
+   DEV LOCAL V5 — CARRINHO EDITÁVEL + CARDÁPIO ISOLADO
+   ========================================================= */
+body.modo-cardapio-v4{
+  overflow-x:hidden;
+}
+body.modo-cardapio-v4 #cardapio{
+  margin:0!important;
+  width:100%!important;
+}
+
+/* Modal do pedido */
+.modal-carrinho-v5{
+  width:min(94vw,760px);
+  max-height:88vh;
+  overflow:auto;
+}
+.modal-carrinho-v5-top{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
+  margin-bottom:16px;
+}
+.modal-carrinho-v5-top h2{margin:2px 0 7px}
+.modal-carrinho-v5-top p{margin:0;color:#999;font-size:13px}
+.lista-carrinho-v5{
+  display:grid;
+  gap:10px;
+  max-height:48vh;
+  overflow:auto;
+  padding-right:3px;
+}
+.item-carrinho-v5{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:14px;
+  align-items:center;
+  background:#0c0c0c;
+  border:1px solid #292929;
+  border-radius:14px;
+  padding:14px;
+}
+.item-carrinho-v5-info{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.item-carrinho-v5-info strong{font-size:15px}
+.item-carrinho-v5-info small{color:#949494;font-size:11px}
+.item-carrinho-v5-info span{color:#ffb800;font-weight:900;margin-top:4px}
+.item-carrinho-v5-acoes{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.item-carrinho-v5-acoes button{
+  border:1px solid #343434;
+  background:#191919;
+  color:#fff;
+  border-radius:9px;
+  padding:8px 10px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.item-carrinho-v5-acoes .excluir-item-v5{
+  border-color:#5b2727;
+  background:#2a1111;
+  color:#ffb3b3;
+}
+.resumo-carrinho-v5{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-top:1px solid #292929;
+  margin-top:14px;
+  padding-top:15px;
+  font-size:16px;
+}
+.resumo-carrinho-v5 strong{font-size:22px;color:#ffb800}
+.acoes-carrinho-v5{
+  margin-top:16px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+}
+.acoes-carrinho-v5-direita{display:flex;gap:8px}
+.btn-perigo-v5{
+  background:#431616!important;
+  color:#ffc1c1!important;
+  border:1px solid #6b2929!important;
+}
+.carrinho-vazio-v5{
+  text-align:center;
+  padding:28px;
+  color:#8d8d8d;
+  background:#0c0c0c;
+  border:1px dashed #333;
+  border-radius:14px;
+}
+
+/* O botão flutuante agora é button, mantendo a aparência */
+button.carrinho-flutuante{
+  border:0;
+  cursor:pointer;
+  font-family:inherit;
+}
+
+/* Cardápio: nenhum vestígio da tela inicial enquanto estiver nele */
+body.modo-cardapio-v4 .conteudo-pos-inicio:not(#cardapio){
+  display:none!important;
+}
+body.modo-cardapio-v4 #cardapio .container{
+  padding-top:0;
+}
+
+@media(max-width:600px){
+  .modal-carrinho-v5{width:calc(100vw - 20px);padding:17px}
+  .modal-carrinho-v5-top{display:block}
+  .modal-carrinho-v5-top .tipo-pedido-cardapio-v4{margin-top:8px}
+  .item-carrinho-v5{grid-template-columns:1fr}
+  .item-carrinho-v5-acoes{justify-content:flex-start}
+  .acoes-carrinho-v5{display:grid;grid-template-columns:1fr}
+  .acoes-carrinho-v5-direita{display:grid;grid-template-columns:1fr 1fr}
+  .acoes-carrinho-v5 .btn{width:100%}
+}
+
+
+/* =========================================================
+   DEV LOCAL V6 — CARDÁPIO REALMENTE ISOLADO
+   ========================================================= */
+body.modo-cardapio-v6 .home-only-v6,
+body.modo-cardapio-v6 #homeTopoV6,
+body.modo-cardapio-v6 #statusLojaCliente,
+body.modo-cardapio-v6 #homeBeneficiosV6,
+body.modo-cardapio-v6 #homeHeroV6,
+body.modo-cardapio-v6 #finalizar{
+  display:none!important;
+}
+body.modo-cardapio-v6 #cardapio{
+  display:block!important;
+  min-height:100vh!important;
+  padding-top:12px!important;
+}
+body.modo-cardapio-v6{
+  background:#080808!important;
+}
