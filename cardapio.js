@@ -150,9 +150,8 @@ function atualizarBotoesItemAdicionadoV18(){
 
 function aplicarEstadoLojaCardapioV16(){
   if(estadoLojaV16.pickup_only){
-    tipoPedido="Retirada";
-    localStorage.setItem("bb_tipo_pedido","Retirada");
-    $("tipoPedidoBadgeV7").textContent="📍 Retirada";
+    // V23: não muda silenciosamente um pedido que já estava em Entrega/Consumo.
+    // A troca para Retirada será perguntada ao cliente ao tentar finalizar.
     document.querySelectorAll(".tipo-opcao-v10").forEach(b=>{
       const ok=b.dataset.tipo==="Retirada";
       b.disabled=!ok;
@@ -411,3 +410,35 @@ $("modalTipoPedidoV10").onclick=e=>{
 
 atualizarBotaoCarrinho();
 carregarCatalogo();
+
+
+async function atualizarStatusLojaV23(){
+  try{
+    const r=await fetch("/api/orders",{method:"GET",cache:"no-store"});
+    const j=await r.json();
+    if(j && j.store){
+      const antes=JSON.stringify(estadoLojaV16||{});
+      estadoLojaV16=j.store;
+      localStorage.setItem("bb_store_state",JSON.stringify(j.store));
+      aplicarEstadoLojaCardapioV16();
+
+      // If the store switched to pickup-only while customer is browsing,
+      // preserve current modality until they decide at finalization.
+      if(JSON.stringify(j.store)!==antes && j.store.pickup_only){
+        console.log("Beach Burguer: estado atualizado para somente retirada.");
+      }
+    }
+  }catch(e){}
+}
+let monitorStatusLojaV23=null;
+function iniciarMonitorStatusLojaV23(){
+  atualizarStatusLojaV23();
+  if(monitorStatusLojaV23)clearInterval(monitorStatusLojaV23);
+  monitorStatusLojaV23=setInterval(atualizarStatusLojaV23,3000);
+}
+window.addEventListener("focus",atualizarStatusLojaV23);
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden) atualizarStatusLojaV23();
+});
+
+iniciarMonitorStatusLojaV23();

@@ -142,10 +142,8 @@ async function carregarEstadoLojaCheckoutV16(){
   }catch{
     try{estadoLojaCheckoutV16=JSON.parse(localStorage.getItem("bb_store_state")||"{}")||estadoLojaCheckoutV16}catch{}
   }
-  if(estadoLojaCheckoutV16.pickup_only){
-    tipoPedido="Retirada";
-    localStorage.setItem("bb_tipo_pedido","Retirada");
-  }
+  // V23: se o pedido já estava em Entrega/Consumo, não muda silenciosamente.
+  // A confirmação para mudar para Retirada ocorre antes de prosseguir/finalizar.
   aplicarBloqueioModalidadeCheckoutV16();
   atualizarTudo();
 }
@@ -623,3 +621,22 @@ if("serviceWorker" in navigator){
 carregarEstadoLojaCheckoutV16();
 
 $("bairroCheckout")?.addEventListener("change",salvarBairroCheckoutV22);
+
+
+let monitorStatusCheckoutV23=null;
+async function atualizarStatusCheckoutV23(){
+  try{
+    await carregarEstadoLojaCheckoutV16();
+  }catch(e){}
+}
+function iniciarMonitorStatusCheckoutV23(){
+  atualizarStatusCheckoutV23();
+  if(monitorStatusCheckoutV23)clearInterval(monitorStatusCheckoutV23);
+  monitorStatusCheckoutV23=setInterval(atualizarStatusCheckoutV23,3000);
+}
+window.addEventListener("focus",atualizarStatusCheckoutV23);
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden) atualizarStatusCheckoutV23();
+});
+
+iniciarMonitorStatusCheckoutV23();
