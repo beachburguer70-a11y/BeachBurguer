@@ -288,7 +288,7 @@ function aplicarStatusLojaCliente(){
     localStorage.setItem("bb_store_state",JSON.stringify(estadoLojaCliente));
     if(sessionStorage.getItem("bb_aviso_somente_retirada")!=="1"){
       sessionStorage.setItem("bb_aviso_somente_retirada","1");
-      setTimeout(()=>alert("No momento estamos atendendo SOMENTE PARA RETIRADA no local. As opções Entrega e Consumir no local estão temporariamente bloqueadas."),100);
+      setTimeout(()=>alert("A loja está aceitando pedidos somente para RETIRADA no local porque nosso horário de entregas finalizou às 23:00."),100);
     }
     if($("tipoPedido").value!=="Retirada")$("tipoPedido").value="Retirada";
     document.querySelectorAll(".tipo-rapido").forEach(b=>{

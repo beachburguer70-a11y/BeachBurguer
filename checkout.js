@@ -66,6 +66,71 @@ let enviando=false;
 
 let estadoLojaCheckoutV16={open:true,pickup_only:false,mode:"open"};
 
+
+
+function passouDas22V22(){
+  return new Date().getHours()>=22;
+}
+function bairroEhChapeuV22(){
+  const b=String($("bairroCheckout")?.value||"").trim().toLowerCase();
+  return b.includes("chapéu") || b.includes("chapeu");
+}
+function salvarBairroCheckoutV22(){
+  try{localStorage.setItem("bb_bairro_checkout",$("bairroCheckout")?.value||"")}catch{}
+}
+async function validarHorarioChapeuV22(){
+  salvarBairroCheckoutV22();
+  if(tipoPedido!=="Entrega" || !bairroEhChapeuV22() || !passouDas22V22())return true;
+
+  const prosseguir=confirm(
+    "Nosso horário de entregas para Chapéu do Sol finalizou às 22:00.\n\nDeseja prosseguir com o pedido para RETIRADA?\n\nOK = Prosseguir\nCancelar = Cancelar pedido"
+  );
+
+  if(!prosseguir)return false;
+
+  tipoPedido="Retirada";
+  localStorage.setItem("bb_tipo_pedido","Retirada");
+  atualizarTudo();
+  document.querySelectorAll(".tipo-opcao-checkout-v11").forEach(b=>{
+    b.classList.toggle("ativa",b.dataset.tipo==="Retirada");
+  });
+  return true;
+}
+
+async function validarEstadoLojaAntesDeProsseguirV20(){
+  await carregarEstadoLojaCheckoutV16();
+
+  if(estadoLojaCheckoutV16 && estadoLojaCheckoutV16.open===false){
+    alert("A loja está fechada no momento. Não é possível finalizar o pedido.");
+    window.location.href="/cardapio.html";
+    return false;
+  }
+
+  if(!(await validarHorarioChapeuV22()))return false;
+
+  if(estadoLojaCheckoutV16 && estadoLojaCheckoutV16.pickup_only && tipoPedido!=="Retirada"){
+    const prosseguir=confirm(
+      "A loja está aceitando pedidos somente para RETIRADA no local porque nosso horário de entregas finalizou às 23:00.\n\nDeseja prosseguir com o pedido para RETIRADA?\n\nOK = Prosseguir\nCancelar = Cancelar pedido"
+    );
+
+    if(!prosseguir){
+      return false;
+    }
+
+    tipoPedido="Retirada";
+    localStorage.setItem("bb_tipo_pedido","Retirada");
+    atualizarTudo();
+
+    document.querySelectorAll(".tipo-opcao-checkout-v11").forEach(b=>{
+      b.classList.toggle("ativa",b.dataset.tipo==="Retirada");
+    });
+
+    return true;
+  }
+
+  return true;
+}
+
 async function carregarEstadoLojaCheckoutV16(){
   try{
     const r=await fetch("/api/orders",{method:"GET",cache:"no-store"});
@@ -388,6 +453,7 @@ async function enviarPedido(){
   finally{enviando=false}
 }
 async function gerarPix(){
+  if(!(await validarHorarioChapeuV22()))return;
   await carregarEstadoLojaCheckoutV16();
   if(estadoLojaCheckoutV16 && estadoLojaCheckoutV16.open===false){
     alert("A loja está fechada. O Pix não pode ser gerado.");
@@ -461,7 +527,11 @@ $("bairroCheckout").addEventListener("change",()=>{
     abrirAvisoTaxaCartaoAtafona();
   }
 });
-$("avancarPagamento").onclick=()=>{if(validarDados())mostrarEtapa("etapaPagamento");atualizarTudo()};
+$("avancarPagamento").onclick=async()=>{
+  if(!(await validarEstadoLojaAntesDeProsseguirV20()))return;
+  if(validarDados())mostrarEtapa("etapaPagamento");
+  atualizarTudo();
+};
 $("voltarDados").onclick=()=>mostrarEtapa("etapaDados");
 document.querySelectorAll(".payment-option").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".payment-option").forEach(x=>x.classList.remove("ativo"));
@@ -473,11 +543,15 @@ document.querySelectorAll(".payment-option").forEach(b=>b.onclick=()=>{
     abrirAvisoTaxaCartaoAtafona();
   }
 });
-$("acaoPagamento").onclick=()=>abrirRevisao(pagamento==="Pix"?"pix":"normal");
+$("acaoPagamento").onclick=async()=>{
+  if(!(await validarEstadoLojaAntesDeProsseguirV20()))return;
+  abrirRevisao(pagamento==="Pix"?"pix":"normal");
+};
 $("fecharRevisaoCheckout").onclick=$("voltarRevisaoCheckout").onclick=()=>{
   $("modalRevisaoCheckout").classList.remove("ativo");$("progRevisao").classList.remove("ativo");
 };
 $("confirmarRevisaoCheckout").onclick=async()=>{
+  if(!(await validarEstadoLojaAntesDeProsseguirV20()))return;
   if(modoRevisao==="pix") await gerarPix();
   else { $("modalRevisaoCheckout").classList.remove("ativo"); await enviarPedido(); }
 };
@@ -547,3 +621,5 @@ if("serviceWorker" in navigator){
 }
 
 carregarEstadoLojaCheckoutV16();
+
+$("bairroCheckout")?.addEventListener("change",salvarBairroCheckoutV22);

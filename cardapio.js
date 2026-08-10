@@ -60,6 +60,75 @@ function validarItemPrincipalV15(){
 let estadoLojaV16={open:true,pickup_only:false,mode:"open"};
 
 
+
+
+function passouDas22V22(){
+  const agora=new Date();
+  return agora.getHours()>=22;
+}
+function localidadeChapeuV22(){
+  // No cardápio a localidade pode ainda não ter sido preenchida.
+  // Se houver uma última localidade salva, usamos apenas como antecipação;
+  // a validação definitiva ocorre no checkout após o cliente selecionar o bairro.
+  try{
+    const b=localStorage.getItem("bb_bairro_checkout")||"";
+    return String(b).trim().toLowerCase().includes("chapéu") ||
+           String(b).trim().toLowerCase().includes("chapeu");
+  }catch{return false}
+}
+function confirmarChapeuApos22V22(){
+  if(tipoPedido!=="Entrega" || !passouDas22V22() || !localidadeChapeuV22()) return true;
+  const ok=confirm(
+    "Nosso horário de entregas para Chapéu do Sol finalizou às 22:00.\n\nDeseja prosseguir com o pedido para RETIRADA?\n\nOK = Prosseguir\nCancelar = Cancelar pedido"
+  );
+  if(!ok)return false;
+  tipoPedido="Retirada";
+  localStorage.setItem("bb_tipo_pedido","Retirada");
+  $("tipoPedidoBadgeV7").textContent="📍 Retirada";
+  document.querySelectorAll(".tipo-opcao-v10").forEach(b=>b.classList.toggle("ativa",b.dataset.tipo==="Retirada"));
+  return true;
+}
+
+async function atualizarEstadoLojaAntesDeFinalizarV20(){
+  try{
+    const r=await fetch("/api/orders",{method:"GET",cache:"no-store"});
+    const j=await r.json();
+    if(j && j.store){
+      estadoLojaV16=j.store;
+      localStorage.setItem("bb_store_state",JSON.stringify(j.store));
+      aplicarEstadoLojaCardapioV16();
+    }
+  }catch(e){
+    try{
+      const salvo=JSON.parse(localStorage.getItem("bb_store_state")||"null");
+      if(salvo) estadoLojaV16=salvo;
+    }catch{}
+  }
+}
+
+function validarSomenteRetiradaAntesFinalizarV20(){
+  if(estadoLojaV16 && estadoLojaV16.pickup_only && tipoPedido!=="Retirada"){
+    const prosseguir=confirm(
+      "A loja está aceitando pedidos somente para RETIRADA no local porque nosso horário de entregas finalizou às 23:00.\n\nDeseja prosseguir com o pedido para RETIRADA?\n\nOK = Prosseguir\nCancelar = Cancelar pedido"
+    );
+
+    if(!prosseguir){
+      return false;
+    }
+
+    tipoPedido="Retirada";
+    localStorage.setItem("bb_tipo_pedido","Retirada");
+    $("tipoPedidoBadgeV7").textContent="📍 Retirada";
+
+    document.querySelectorAll(".tipo-opcao-v10").forEach(b=>{
+      b.classList.toggle("ativa",b.dataset.tipo==="Retirada");
+    });
+
+    return true;
+  }
+  return true;
+}
+
 function lojaFechadaV18(){
   return estadoLojaV16 && estadoLojaV16.open===false;
 }
@@ -297,8 +366,11 @@ function renderCarrinhoModal(){
 $("confirmarProdutoV7").onclick=confirmarProduto;
 $("fecharProdutoV7").onclick=()=>$("modalProdutoV7").classList.remove("ativo");
 $("continuarComprandoV7").onclick=()=>$("modalDepoisAdicionarV7").classList.remove("ativo");
-$("finalizarPedidoV7").onclick=()=>{
+$("finalizarPedidoV7").onclick=async()=>{
+  await atualizarEstadoLojaAntesDeFinalizarV20();
   if(lojaFechadaV18()){avisarLojaFechadaV18();return}
+  if(!confirmarChapeuApos22V22())return;
+  if(!validarSomenteRetiradaAntesFinalizarV20())return;
   if(!validarItemPrincipalV15())return;
   localStorage.setItem("bb_tipo_pedido",tipoPedido);
   location.href="/checkout.html";
@@ -306,8 +378,11 @@ $("finalizarPedidoV7").onclick=()=>{
 $("verPedidoV7").onclick=()=>{renderCarrinhoModal();$("modalCarrinhoV7").classList.add("ativo")};
 $("fecharCarrinhoV7").onclick=()=>$("modalCarrinhoV7").classList.remove("ativo");
 $("continuarCarrinhoV7").onclick=()=>$("modalCarrinhoV7").classList.remove("ativo");
-$("finalizarCarrinhoV7").onclick=()=>{
+$("finalizarCarrinhoV7").onclick=async()=>{
+  await atualizarEstadoLojaAntesDeFinalizarV20();
   if(lojaFechadaV18()){avisarLojaFechadaV18();return}
+  if(!confirmarChapeuApos22V22())return;
+  if(!validarSomenteRetiradaAntesFinalizarV20())return;
   if(!validarItemPrincipalV15())return;
   location.href="/checkout.html";
 };
