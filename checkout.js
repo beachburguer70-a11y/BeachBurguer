@@ -275,7 +275,7 @@ async function preencherClienteCheckoutV16(){
     const addresses=Array.isArray(data?.addresses)?data.addresses:[];
     if(!r.ok||!data?.ok||(!c&&!addresses.length))return;
 
-    if($("nomeCheckout") && !$("nomeCheckout").value.trim()) $("nomeCheckout").value=c?.nome||"";
+    if($("nomeCheckout") && c?.nome) $("nomeCheckout").value=c.nome;
     if(tipoPedido!=="Entrega")return;
 
     if(addresses.length){
@@ -580,6 +580,8 @@ try{
 
 $("telefoneCheckout").addEventListener("input",e=>{
   e.target.value=telefoneFormat(e.target.value);
+  const tel=normalizarTelefoneV16(e.target.value);
+  if(tel.length<10)telefoneConsultadoV25="";
   preencherClienteCheckoutV16();
 });
 $("novoEnderecoV30")?.addEventListener("click",novoEnderecoV30);

@@ -247,7 +247,57 @@ export async function onRequestGet({ request, env }) {
     if(customerPhone){
       if(customerPhone.length!==10&&customerPhone.length!==11)return json({ok:false,error:"Telefone inválido."},400);
       const rows=await supabaseRequest(env,`customers?select=telefone,nome,endereco,numero,sem_numero,bairro,referencia,updated_at&telefone=eq.${customerPhone}&limit=1`);
-      const customer=Array.isArray(rows)?(rows[0]||null):null;
+      let customer=Array.isArray(rows)?(rows[0]||null):null;
+
+      // V30.2: clientes que já fizeram pedido (inclusive hoje) precisam ser
+      // reconhecidos imediatamente, mesmo que ainda não exista linha em customers.
+      // O último pedido do telefone vira o fallback do cadastro.
+      let latestOrder=null;
+      try{
+        const latest=await supabaseRequest(
+          env,
+          `orders?select=id,cliente,telefone,endereco,bairro,referencia,created_at,tipo&telefone=eq.${customerPhone}&order=created_at.desc&limit=1`
+        );
+        latestOrder=Array.isArray(latest)?(latest[0]||null):null;
+      }catch(e){
+        console.warn("Último pedido do cliente:",e?.message||e);
+      }
+
+      const separarEnderecoNumero=v=>{
+        const s=String(v||"").trim();
+        if(!s)return {endereco:"",numero:"",sem_numero:false};
+        if(/,\s*s\/?n$/i.test(s)){
+          return {endereco:s.replace(/,\s*s\/?n$/i,"").trim(),numero:"",sem_numero:true};
+        }
+        const m=s.match(/^(.*?),\s*(?:n[ºo°]?\s*)?([^,]+)$/i);
+        if(m){
+          return {endereco:String(m[1]||"").trim(),numero:String(m[2]||"").trim(),sem_numero:false};
+        }
+        return {endereco:s,numero:"",sem_numero:false};
+      };
+
+      if(!customer && latestOrder){
+        const pe=separarEnderecoNumero(latestOrder.endereco);
+        customer={
+          telefone:customerPhone,
+          nome:String(latestOrder.cliente||"").trim(),
+          endereco:pe.endereco,
+          numero:pe.numero,
+          sem_numero:pe.sem_numero,
+          bairro:String(latestOrder.bairro||"").trim(),
+          referencia:String(latestOrder.referencia||"").trim(),
+          updated_at:latestOrder.created_at
+        };
+      }else if(customer && latestOrder){
+        // Se o cadastro antigo estiver incompleto, completa com o último pedido.
+        const pe=separarEnderecoNumero(latestOrder.endereco);
+        if(!String(customer.nome||"").trim())customer.nome=String(latestOrder.cliente||"").trim();
+        if(!String(customer.endereco||"").trim())customer.endereco=pe.endereco;
+        if(!String(customer.numero||"").trim() && pe.numero)customer.numero=pe.numero;
+        if(!customer.sem_numero && pe.sem_numero)customer.sem_numero=true;
+        if(!String(customer.bairro||"").trim())customer.bairro=String(latestOrder.bairro||"").trim();
+        if(!String(customer.referencia||"").trim())customer.referencia=String(latestOrder.referencia||"").trim();
+      }
 
       let addresses=[];
       try{
@@ -266,6 +316,20 @@ export async function onRequestGet({ request, env }) {
           env,
           `orders?select=cliente,telefone,endereco,bairro,referencia,created_at,tipo&telefone=eq.${customerPhone}&tipo=eq.Entrega&order=created_at.desc&limit=50`
         ) || [];
+        if(!customer && historico.length){
+          const ultimo=historico[0];
+          const pe=separarEnderecoNumero(ultimo.endereco);
+          customer={
+            telefone:customerPhone,
+            nome:String(ultimo.cliente||"").trim(),
+            endereco:pe.endereco,
+            numero:pe.numero,
+            sem_numero:pe.sem_numero,
+            bairro:String(ultimo.bairro||"").trim(),
+            referencia:String(ultimo.referencia||"").trim(),
+            updated_at:ultimo.created_at
+          };
+        }
         const normal=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/\s+/g," ");
         const parseEnderecoCompleto=v=>{
           const s=String(v||"").trim();
