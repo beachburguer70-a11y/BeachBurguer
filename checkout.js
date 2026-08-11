@@ -213,6 +213,56 @@ function salvarClienteCheckoutV16(){
   localStorage.setItem("bb_clientes",JSON.stringify(clientes));
 }
 let telefoneConsultadoV25="";
+let enderecosClienteV30=[];
+
+function aplicarEnderecoV30(a){
+  $("enderecoCheckout").value=a?.endereco||"";
+  $("numeroCheckout").value=a?.numero||"";
+  $("semNumeroCheckout").checked=Boolean(a?.sem_numero);
+  $("numeroCheckout").disabled=Boolean(a?.sem_numero);
+  $("bairroCheckout").value=a?.bairro||"";
+  $("referenciaCheckout").value=a?.referencia||"";
+  atualizarTudo();
+}
+
+function novoEnderecoV30(){
+  $("enderecoCheckout").value="";
+  $("numeroCheckout").value="";
+  $("semNumeroCheckout").checked=false;
+  $("numeroCheckout").disabled=false;
+  $("bairroCheckout").value="";
+  $("referenciaCheckout").value="";
+  $("modalEnderecosV30")?.classList.remove("ativo");
+  $("enderecoCheckout")?.focus();
+  atualizarTudo();
+}
+
+function mostrarEnderecosV30(c,addresses){
+  const lista=(addresses||[]).filter(a=>a&&a.endereco&&a.bairro);
+  enderecosClienteV30=lista;
+  if(!lista.length)return;
+
+  if($("saudacaoEnderecosV30"))$("saudacaoEnderecosV30").textContent=
+    `Olá${c?.nome?", "+c.nome:""}! Selecione um endereço salvo ou use um novo.`;
+
+  $("listaEnderecosV30").innerHTML=lista.map((a,i)=>{
+    const numero=a.sem_numero?"s/n":(a.numero?`nº ${a.numero}`:"número pendente");
+    const ref=a.referencia?`<small style="display:block;opacity:.72;margin-top:3px">Ref.: ${String(a.referencia).replace(/[<>&"]/g,"")}</small>`:"";
+    return `<button type="button" class="btn btn-escuro endereco-salvo-v30" data-i="${i}" style="text-align:left;padding:14px">
+      <strong>${String(a.endereco).replace(/[<>&"]/g,"")} — ${numero}</strong>
+      <span style="display:block;margin-top:3px">${String(a.bairro).replace(/[<>&"]/g,"")}</span>${ref}
+    </button>`;
+  }).join("");
+
+  document.querySelectorAll(".endereco-salvo-v30").forEach(b=>b.onclick=()=>{
+    aplicarEnderecoV30(enderecosClienteV30[Number(b.dataset.i)]);
+    $("modalEnderecosV30")?.classList.remove("ativo");
+    // Endereço legado sem número: mantém o mesmo endereço e exige completar o número na finalização.
+    if(!$("semNumeroCheckout").checked && !$("numeroCheckout").value.trim())$("numeroCheckout")?.focus();
+  });
+  $("modalEnderecosV30")?.classList.add("ativo");
+}
+
 async function preencherClienteCheckoutV16(){
   const tel=normalizarTelefoneV16($("telefoneCheckout")?.value);
   if(tel.length!==10 && tel.length!==11)return;
@@ -222,26 +272,17 @@ async function preencherClienteCheckoutV16(){
     const r=await fetch(`/api/orders?customer_phone=${encodeURIComponent(tel)}`,{cache:"no-store"});
     const data=await r.json();
     const c=data?.customer;
-    if(!r.ok||!data?.ok||!c)return;
-    if($("nomeCheckout") && !$("nomeCheckout").value.trim()) $("nomeCheckout").value=c.nome||"";
+    const addresses=Array.isArray(data?.addresses)?data.addresses:[];
+    if(!r.ok||!data?.ok||(!c&&!addresses.length))return;
+
+    if($("nomeCheckout") && !$("nomeCheckout").value.trim()) $("nomeCheckout").value=c?.nome||"";
     if(tipoPedido!=="Entrega")return;
-    const mesmo=confirm(`Olá${c.nome?", "+c.nome:""}! Deseja entregar no mesmo endereço do último pedido?`);
-    if(mesmo){
-      $("enderecoCheckout").value=c.endereco||"";
-      $("numeroCheckout").value=c.numero||"";
-      $("semNumeroCheckout").checked=Boolean(c.sem_numero);
-      $("numeroCheckout").disabled=Boolean(c.sem_numero);
-      $("bairroCheckout").value=c.bairro||"";
-      $("referenciaCheckout").value=c.referencia||"";
-    }else{
-      $("enderecoCheckout").value="";
-      $("numeroCheckout").value="";
-      $("semNumeroCheckout").checked=false;
-      $("numeroCheckout").disabled=false;
-      $("bairroCheckout").value="";
-      $("referenciaCheckout").value="";
+
+    if(addresses.length){
+      mostrarEnderecosV30(c,addresses);
+    }else if(c?.endereco){
+      mostrarEnderecosV30(c,[c]);
     }
-    atualizarTudo();
   }catch(e){console.warn("Cliente por telefone:",e);}
 }
 
@@ -540,6 +581,10 @@ try{
 $("telefoneCheckout").addEventListener("input",e=>{
   e.target.value=telefoneFormat(e.target.value);
   preencherClienteCheckoutV16();
+});
+$("novoEnderecoV30")?.addEventListener("click",novoEnderecoV30);
+$("modalEnderecosV30")?.addEventListener("click",e=>{
+  if(e.target.id==="modalEnderecosV30")e.currentTarget.classList.remove("ativo");
 });
 $("semNumeroCheckout")?.addEventListener("change",e=>{
   $("numeroCheckout").disabled=e.target.checked;

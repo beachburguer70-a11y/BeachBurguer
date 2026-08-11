@@ -122,7 +122,7 @@
     }
   .produto.resultado-selecionado-v25{outline:3px solid #ffb800;outline-offset:2px}
   </style>
-  <script defer src="garcom.js?v=8270"></script>
+  <script defer src="garcom.js?v=8290"></script>
 
 <style>
 .resultados-pesquisa-garcom-v27{
@@ -142,6 +142,25 @@
 .resultado-pesquisa-v27 small{opacity:.75}
 .resultado-pesquisa-v27 strong:last-child{white-space:nowrap}
 .resultado-pesquisa-v27:disabled{opacity:.45;cursor:not-allowed}
+</style>
+
+<style id="menu-garcom-v29">
+/* V29 - categorias do Garçom: 3 em cima e 3 embaixo */
+#abasGarcom{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:8px !important;
+}
+#abasGarcom .aba{
+  width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  text-align:center !important;
+}
+@media(max-width:480px){
+  #abasGarcom{grid-template-columns:repeat(3,minmax(0,1fr)) !important}
+  #abasGarcom .aba{font-size:12px !important;padding-left:5px !important;padding-right:5px !important}
+}
 </style>
 </head>
 <body>

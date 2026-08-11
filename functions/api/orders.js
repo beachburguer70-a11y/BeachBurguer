@@ -246,8 +246,58 @@ export async function onRequestGet({ request, env }) {
     const customerPhone=String(url.searchParams.get("customer_phone")||"").replace(/\D/g,"");
     if(customerPhone){
       if(customerPhone.length!==10&&customerPhone.length!==11)return json({ok:false,error:"Telefone inválido."},400);
-      const rows=await supabaseRequest(env,`customers?select=telefone,nome,endereco,numero,sem_numero,bairro,referencia&telefone=eq.${customerPhone}&limit=1`);
-      return json({ok:true,customer:Array.isArray(rows)?(rows[0]||null):null});
+      const rows=await supabaseRequest(env,`customers?select=telefone,nome,endereco,numero,sem_numero,bairro,referencia,updated_at&telefone=eq.${customerPhone}&limit=1`);
+      const customer=Array.isArray(rows)?(rows[0]||null):null;
+
+      let addresses=[];
+      try{
+        addresses=await supabaseRequest(
+          env,
+          `customer_addresses?select=id,telefone,endereco,numero,sem_numero,bairro,referencia,updated_at&telefone=eq.${customerPhone}&order=updated_at.desc`
+        ) || [];
+      }catch(e){
+        console.warn("customer_addresses ainda não disponível:",e?.message||e);
+      }
+
+      // Compatibilidade imediata: pedidos antigos/feitos hoje também entram na seleção,
+      // mesmo antes de terem sido migrados para customer_addresses.
+      try{
+        const historico=await supabaseRequest(
+          env,
+          `orders?select=cliente,telefone,endereco,bairro,referencia,created_at,tipo&telefone=eq.${customerPhone}&tipo=eq.Entrega&order=created_at.desc&limit=50`
+        ) || [];
+        const normal=s=>String(s||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().trim().replace(/\\s+/g," ");
+        const parseEnderecoCompleto=v=>{
+          const s=String(v||"").trim();
+          const m=s.match(/^(.*?)(?:,\\s*(?:n[ºo°]?\\s*)?([^,]+)|,\\s*s\\/?n)$/i);
+          if(!m)return {endereco:s,numero:"",sem_numero:false};
+          const sem=/,\\s*s\\/?n$/i.test(s);
+          return {endereco:String(m[1]||s).trim(),numero:sem?"":String(m[2]||"").trim(),sem_numero:sem};
+        };
+        for(const ped of historico){
+          const p=parseEnderecoCompleto(ped.endereco);
+          const candidato={endereco:p.endereco,numero:p.numero,sem_numero:p.sem_numero,bairro:ped.bairro||"",referencia:ped.referencia||"",updated_at:ped.created_at};
+          const key=normal(candidato.endereco)+"|"+normal(candidato.bairro);
+          const existente=addresses.find(a=>normal(a.endereco)+"|"+normal(a.bairro)===key);
+          if(!existente)addresses.push(candidato);
+          else if(!String(existente.numero||"").trim() && candidato.numero){
+            existente.numero=candidato.numero; existente.sem_numero=false;
+          }
+        }
+      }catch(e){console.warn("Histórico de endereços:",e?.message||e);}
+
+      if(customer && customer.endereco){
+        const normal=s=>String(s||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().trim().replace(/\\s+/g," ");
+        const key=normal(customer.endereco)+"|"+normal(customer.bairro);
+        if(!addresses.some(a=>normal(a.endereco)+"|"+normal(a.bairro)===key)){
+          addresses.unshift({
+            endereco:customer.endereco,numero:customer.numero||"",sem_numero:Boolean(customer.sem_numero),
+            bairro:customer.bairro||"",referencia:customer.referencia||"",updated_at:customer.updated_at
+          });
+        }
+      }
+
+      return json({ok:true,customer,addresses});
     }
     const phone=String(url.searchParams.get("phone")||"").replace(/\D/g,"");
     if(phone){
@@ -399,7 +449,35 @@ export async function onRequestPost({ request, env }) {
             headers:{ Prefer:"resolution=merge-duplicates,return=minimal" },
             body:JSON.stringify(customer)
           }
-        );      }
+        );
+
+        // V30: histórico permanente de endereços. Rua + localidade identificam o endereço.
+        // Se antes faltava número, informar o número atualiza o mesmo registro em vez de duplicar.
+        if(String(body.tipo)==="Entrega" && customer.endereco && customer.bairro){
+          const normal=s=>String(s||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().trim().replace(/\\s+/g," ");
+          const addressKey=normal(customer.endereco)+"|"+normal(customer.bairro);
+          try{
+            await supabaseRequest(
+              env,
+              "customer_addresses?on_conflict=telefone,address_key",
+              {
+                method:"POST",
+                headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
+                body:JSON.stringify({
+                  telefone,
+                  address_key:addressKey,
+                  endereco:customer.endereco,
+                  numero:customer.numero,
+                  sem_numero:customer.sem_numero,
+                  bairro:customer.bairro,
+                  referencia:customer.referencia,
+                  updated_at:new Date().toISOString()
+                })
+              }
+            );
+          }catch(e){console.warn("Não foi possível salvar histórico de endereço:",e?.message||e);}
+        }
+      }
 
 
       return json({ ok:true, order:saved });

@@ -551,6 +551,15 @@ function abrirProdutoGarcom(id){
   produtoSelecionado=dados.produtos.find(p=>p.id===id);
   if(!produtoSelecionado||produtoSelecionado.disponivel===false)return;
 
+  // V29 - prepara a pesquisa para o próximo item assim que este produto abre.
+  pesquisaProdutoGarcom="";
+  indicePesquisaGarcomV25=0;
+  if($("pesquisaProdutoGarcom"))$("pesquisaProdutoGarcom").value="";
+  if($("resultadosPesquisaGarcomV27")){
+    $("resultadosPesquisaGarcomV27").innerHTML="";
+    $("resultadosPesquisaGarcomV27").classList.add("hidden");
+  }
+
   $("produtoNomeGarcom").textContent=produtoSelecionado.nome;
   $("produtoDescricaoGarcom").textContent=produtoSelecionado.descricao;
   $("produtoPrecoGarcom").textContent=moeda(produtoSelecionado.preco);
@@ -809,6 +818,31 @@ $("novoPedido").onclick=()=>{if(!carrinho.length||confirm("Limpar o pedido atual
 $("fecharProdutoGarcom").onclick=()=>$("modalProdutoGarcom").classList.remove("ativo");
 $("modalProdutoGarcom").onclick=e=>{if(e.target.id==="modalProdutoGarcom")$("modalProdutoGarcom").classList.remove("ativo")};
 $("confirmarProdutoGarcom").onclick=adicionarProduto;
+
+// V28 - após selecionar um produto pela pesquisa, Enter também confirma
+// o botão "Adicionar ao pedido". Em observações, Enter continua criando
+// uma nova linha normalmente para não atrapalhar a digitação.
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Enter" || e.repeat)return;
+
+  const modal=$("modalProdutoGarcom");
+  if(!modal || !modal.classList.contains("ativo"))return;
+
+  const alvo=e.target;
+  if(alvo && (alvo.tagName==="TEXTAREA" || alvo.isContentEditable))return;
+
+  // Não interfere em caixas de diálogo/controles que possam estar
+  // sendo exibidos pelo fluxo de adicionais por quantidade.
+  const dialogoAberto=document.querySelector("dialog[open], .modal.ativo:not(#modalProdutoGarcom)");
+  if(dialogoAberto)return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  const botao=$("confirmarProdutoGarcom");
+  if(botao && !botao.disabled)botao.click();
+},true);
+
 $("enviarGarcom").onclick=enviarPedido;
 
 document.querySelectorAll(".tipo-btn").forEach(btn=>btn.onclick=()=>{
