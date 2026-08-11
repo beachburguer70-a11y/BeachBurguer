@@ -122,6 +122,7 @@ async function entrar(){
     renderTudo();
     iniciarMonitorPedidosGarcom();
     iniciarMonitorHorarioGarcom();
+    atualizarClientesOnlineGarcomV27();
   }catch(e){
     alert("Senha incorreta ou conexão indisponível.");
   }
@@ -835,23 +836,103 @@ $("atualizarPedidosGarcom").onclick=carregarPedidosParaEditar;
 $("modalEditarPedidoGarcom").onclick=e=>{if(e.target.id==="modalEditarPedidoGarcom")$("modalEditarPedidoGarcom").classList.remove("ativo")};
 
 
-// V8.39 - pesquisa rápida de itens no cardápio do garçom
+
+function resultadosPesquisaGarcomV27(){
+  const termo=String(pesquisaProdutoGarcom||"").trim().toLowerCase();
+  if(!termo)return [];
+  return dados.produtos.filter(p=>{
+    if(!p.ativo)return false;
+    const texto=`${p.nome||""} ${p.descricao||""} ${p.categoria||""}`.toLowerCase();
+    return texto.includes(termo);
+  }).slice(0,12);
+}
+
+function renderAutocompleteGarcomV27(){
+  const box=$("resultadosPesquisaGarcomV27");
+  if(!box)return;
+
+  const termo=String(pesquisaProdutoGarcom||"").trim();
+  if(!termo){
+    box.innerHTML="";
+    box.classList.add("hidden");
+    return;
+  }
+
+  const lista=resultadosPesquisaGarcomV27();
+  if(indicePesquisaGarcomV25>=lista.length)indicePesquisaGarcomV25=0;
+
+  if(!lista.length){
+    box.innerHTML='<div style="padding:12px 14px;color:#bbb">Nenhum item encontrado.</div>';
+    box.classList.remove("hidden");
+    return;
+  }
+
+  box.innerHTML=lista.map((p,idx)=>`
+    <button type="button"
+      class="resultado-pesquisa-v27 ${idx===indicePesquisaGarcomV25?"ativo":""}"
+      data-produto-id="${p.id}" ${p.disponivel===false?"disabled":""}>
+      <span class="rp-info">
+        <strong>${esc(p.nome)}</strong>
+        <small>${esc(p.categoria)}${p.disponivel===false?" • ESGOTADO":""}</small>
+      </span>
+      <strong>${moeda(p.preco)}</strong>
+    </button>`).join("");
+
+  box.classList.remove("hidden");
+
+  box.querySelectorAll(".resultado-pesquisa-v27[data-produto-id]").forEach(btn=>{
+    btn.onclick=()=>{
+      if(btn.disabled)return;
+      abrirProdutoGarcom(Number(btn.dataset.produtoId));
+    };
+  });
+
+  box.querySelector(".resultado-pesquisa-v27.ativo")?.scrollIntoView({block:"nearest"});
+}
+
+// V27 - autocomplete do Garçom: digitar, ↑/↓ e Enter
 if($("pesquisaProdutoGarcom")){
   $("pesquisaProdutoGarcom").addEventListener("input",e=>{
     pesquisaProdutoGarcom=e.target.value||"";
     indicePesquisaGarcomV25=0;
-    renderProdutos();
+    renderAutocompleteGarcomV27();
+  });
+
+  $("pesquisaProdutoGarcom").addEventListener("focus",()=>{
+    renderAutocompleteGarcomV27();
   });
 
   $("pesquisaProdutoGarcom").addEventListener("keydown",e=>{
-    const cards=[...document.querySelectorAll("#produtosGarcom .produto[data-produto-id]")].filter(x=>!x.classList.contains("produto-esgotado"));
-    if(e.key==="ArrowDown"&&cards.length){e.preventDefault();indicePesquisaGarcomV25=(indicePesquisaGarcomV25+1)%cards.length;renderProdutos();}
-    else if(e.key==="ArrowUp"&&cards.length){e.preventDefault();indicePesquisaGarcomV25=(indicePesquisaGarcomV25-1+cards.length)%cards.length;renderProdutos();}
-    else if(e.key==="Enter"&&cards.length&&pesquisaProdutoGarcom.trim()){
-      e.preventDefault(); const atual=[...document.querySelectorAll("#produtosGarcom .produto[data-produto-id]")].filter(x=>!x.classList.contains("produto-esgotado"))[indicePesquisaGarcomV25]||cards[0];
-      if(atual)abrirProdutoGarcom(Number(atual.dataset.produtoId));
+    const lista=resultadosPesquisaGarcomV27();
+    const disponiveis=lista.map((p,i)=>({p,i})).filter(x=>x.p.disponivel!==false);
+
+    if(e.key==="ArrowDown"&&lista.length){
+      e.preventDefault();
+      indicePesquisaGarcomV25=(indicePesquisaGarcomV25+1)%lista.length;
+      // pula esgotados
+      let tentativas=0;
+      while(lista[indicePesquisaGarcomV25]?.disponivel===false && tentativas<lista.length){
+        indicePesquisaGarcomV25=(indicePesquisaGarcomV25+1)%lista.length;tentativas++;
+      }
+      renderAutocompleteGarcomV27();
+    }else if(e.key==="ArrowUp"&&lista.length){
+      e.preventDefault();
+      indicePesquisaGarcomV25=(indicePesquisaGarcomV25-1+lista.length)%lista.length;
+      let tentativas=0;
+      while(lista[indicePesquisaGarcomV25]?.disponivel===false && tentativas<lista.length){
+        indicePesquisaGarcomV25=(indicePesquisaGarcomV25-1+lista.length)%lista.length;tentativas++;
+      }
+      renderAutocompleteGarcomV27();
+    }else if(e.key==="Enter"&&lista.length&&pesquisaProdutoGarcom.trim()){
+      e.preventDefault();
+      const p=lista[indicePesquisaGarcomV25]||disponiveis[0]?.p;
+      if(p&&p.disponivel!==false)abrirProdutoGarcom(Number(p.id));
     }else if(e.key==="Escape"){
-      e.target.value=""; pesquisaProdutoGarcom=""; indicePesquisaGarcomV25=0; renderProdutos();
+      e.preventDefault();
+      e.target.value="";
+      pesquisaProdutoGarcom="";
+      indicePesquisaGarcomV25=0;
+      renderAutocompleteGarcomV27();
     }
   });
 }
@@ -859,11 +940,18 @@ if($("pesquisaProdutoGarcom")){
 if($("limparPesquisaGarcom")){
   $("limparPesquisaGarcom").onclick=()=>{
     pesquisaProdutoGarcom="";
+    indicePesquisaGarcomV25=0;
     $("pesquisaProdutoGarcom").value="";
-    renderProdutos();
+    renderAutocompleteGarcomV27();
     $("pesquisaProdutoGarcom").focus();
   };
 }
+
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".pesquisa-garcom-v27")){
+    $("resultadosPesquisaGarcomV27")?.classList.add("hidden");
+  }
+});
 
 $("valorEntregaGarcom").addEventListener("input",()=>{renderCarrinho();atualizarTrocoCalculadoGarcom()});
 $("trocoGarcom").addEventListener("input",atualizarTrocoCalculadoGarcom);
@@ -876,7 +964,16 @@ document.addEventListener("visibilitychange",()=>{
 
 
 // V25 - contador de clientes online
-async function atualizarClientesOnlineGarcomV25(){
- try{const r=await fetch("/api/presence",{headers:{"X-Store-Token":token},cache:"no-store"});const d=await r.json();if(d.ok&&$("clientesOnlineGarcom"))$("clientesOnlineGarcom").textContent=`🟢 Clientes online: ${d.online}`;}catch{}
+async function atualizarClientesOnlineGarcomV27(){
+  const el=$("clientesOnlineGarcom");
+  try{
+    const r=await fetch("/api/presence",{headers:{"X-Store-Token":token},cache:"no-store"});
+    const d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||"Erro");
+    if(el)el.textContent=`🟢 Clientes online: ${Number(d.online||0)}`;
+  }catch(e){
+    if(el)el.textContent="🟢 Clientes online: 0";
+    console.warn("Contador online:",e.message);
+  }
 }
-setInterval(()=>{if(token)atualizarClientesOnlineGarcomV25();},5000);
+setInterval(()=>{if(token)atualizarClientesOnlineGarcomV27();},3000);

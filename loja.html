@@ -49,7 +49,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 <div id="app" class="hidden">
 <header>
   <div class="container top">
-    <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small><br><strong id="clientesOnlineLoja" style="color:#8ee59a">🟢 Clientes online: --</strong></div></div>
+    <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small><br><strong id="clientesOnlineLoja" style="color:#8ee59a">🟢 Clientes online: 0</strong></div></div>
     <div class="controls">
       <a href="/relatorios" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
       <button id="horariosBtn" class="btn dark">🕒 Horários</button>
@@ -227,6 +227,7 @@ async function entrar(){
     $("app").classList.remove("hidden");
     if(intervalo)clearInterval(intervalo);
     await carregarConfigLoja();
+    await atualizarClientesOnlineLojaV27();
     intervalo=setInterval(carregarPedidos,3000);
     setInterval(carregarConfigLoja,30000);
   }catch(e){alert("Senha incorreta ou conexão indisponível.");}
@@ -308,10 +309,20 @@ async function imprimirPorId(id){
   }
 }
 
-async function atualizarClientesOnlineLojaV25(){
-  try{if(!token)return;const r=await fetch("/api/presence",{headers:{"X-Store-Token":token},cache:"no-store"});const d=await r.json();if(d.ok&&$("clientesOnlineLoja"))$("clientesOnlineLoja").textContent=`🟢 Clientes online: ${d.online}`;}catch{}
+async function atualizarClientesOnlineLojaV27(){
+  const el=$("clientesOnlineLoja");
+  if(!token)return;
+  try{
+    const r=await fetch("/api/presence",{headers:{"X-Store-Token":token},cache:"no-store"});
+    const d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||"Erro");
+    if(el)el.textContent=`🟢 Clientes online: ${Number(d.online||0)}`;
+  }catch(e){
+    if(el)el.textContent="🟢 Clientes online: 0";
+    console.warn("Contador online:",e.message);
+  }
 }
-setInterval(atualizarClientesOnlineLojaV25,5000);
+setInterval(atualizarClientesOnlineLojaV27,3000);
 </script>
 </body>
 </html>

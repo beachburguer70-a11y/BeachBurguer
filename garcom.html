@@ -122,7 +122,27 @@
     }
   .produto.resultado-selecionado-v25{outline:3px solid #ffb800;outline-offset:2px}
   </style>
-  <script defer src="garcom.js?v=900"></script>
+  <script defer src="garcom.js?v=8270"></script>
+
+<style>
+.resultados-pesquisa-garcom-v27{
+  position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5000;
+  background:#121212;border:1px solid #555;border-radius:12px;
+  box-shadow:0 14px 35px rgba(0,0,0,.55);max-height:360px;overflow:auto;
+}
+.resultados-pesquisa-garcom-v27.hidden{display:none}
+.resultado-pesquisa-v27{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 14px;border:0;border-bottom:1px solid #292929;background:#121212;
+  color:#fff;text-align:left;cursor:pointer;
+}
+.resultado-pesquisa-v27:last-child{border-bottom:0}
+.resultado-pesquisa-v27:hover,.resultado-pesquisa-v27.ativo{background:#ffb800;color:#111}
+.resultado-pesquisa-v27 .rp-info{display:flex;flex-direction:column;gap:2px}
+.resultado-pesquisa-v27 small{opacity:.75}
+.resultado-pesquisa-v27 strong:last-child{white-space:nowrap}
+.resultado-pesquisa-v27:disabled{opacity:.45;cursor:not-allowed}
+</style>
 </head>
 <body>
 <div id="loginGarcom" class="login-garcom">
@@ -158,11 +178,12 @@
   <div class="garcom-layout">
     <section>
       <div class="garcom-card">
-        <div class="pesquisa-garcom" style="margin-bottom:18px">
+        <div class="pesquisa-garcom pesquisa-garcom-v27" style="margin-bottom:6px;position:relative">
           <input id="pesquisaProdutoGarcom" type="search" placeholder="🔎 Pesquisar item pelo nome..." autocomplete="off">
           <button id="limparPesquisaGarcom" type="button" class="btn btn-escuro">Limpar</button>
+          <div id="resultadosPesquisaGarcomV27" class="resultados-pesquisa-garcom-v27 hidden"></div>
         </div>
-        <div id="clientesOnlineGarcom" style="margin-bottom:12px;color:#8ee59a;font-weight:900">🟢 Clientes online: --</div>
+        <div id="clientesOnlineGarcom" style="margin-bottom:12px;color:#8ee59a;font-weight:900">🟢 Clientes online: 0</div>
         <h2>Dados do pedido</h2>
 
         <div class="tipo-presencial">

@@ -1051,8 +1051,18 @@ $("irFinalizar").onclick=()=>{
 };
 
 $("telefone").addEventListener("input",e=>e.target.value=formatarTelefone(e.target.value));
-$("telefone").addEventListener("blur",preencherClientePeloTelefone);
-$("telefone").addEventListener("change",preencherClientePeloTelefone);
+$("telefone").addEventListener("blur",async e=>{
+  await preencherClientePeloTelefone();
+  if("Notification" in window && Notification.permission==="granted"){
+    vincularPushAoTelefone(e.target.value).catch(()=>{});
+  }
+});
+$("telefone").addEventListener("change",async e=>{
+  await preencherClientePeloTelefone();
+  if("Notification" in window && Notification.permission==="granted"){
+    vincularPushAoTelefone(e.target.value).catch(()=>{});
+  }
+});
 ["nome","endereco","bairro","referencia"].forEach(id=>{$(id).addEventListener("input",()=>{if(pixPaymentId)resetarConfirmacaoPix()})});
 
 $("fecharProduto").onclick=()=>$("modalProduto").classList.remove("ativo");
@@ -1093,7 +1103,7 @@ window.alterarQtd=alterarQtd;
 window.removerItem=removerItem;
 window.addEventListener("load",iniciar);
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js?v=842",{updateViaCache:"none"})
+  navigator.serviceWorker.register("sw.js?v=8270",{updateViaCache:"none"})
     .then(reg=>reg.update())
     .catch(()=>{});
 }
@@ -1170,6 +1180,12 @@ function configurarNotificacaoNaEntrada(){
 
   const jaDispensou=sessionStorage.getItem("bb_notificacao_entrada_dispensada")==="1";
 
+  // V27: o aviso próprio aparece logo que o cliente entra no site.
+  // A caixa nativa do navegador só pode ser aberta após o clique em "Permitir notificações".
+  if(!jaDispensou && "Notification" in window && Notification.permission==="default"){
+    setTimeout(()=>modal.classList.add("ativo"),350);
+  }
+
   btn.onclick=async()=>{
     try{
       const permissao=await Notification.requestPermission();
@@ -1177,7 +1193,12 @@ function configurarNotificacaoNaEntrada(){
 
       if(permissao==="granted"){
         localStorage.setItem("bb_notificacoes_permitidas","1");
-        await garantirAssinaturaPush();
+        try{
+          const reg=await navigator.serviceWorker.ready;
+          await reg.update();
+        }catch{}
+        const sub=await garantirAssinaturaPush();
+        if(!sub)console.warn("Permissão concedida, mas a assinatura Push não foi criada.");
       }
     }catch(e){
       console.warn("Permissão de notificação:",e);
@@ -1342,10 +1363,37 @@ window.addEventListener("pageshow",()=>{
   }
 });
 
-// V25 - presença aproximada de clientes na página de pedidos
-(function iniciarPresencaClienteV25(){
-  let id=sessionStorage.getItem("bb_presence_id");
-  if(!id){id=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random());sessionStorage.setItem("bb_presence_id",id);}
-  const ping=()=>fetch("/api/presence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session_id:id}),keepalive:true}).catch(()=>{});
-  ping(); setInterval(ping,20000);
+// V27 - presença de clientes na página de pedidos
+(function iniciarPresencaClienteV27(){
+  let id=localStorage.getItem("bb_presence_device_id");
+  if(!id){
+    id=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random());
+    localStorage.setItem("bb_presence_device_id",id);
+  }
+
+  let timer=null;
+  const ping=async()=>{
+    if(document.visibilityState!=="visible")return;
+    try{
+      await fetch("/api/presence",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({session_id:id}),
+        cache:"no-store",
+        keepalive:true
+      });
+    }catch{}
+  };
+
+  const iniciar=()=>{
+    ping();
+    if(timer)clearInterval(timer);
+    timer=setInterval(ping,15000);
+  };
+
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible")iniciar();
+  });
+
+  iniciar();
 })();
