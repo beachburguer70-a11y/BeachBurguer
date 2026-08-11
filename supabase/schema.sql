@@ -9,6 +9,8 @@ create table if not exists public.orders (
   cliente text not null,
   telefone text not null,
   endereco text not null default '',
+  numero text not null default '',
+  sem_numero boolean not null default false,
   bairro text not null default '',
   referencia text not null default '',
   localidade text not null default '',
@@ -32,6 +34,8 @@ create table if not exists public.customers (
   telefone text primary key,
   nome text not null default '',
   endereco text not null default '',
+  numero text not null default '',
+  sem_numero boolean not null default false,
   bairro text not null default '',
   referencia text not null default '',
   created_at timestamptz not null default now(),
@@ -152,3 +156,12 @@ alter table public.orders
 update public.orders
 set origem = 'cliente'
 where origem is null or origem = '';
+
+
+-- V25: presença aproximada de clientes online
+create table if not exists public.client_presence (
+  session_id text primary key,
+  last_seen timestamptz not null default now()
+);
+create index if not exists client_presence_last_seen_idx on public.client_presence(last_seen);
+alter table public.client_presence enable row level security;

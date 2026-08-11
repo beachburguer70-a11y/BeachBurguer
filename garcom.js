@@ -70,6 +70,7 @@ let produtoSelecionado=null;
 let tipoPedido="Consumir no local";
 let pagamento="A pagar";
 let pesquisaProdutoGarcom="";
+let indicePesquisaGarcomV25=0;
 let pedidosConhecidosGarcom=new Set();
 let primeiraMonitoracaoGarcom=true;
 let monitorPedidosGarcom=null;
@@ -353,8 +354,8 @@ function renderProdutos(){
     return p.categoria===categoriaAtual;
   });
 
-  $("produtosGarcom").innerHTML=lista.length?lista.map(p=>`
-    <article class="produto ${p.disponivel===false?"produto-esgotado":""}">
+  $("produtosGarcom").innerHTML=lista.length?lista.map((p,idx)=>`
+    <article class="produto ${p.disponivel===false?"produto-esgotado":""} ${termo&&idx===indicePesquisaGarcomV25?"resultado-selecionado-v25":""}" data-produto-id="${p.id}">
       <div class="icone">${icone(p.categoria)}</div>
       ${p.disponivel===false?'<span class="selo-esgotado">ESGOTADO</span>':""}
       ${termo?`<small style="color:#999;font-weight:800">${esc(p.categoria)}</small>`:""}
@@ -838,14 +839,19 @@ $("modalEditarPedidoGarcom").onclick=e=>{if(e.target.id==="modalEditarPedidoGarc
 if($("pesquisaProdutoGarcom")){
   $("pesquisaProdutoGarcom").addEventListener("input",e=>{
     pesquisaProdutoGarcom=e.target.value||"";
+    indicePesquisaGarcomV25=0;
     renderProdutos();
   });
 
   $("pesquisaProdutoGarcom").addEventListener("keydown",e=>{
-    if(e.key==="Escape"){
-      e.target.value="";
-      pesquisaProdutoGarcom="";
-      renderProdutos();
+    const cards=[...document.querySelectorAll("#produtosGarcom .produto[data-produto-id]")].filter(x=>!x.classList.contains("produto-esgotado"));
+    if(e.key==="ArrowDown"&&cards.length){e.preventDefault();indicePesquisaGarcomV25=(indicePesquisaGarcomV25+1)%cards.length;renderProdutos();}
+    else if(e.key==="ArrowUp"&&cards.length){e.preventDefault();indicePesquisaGarcomV25=(indicePesquisaGarcomV25-1+cards.length)%cards.length;renderProdutos();}
+    else if(e.key==="Enter"&&cards.length&&pesquisaProdutoGarcom.trim()){
+      e.preventDefault(); const atual=[...document.querySelectorAll("#produtosGarcom .produto[data-produto-id]")].filter(x=>!x.classList.contains("produto-esgotado"))[indicePesquisaGarcomV25]||cards[0];
+      if(atual)abrirProdutoGarcom(Number(atual.dataset.produtoId));
+    }else if(e.key==="Escape"){
+      e.target.value=""; pesquisaProdutoGarcom=""; indicePesquisaGarcomV25=0; renderProdutos();
     }
   });
 }
@@ -867,3 +873,10 @@ document.addEventListener("visibilitychange",()=>{
     carregarConfigHorarioGarcom();
   }
 });
+
+
+// V25 - contador de clientes online
+async function atualizarClientesOnlineGarcomV25(){
+ try{const r=await fetch("/api/presence",{headers:{"X-Store-Token":token},cache:"no-store"});const d=await r.json();if(d.ok&&$("clientesOnlineGarcom"))$("clientesOnlineGarcom").textContent=`🟢 Clientes online: ${d.online}`;}catch{}
+}
+setInterval(()=>{if(token)atualizarClientesOnlineGarcomV25();},5000);

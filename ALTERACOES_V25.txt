@@ -1,0 +1,19 @@
+Beach Burguer Produção V25
+
+- Cliente recorrente por telefone: pergunta se é o mesmo endereço; SIM preenche, NÃO mantém nome/telefone e limpa endereço.
+- Campo Número + opção Sem número, com validação obrigatória.
+- Cadastro do cliente continua no Supabase e agora guarda número/sem número.
+- Entregas para São João da Barra e Chapéu do Sol encerram às 22:00; após isso oferece retirada.
+- Garçom: pesquisa movida para o topo, busca instantânea, setas para navegar e Enter para adicionar.
+- Garçom: menu de categorias preserva o mesmo componente visual da página cliente.
+- Loja e Garçom: contador aproximado de clientes online (sessões ativas nos últimos 60s).
+- Push: fluxo existente preservado (service worker, assinatura e vínculo ao telefone), sem remover funcionalidades existentes.
+
+IMPORTANTE ANTES DO DEPLOY:
+Execute no Supabase SQL Editor: supabase/ATUALIZAR_V25_CLIENTE_PRESENCA.sql
+
+
+AJUSTES V26
+- Página Loja: botão Fechar loja disponível durante o expediente para fechamento manual antecipado, com confirmação.
+- O fechamento manual não altera os horários cadastrados; vale somente para o dia atual.
+- Página Cliente: quando fechada, a faixa vermelha mostra somente LOJA FECHADA e o próximo dia/horário de abertura calculado pela grade cadastrada em Horários.

@@ -102,7 +102,13 @@
     <div id="camposEntregaCheckout" class="hidden" style="margin-top:12px">
       <div class="flow-grid">
         <label>Endereço
-          <input id="enderecoCheckout" placeholder="Rua, número">
+          <input id="enderecoCheckout" placeholder="Rua / Avenida">
+        </label>
+        <label>Número *
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input id="numeroCheckout" inputmode="numeric" placeholder="Ex.: 123" style="flex:1;min-width:120px">
+            <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;font-weight:800"><input id="semNumeroCheckout" type="checkbox" style="width:auto"> Sem número</label>
+          </div>
         </label>
         <label>Bairro / Localidade
           <select id="bairroCheckout">

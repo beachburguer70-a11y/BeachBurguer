@@ -71,19 +71,19 @@ let estadoLojaCheckoutV16={open:true,pickup_only:false,mode:"open"};
 function passouDas22V22(){
   return new Date().getHours()>=22;
 }
-function bairroEhChapeuV22(){
+function bairroEntregaEncerra22V25(){
   const b=String($("bairroCheckout")?.value||"").trim().toLowerCase();
-  return b.includes("chapéu") || b.includes("chapeu");
+  return b.includes("chapéu") || b.includes("chapeu") || b.includes("são joão") || b.includes("sao joao");
 }
 function salvarBairroCheckoutV22(){
   try{localStorage.setItem("bb_bairro_checkout",$("bairroCheckout")?.value||"")}catch{}
 }
 async function validarHorarioChapeuV22(){
   salvarBairroCheckoutV22();
-  if(tipoPedido!=="Entrega" || !bairroEhChapeuV22() || !passouDas22V22())return true;
+  if(tipoPedido!=="Entrega" || !bairroEntregaEncerra22V25() || !passouDas22V22())return true;
 
   const prosseguir=confirm(
-    "Nosso horário de entregas para Chapéu do Sol finalizou às 22:00.\n\nDeseja prosseguir com o pedido para RETIRADA?\n\nOK = Prosseguir\nCancelar = Cancelar pedido"
+    "Nosso horário de entregas para São João da Barra e Chapéu do Sol finalizou às 22:00.\n\nDeseja prosseguir com o pedido para RETIRADA?\n\nOK = Prosseguir\nCancelar = Cancelar pedido"
   );
 
   if(!prosseguir)return false;
@@ -205,21 +205,44 @@ function salvarClienteCheckoutV16(){
     nome:$("nomeCheckout")?.value.trim()||"",
     telefone:$("telefoneCheckout")?.value.trim()||"",
     endereco:$("enderecoCheckout")?.value.trim()||"",
+    numero:$("numeroCheckout")?.value.trim()||"",
+    sem_numero:Boolean($("semNumeroCheckout")?.checked),
     bairro:$("bairroCheckout")?.value||"",
     referencia:$("referenciaCheckout")?.value.trim()||""
   };
   localStorage.setItem("bb_clientes",JSON.stringify(clientes));
 }
-function preencherClienteCheckoutV16(){
+let telefoneConsultadoV25="";
+async function preencherClienteCheckoutV16(){
   const tel=normalizarTelefoneV16($("telefoneCheckout")?.value);
   if(tel.length!==10 && tel.length!==11)return;
-  const c=obterClientesSalvosV16()[tel];
-  if(!c)return;
-  if($("nomeCheckout") && !$("nomeCheckout").value.trim()) $("nomeCheckout").value=c.nome||"";
-  if($("enderecoCheckout") && !$("enderecoCheckout").value.trim()) $("enderecoCheckout").value=c.endereco||"";
-  if($("bairroCheckout") && !$("bairroCheckout").value) $("bairroCheckout").value=c.bairro||"";
-  if($("referenciaCheckout") && !$("referenciaCheckout").value.trim()) $("referenciaCheckout").value=c.referencia||"";
-  atualizarTudo();
+  if(telefoneConsultadoV25===tel)return;
+  telefoneConsultadoV25=tel;
+  try{
+    const r=await fetch(`/api/orders?customer_phone=${encodeURIComponent(tel)}`,{cache:"no-store"});
+    const data=await r.json();
+    const c=data?.customer;
+    if(!r.ok||!data?.ok||!c)return;
+    if($("nomeCheckout") && !$("nomeCheckout").value.trim()) $("nomeCheckout").value=c.nome||"";
+    if(tipoPedido!=="Entrega")return;
+    const mesmo=confirm(`Olá${c.nome?", "+c.nome:""}! Deseja entregar no mesmo endereço do último pedido?`);
+    if(mesmo){
+      $("enderecoCheckout").value=c.endereco||"";
+      $("numeroCheckout").value=c.numero||"";
+      $("semNumeroCheckout").checked=Boolean(c.sem_numero);
+      $("numeroCheckout").disabled=Boolean(c.sem_numero);
+      $("bairroCheckout").value=c.bairro||"";
+      $("referenciaCheckout").value=c.referencia||"";
+    }else{
+      $("enderecoCheckout").value="";
+      $("numeroCheckout").value="";
+      $("semNumeroCheckout").checked=false;
+      $("numeroCheckout").disabled=false;
+      $("bairroCheckout").value="";
+      $("referenciaCheckout").value="";
+    }
+    atualizarTudo();
+  }catch(e){console.warn("Cliente por telefone:",e);}
 }
 
 function parseDinheiroV10(v){
@@ -378,6 +401,7 @@ function validarDados(){
   if(!telefoneValido($("telefoneCheckout").value)){alert("Informe um telefone com DDD.");$("telefoneCheckout").focus();return false}
   if(tipoPedido==="Entrega"){
     if(!$("enderecoCheckout").value.trim()){alert("Preencha o endereço.");$("enderecoCheckout").focus();return false}
+    if(!$("semNumeroCheckout").checked && !$("numeroCheckout").value.trim()){alert("Preencha o número do endereço ou marque Sem número.");$("numeroCheckout").focus();return false}
     if(!$("bairroCheckout").value){alert("Selecione a localidade.");$("bairroCheckout").focus();return false}
   }
   if(pagamento==="Dinheiro"){
@@ -394,7 +418,10 @@ function dadosPedido(){
   return {
     cliente:$("nomeCheckout").value.trim(),
     telefone:$("telefoneCheckout").value.trim(),
-    endereco:tipoPedido==="Entrega"?$("enderecoCheckout").value.trim():"",
+    endereco:tipoPedido==="Entrega"?`${$("enderecoCheckout").value.trim()}${$("semNumeroCheckout").checked?", s/n":", nº "+$("numeroCheckout").value.trim()}`:"",
+    endereco_base:tipoPedido==="Entrega"?$("enderecoCheckout").value.trim():"",
+    numero:tipoPedido==="Entrega"?$("numeroCheckout").value.trim():"",
+    sem_numero:tipoPedido==="Entrega"?Boolean($("semNumeroCheckout").checked):false,
     bairro:tipoPedido==="Entrega"?$("bairroCheckout").value:"",
     referencia:tipoPedido==="Entrega"?$("referenciaCheckout").value.trim():"",
     localidade:tipoPedido==="Entrega"?$("bairroCheckout").value:tipoPedido,
@@ -513,6 +540,10 @@ try{
 $("telefoneCheckout").addEventListener("input",e=>{
   e.target.value=telefoneFormat(e.target.value);
   preencherClienteCheckoutV16();
+});
+$("semNumeroCheckout")?.addEventListener("change",e=>{
+  $("numeroCheckout").disabled=e.target.checked;
+  if(e.target.checked)$("numeroCheckout").value="";
 });
 $("trocoCheckout").addEventListener("input",()=>{
   atualizarCalculoTrocoV10();

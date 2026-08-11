@@ -49,11 +49,11 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 <div id="app" class="hidden">
 <header>
   <div class="container top">
-    <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small></div></div>
+    <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small><br><strong id="clientesOnlineLoja" style="color:#8ee59a">🟢 Clientes online: --</strong></div></div>
     <div class="controls">
       <a href="/relatorios" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
       <button id="horariosBtn" class="btn dark">🕒 Horários</button>
-      <button id="fecharLojaBtn" class="btn red hidden">🔴 Fechar loja</button>
+      <button id="fecharLojaBtn" class="btn red">🔴 Fechar loja</button>
       <button id="finalizarExpediente" class="btn finalizar-expediente">🌙 Finalizar expediente</button>
       <button id="somBtn" class="btn dark">🔔 Campainha ativada</button>
       <span class="badge">🖨️ Impressão automática pelo programa do Windows</span>
@@ -114,7 +114,11 @@ $("salvarHorarios").onclick=salvarHorarios;
 $("abrirHoje").onclick=async()=>{await definirModoLoja("open");alert("Loja aberta excepcionalmente hoje.")};
 $("fecharHoje").onclick=async()=>{await definirModoLoja("closed");alert("Loja fechada para hoje.")};
 $("automaticoHoje").onclick=async()=>{await definirModoLoja("auto");alert("Horário automático restaurado.")};
-$("fecharLojaBtn").onclick=async()=>{if(confirm("Fechar a loja por completo agora?")){await definirModoLoja("closed");alert("Loja fechada.")}};
+$("fecharLojaBtn").onclick=async()=>{
+  if(!confirm("Deseja realmente fechar a loja agora?\n\nOs novos pedidos serão bloqueados até o próximo horário de abertura configurado."))return;
+  await definirModoLoja("closed");
+  alert("Loja fechada.");
+};
 
 
 const NOMES_DIAS=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
@@ -131,7 +135,7 @@ function atualizarStatusLoja(){
   if(!storeConfig)return;
   const modo=storeConfig.mode;
   const txt=modo==="pickup_only"?"ABERTO SOMENTE PARA RETIRADA":modo==="open"?"LOJA ABERTA":"LOJA FECHADA";
-  $("fecharLojaBtn").classList.toggle("hidden",modo!=="pickup_only");
+  $("fecharLojaBtn").classList.toggle("hidden",storeConfig.open===false);
   if($("statusHorarioLoja"))$("statusHorarioLoja").textContent=`Status atual: ${txt}`;
 }
 function abrirModalHorarios(){
@@ -303,6 +307,11 @@ async function imprimirPorId(id){
     alert("Não foi possível enviar para reimpressão.\n\n"+erro.message);
   }
 }
+
+async function atualizarClientesOnlineLojaV25(){
+  try{if(!token)return;const r=await fetch("/api/presence",{headers:{"X-Store-Token":token},cache:"no-store"});const d=await r.json();if(d.ok&&$("clientesOnlineLoja"))$("clientesOnlineLoja").textContent=`🟢 Clientes online: ${d.online}`;}catch{}
+}
+setInterval(atualizarClientesOnlineLojaV25,5000);
 </script>
 </body>
 </html>

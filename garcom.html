@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#070707">
   <title>Beach Burguer | Garçom</title>
   <link rel="icon" href="assets/logo.png">
-  <link rel="stylesheet" href="style.css?v=844">
+  <link rel="stylesheet" href="style.css?v=900">
   <style>
     body{background:#080808}
     .garcom-topo{position:sticky;top:0;z-index:30;background:#050505;border-bottom:1px solid #262626}
@@ -120,8 +120,9 @@
       max-width:430px !important;
       z-index:30001 !important;
     }
+  .produto.resultado-selecionado-v25{outline:3px solid #ffb800;outline-offset:2px}
   </style>
-  <script defer src="garcom.js?v=854"></script>
+  <script defer src="garcom.js?v=900"></script>
 </head>
 <body>
 <div id="loginGarcom" class="login-garcom">
@@ -157,6 +158,11 @@
   <div class="garcom-layout">
     <section>
       <div class="garcom-card">
+        <div class="pesquisa-garcom" style="margin-bottom:18px">
+          <input id="pesquisaProdutoGarcom" type="search" placeholder="🔎 Pesquisar item pelo nome..." autocomplete="off">
+          <button id="limparPesquisaGarcom" type="button" class="btn btn-escuro">Limpar</button>
+        </div>
+        <div id="clientesOnlineGarcom" style="margin-bottom:12px;color:#8ee59a;font-weight:900">🟢 Clientes online: --</div>
         <h2>Dados do pedido</h2>
 
         <div class="tipo-presencial">
@@ -191,12 +197,6 @@
           <p>Escolha os itens do pedido presencial.</p>
         </div>
         
-        <div class="pesquisa-garcom">
-          <input id="pesquisaProdutoGarcom" type="search"
-                 placeholder="🔎 Pesquisar item pelo nome..."
-                 autocomplete="off">
-          <button id="limparPesquisaGarcom" type="button" class="btn btn-escuro">Limpar</button>
-        </div>
 
         <div id="abasGarcom" class="abas"></div>
         <div id="produtosGarcom" class="grade-produtos"></div>

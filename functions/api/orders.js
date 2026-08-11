@@ -169,36 +169,50 @@ function horarioSaoPaulo(){
   };
 }
 function minutos(h){const [a,b]=String(h||"00:00").split(":").map(Number);return a*60+b}
+function proximaAbertura(hours, agora){
+  const nomes=["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
+  const atual=minutos(agora.time);
+  for(let offset=0;offset<=7;offset++){
+    const dia=(agora.day+offset)%7;
+    const cfg=hours[String(dia)]||DEFAULT_OPENING_HOURS[String(dia)];
+    if(!cfg?.enabled||!cfg.open)continue;
+    if(offset===0 && minutos(cfg.open)<=atual)continue;
+    return {day:dia,day_name:nomes[dia],time:String(cfg.open),days_ahead:offset};
+  }
+  return null;
+}
+
 function calcularStatusLoja(state){
   const agora=horarioSaoPaulo();
   let hours=state?.opening_hours||DEFAULT_OPENING_HOURS;
   if(typeof hours==="string"){try{hours=JSON.parse(hours)}catch{hours=DEFAULT_OPENING_HOURS}}
   const manualDate=state?.manual_date||null;
   const manualMode=(manualDate===agora.date)?String(state?.manual_mode||"auto"):"auto";
+  const next_open=proximaAbertura(hours,agora);
 
-  if(manualMode==="closed")return {mode:"closed",open:false,pickup_only:false,now:agora,hours,manual_date:state?.manual_date||null};
-  if(manualMode==="pickup_only")return {mode:"pickup_only",open:true,pickup_only:true,now:agora,hours,manual_date:state?.manual_date||null};
-  if(manualMode==="open")return {mode:"open",open:true,pickup_only:false,now:agora,hours,manual_date:state?.manual_date||null};
+  if(manualMode==="closed")return {mode:"closed",open:false,pickup_only:false,now:agora,hours,next_open,manual_date:state?.manual_date||null};
+  if(manualMode==="pickup_only")return {mode:"pickup_only",open:true,pickup_only:true,now:agora,hours,next_open,manual_date:state?.manual_date||null};
+  if(manualMode==="open")return {mode:"open",open:true,pickup_only:false,now:agora,hours,next_open,manual_date:state?.manual_date||null};
 
   const cfg=hours[String(agora.day)]||DEFAULT_OPENING_HOURS[String(agora.day)];
-  if(!cfg?.enabled)return {mode:"closed",open:false,pickup_only:false,now:agora,hours,today:cfg,manual_date:state?.manual_date||null};
+  if(!cfg?.enabled)return {mode:"closed",open:false,pickup_only:false,now:agora,hours,next_open,today:cfg,manual_date:state?.manual_date||null};
 
   const atual=minutos(agora.time),ini=minutos(cfg.open),fim=minutos(cfg.close);
 
   // Durante o horário normal: aberto.
   const dentroHorario=fim>ini ? (atual>=ini&&atual<fim) : (atual>=ini||atual<fim);
   if(dentroHorario){
-    return {mode:"open",open:true,pickup_only:false,now:agora,hours,today:cfg,manual_date:state?.manual_date||null};
+    return {mode:"open",open:true,pickup_only:false,now:agora,hours,next_open,today:cfg,manual_date:state?.manual_date||null};
   }
 
   // Ao atingir o horário de fechamento, não fecha imediatamente:
   // aguarda a decisão da página Garçom.
   const passouFechamento=fim>ini ? (atual>=fim) : (atual>=fim&&atual<ini);
   if(passouFechamento){
-    return {mode:"awaiting_close_decision",open:true,pickup_only:false,now:agora,hours,today:cfg,manual_date:state?.manual_date||null};
+    return {mode:"awaiting_close_decision",open:true,pickup_only:false,now:agora,hours,next_open,today:cfg,manual_date:state?.manual_date||null};
   }
 
-  return {mode:"closed",open:false,pickup_only:false,now:agora,hours,today:cfg,manual_date:state?.manual_date||null};
+  return {mode:"closed",open:false,pickup_only:false,now:agora,hours,next_open,today:cfg,manual_date:state?.manual_date||null};
 }
 async function obterEstadoLoja(env){
   try{
@@ -229,6 +243,12 @@ export async function onRequestOptions() {
 export async function onRequestGet({ request, env }) {
   try {
     const url=new URL(request.url);
+    const customerPhone=String(url.searchParams.get("customer_phone")||"").replace(/\D/g,"");
+    if(customerPhone){
+      if(customerPhone.length!==10&&customerPhone.length!==11)return json({ok:false,error:"Telefone inválido."},400);
+      const rows=await supabaseRequest(env,`customers?select=telefone,nome,endereco,numero,sem_numero,bairro,referencia&telefone=eq.${customerPhone}&limit=1`);
+      return json({ok:true,customer:Array.isArray(rows)?(rows[0]||null):null});
+    }
     const phone=String(url.searchParams.get("phone")||"").replace(/\D/g,"");
     if(phone){
       if(phone.length!==10&&phone.length!==11){
@@ -363,7 +383,9 @@ export async function onRequestPost({ request, env }) {
         const customer = {
           telefone,
           nome:order.cliente,
-          endereco:order.endereco,
+          endereco:String(body.endereco_base || order.endereco).trim(),
+          numero:String(body.numero || "").trim(),
+          sem_numero:Boolean(body.sem_numero),
           bairro:order.bairro,
           referencia:order.referencia,
           updated_at:new Date().toISOString()

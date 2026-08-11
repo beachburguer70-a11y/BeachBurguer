@@ -281,7 +281,13 @@ function aplicarStatusLojaCliente(){
   if(!estadoLojaCliente.open){
     localStorage.setItem("bb_store_state",JSON.stringify(estadoLojaCliente));
     box.className="status-loja-cliente fechada";
-    box.textContent="🔴 Loja fechada no momento — você pode consultar o cardápio, mas novos pedidos estão pausados.";
+    const prox=estadoLojaCliente.next_open;
+    if(prox?.day_name&&prox?.time){
+      const dia=prox.days_ahead===0?"hoje":prox.days_ahead===1?"amanhã":prox.day_name;
+      box.innerHTML=`🔴 <strong>LOJA FECHADA</strong><br>Voltaremos ${dia} às ${prox.time}`;
+    }else{
+      box.innerHTML="🔴 <strong>LOJA FECHADA</strong>";
+    }
   }else if(estadoLojaCliente.pickup_only){
     box.className="status-loja-cliente retirada";
     box.textContent="🟠 Estamos abertos somente para RETIRADA no local.";
@@ -1335,3 +1341,11 @@ window.addEventListener("pageshow",()=>{
     setTimeout(()=>document.getElementById("cardapio")?.scrollIntoView({block:"start"}),30);
   }
 });
+
+// V25 - presença aproximada de clientes na página de pedidos
+(function iniciarPresencaClienteV25(){
+  let id=sessionStorage.getItem("bb_presence_id");
+  if(!id){id=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random());sessionStorage.setItem("bb_presence_id",id);}
+  const ping=()=>fetch("/api/presence",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session_id:id}),keepalive:true}).catch(()=>{});
+  ping(); setInterval(ping,20000);
+})();
