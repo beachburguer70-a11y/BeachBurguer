@@ -266,12 +266,12 @@ export async function onRequestGet({ request, env }) {
           env,
           `orders?select=cliente,telefone,endereco,bairro,referencia,created_at,tipo&telefone=eq.${customerPhone}&tipo=eq.Entrega&order=created_at.desc&limit=50`
         ) || [];
-        const normal=s=>String(s||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().trim().replace(/\\s+/g," ");
+        const normal=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/\s+/g," ");
         const parseEnderecoCompleto=v=>{
           const s=String(v||"").trim();
-          const m=s.match(/^(.*?)(?:,\\s*(?:n[ºo°]?\\s*)?([^,]+)|,\\s*s\\/?n)$/i);
+          const m=s.match(/^(.*?)(?:,\s*(?:n[ºo°]?\s*)?([^,]+)|,\s*s\/?n)$/i);
           if(!m)return {endereco:s,numero:"",sem_numero:false};
-          const sem=/,\\s*s\\/?n$/i.test(s);
+          const sem=/,\s*s\/?n$/i.test(s);
           return {endereco:String(m[1]||s).trim(),numero:sem?"":String(m[2]||"").trim(),sem_numero:sem};
         };
         for(const ped of historico){
@@ -287,7 +287,7 @@ export async function onRequestGet({ request, env }) {
       }catch(e){console.warn("Histórico de endereços:",e?.message||e);}
 
       if(customer && customer.endereco){
-        const normal=s=>String(s||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().trim().replace(/\\s+/g," ");
+        const normal=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/\s+/g," ");
         const key=normal(customer.endereco)+"|"+normal(customer.bairro);
         if(!addresses.some(a=>normal(a.endereco)+"|"+normal(a.bairro)===key)){
           addresses.unshift({
@@ -454,7 +454,7 @@ export async function onRequestPost({ request, env }) {
         // V30: histórico permanente de endereços. Rua + localidade identificam o endereço.
         // Se antes faltava número, informar o número atualiza o mesmo registro em vez de duplicar.
         if(String(body.tipo)==="Entrega" && customer.endereco && customer.bairro){
-          const normal=s=>String(s||"").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().trim().replace(/\\s+/g," ");
+          const normal=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/\s+/g," ");
           const addressKey=normal(customer.endereco)+"|"+normal(customer.bairro);
           try{
             await supabaseRequest(
