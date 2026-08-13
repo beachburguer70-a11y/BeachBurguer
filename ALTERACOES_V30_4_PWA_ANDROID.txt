@@ -1,0 +1,9 @@
+PRODUÇÃO V30.4 - CORREÇÃO PWA ANDROID
+
+- Corrigido modal de instruções do iPhone aparecendo no Android.
+- No Android, o botão Instalar usa somente o prompt nativo do navegador.
+- No iPhone/iPad, continuam aparecendo as instruções de Adicionar à Tela de Início.
+- Botões X e Entendi agora fecham o modal de forma forçada (hidden + display:none).
+- Clicar fora do cartão também fecha o modal no iPhone.
+- Atualizada a versão do script/Service Worker para evitar cache da versão com erro.
+- Todas as demais funções da V30.3 foram mantidas.
