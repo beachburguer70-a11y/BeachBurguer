@@ -1,0 +1,12 @@
+BEACH BURGUER PRODUÇÃO V31.10
+
+CORREÇÃO: CARDÁPIO CLIENTE COM AS MESMAS CATEGORIAS DO GARÇOM
+
+- /cardapio agora usa a mesma resposta de categorias que abastece o Garçom.
+- /api/orders?categories_only=1 continua como fallback.
+- Categorias cadastradas no Admin aparecem no Cliente mesmo sem produto.
+- O cardápio normal e o cardápio dentro do PWA Cliente usam o mesmo cardapio.js.
+- Atualização automática das categorias a cada 15 segundos.
+- Atualiza também ao voltar para a aba/janela.
+- Cache bust aplicado em cardapio.js e Service Worker do PWA Cliente.
+- Nenhum SQL novo é necessário.

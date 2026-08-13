@@ -1,11 +1,11 @@
-const CACHE="beach-burguer-cliente-app-v31-9";
+const CACHE="beach-burguer-cliente-app-v31-10";
 const STATIC=[
   "/cliente-app/",
   "/cliente-app/cardapio.html",
   "/style.css",
   "/cardapio.css",
   "/script.js?v=31_8",
-  "/cardapio.js?v=31_8",
+  "/cardapio.js?v=31_10",
   "/assets/logo.png",
   "/assets/pwa-192.png",
   "/assets/pwa-512.png"

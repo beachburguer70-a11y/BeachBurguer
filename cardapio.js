@@ -198,29 +198,25 @@ function icone(c){return c==="Mistos Quentes"?"🥪":c==="Combos"?"📦":c==="Be
 
 async function carregarCatalogo(){
   try{
-    // V31.8: o cardápio do Cliente (/cardapio) também busca categorias
-    // diretamente do cadastro do Admin, sem depender de produtos.
-    let categoriasServidor=[];
-    try{
-      const rc=await fetch(`/api/orders?categories_only=1&_=${Date.now()}`,{
+    // V31.10: o Cliente passa a usar a mesma origem de categorias do Garçom.
+    // Primeiro lê a resposta normal /api/orders, que já abastece o Garçom.
+    // Depois consulta categories_only apenas como reforço/fallback.
+    const [respCatalogo, respCategorias] = await Promise.all([
+      fetch(`/api/orders?_=${Date.now()}`,{
         method:"GET",
         cache:"no-store",
-        headers:{"Cache-Control":"no-cache"}
-      });
-      const jc=await rc.json();
-      if(rc.ok && jc.ok && Array.isArray(jc.categories)){
-        categoriasServidor=jc.categories;
-      }
-    }catch(e){
-      console.warn("Categorias do cardápio:",e.message);
-    }
+        headers:{"Cache-Control":"no-cache","Pragma":"no-cache"}
+      }),
+      fetch(`/api/orders?categories_only=1&_=${Date.now()}`,{
+        method:"GET",
+        cache:"no-store",
+        headers:{"Cache-Control":"no-cache","Pragma":"no-cache"}
+      })
+    ]);
 
-    const r=await fetch(`/api/orders?_=${Date.now()}`,{
-      method:"GET",
-      cache:"no-store",
-      headers:{"Cache-Control":"no-cache"}
-    });
-    const j=await r.json();
+    const j = await respCatalogo.json();
+    let jc = {categories:[]};
+    try{ jc = await respCategorias.json(); }catch{}
 
     if(j.store){
       estadoLojaV16=j.store;
@@ -229,10 +225,9 @@ async function carregarCatalogo(){
     }
 
     const mapaCategorias=new Map();
-    for(const c of [
-      ...categoriasServidor,
-      ...(Array.isArray(j.categories)?j.categories:[])
-    ]){
+
+    // Mesma lista que o Garçom recebe da resposta normal.
+    for(const c of (Array.isArray(j.categories)?j.categories:[])){
       const nome=String(c?.name||"").trim();
       if(!nome)continue;
       mapaCategorias.set(nome,{
@@ -243,64 +238,78 @@ async function carregarCatalogo(){
       });
     }
 
-    const lista=j.catalog||j.products||[];
-    if(Array.isArray(lista)&&lista.length){
-      lista.forEach(p=>{
-        const id=Number(p.id||p.product_id);
-        const categoria=p.categoria||p.category||"";
-        const nome=p.nome||p.name||"Produto";
-        const descricao=p.descricao||p.description||"";
-        const preco=Number(p.preco??p.price??0);
-        const ativo=(p.ativo??p.active)!==false;
-        const disponivel=(p.disponivel??p.available)!==false;
-        const permiteAdicionais=(p.permiteAdicionais??p.allows_addons)===true;
-
-        if(categoria && !mapaCategorias.has(categoria)){
-          mapaCategorias.set(categoria,{
-            name:categoria,
-            rule:["Bebidas","Doces"].includes(categoria)?"bebidas":"artesanais",
-            sort_order:9999,
-            active:true
-          });
-        }
-
-        let alvo=dados.produtos.find(x=>Number(x.id)===id);
-        if(alvo){
-          alvo.categoria=categoria||alvo.categoria;
-          alvo.nome=nome||alvo.nome;
-          alvo.descricao=descricao;
-          alvo.preco=preco;
-          alvo.ativo=ativo;
-          alvo.disponivel=disponivel;
-          alvo.permiteAdicionais=permiteAdicionais;
-        }else{
-          dados.produtos.push({
-            id,categoria,nome,descricao,preco,ativo,disponivel,
-            permiteAdicionais
-          });
-        }
+    // Fallback/garantia: endpoint exclusivo.
+    for(const c of (Array.isArray(jc.categories)?jc.categories:[])){
+      const nome=String(c?.name||"").trim();
+      if(!nome)continue;
+      mapaCategorias.set(nome,{
+        name:nome,
+        rule:String(c?.rule||"artesanais"),
+        sort_order:Number(c?.sort_order||0),
+        active:c?.active!==false
       });
+    }
+
+    const lista=Array.isArray(j.catalog)?j.catalog:(Array.isArray(j.products)?j.products:[]);
+
+    // Produtos também podem revelar uma categoria por segurança.
+    for(const p of lista){
+      const id=Number(p.id||p.product_id);
+      const categoria=String(p.categoria||p.category||"").trim();
+      const nome=p.nome||p.name||"Produto";
+      const descricao=p.descricao||p.description||"";
+      const preco=Number(p.preco??p.price??0);
+      const ativo=(p.ativo??p.active)!==false;
+      const disponivel=(p.disponivel??p.available)!==false;
+      const permiteAdicionais=(p.permiteAdicionais??p.allows_addons)===true;
+
+      if(categoria && !mapaCategorias.has(categoria)){
+        mapaCategorias.set(categoria,{
+          name:categoria,
+          rule:["Bebidas","Doces"].includes(categoria)?"bebidas":"artesanais",
+          sort_order:9999,
+          active:true
+        });
+      }
+
+      let alvo=dados.produtos.find(x=>Number(x.id)===id);
+      if(alvo){
+        alvo.categoria=categoria||alvo.categoria;
+        alvo.nome=nome||alvo.nome;
+        alvo.descricao=descricao;
+        alvo.preco=preco;
+        alvo.ativo=ativo;
+        alvo.disponivel=disponivel;
+        alvo.permiteAdicionais=permiteAdicionais;
+      }else if(id){
+        dados.produtos.push({
+          id,categoria,nome,descricao,preco,ativo,disponivel,permiteAdicionais
+        });
+      }
     }
 
     const categoriasAtivas=[...mapaCategorias.values()]
       .filter(c=>c.active!==false)
-      .sort((a,b)=>a.sort_order-b.sort_order || a.name.localeCompare(b.name,"pt-BR"));
+      .sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0) || a.name.localeCompare(b.name,"pt-BR"));
 
     if(categoriasAtivas.length){
       CATEGORIAS=categoriasAtivas.map(c=>c.name);
       REGRAS_CATEGORIAS=Object.fromEntries(
         categoriasAtivas.map(c=>[c.name,c.rule])
       );
+
       if(!CATEGORIAS.includes(categoriaAtual)){
         categoriaAtual=CATEGORIAS[0]||"Artesanais";
       }
     }
+
+    renderAbas();
+    renderProdutos();
   }catch(e){
     console.warn("Não foi possível carregar o cardápio:",e.message);
+    renderAbas();
+    renderProdutos();
   }
-
-  renderAbas();
-  renderProdutos();
 }
 
 function renderAbas(){
@@ -521,3 +530,12 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 iniciarMonitorStatusLojaV23();
+
+// V31.10: mantém o menu de categorias sincronizado com o Garçom/Admin.
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"){
+    carregarCatalogo().catch(()=>{});
+  }
+});
+window.addEventListener("focus",()=>carregarCatalogo().catch(()=>{}));
+setInterval(()=>carregarCatalogo().catch(()=>{}),15000);
