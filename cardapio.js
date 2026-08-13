@@ -44,15 +44,13 @@ let dados=structuredClone(PADRAO);
 let carrinho=[];
 try{carrinho=JSON.parse(localStorage.getItem("bb_carrinho")||"[]")}catch{}
 
-const CATEGORIAS_PRINCIPAIS_V15=["Artesanais","Combos","Mistos Quentes","Beach Podrão"];
-
 function temItemPrincipalV15(){
-  return carrinho.some(i=>CATEGORIAS_PRINCIPAIS_V15.includes(i.categoria));
+  return carrinho.some(i=>(REGRAS_CATEGORIAS[i.categoria]||"artesanais")==="artesanais");
 }
 function validarItemPrincipalV15(){
   if(!carrinho.length)return false;
   if(temItemPrincipalV15())return true;
-  alert("Para fazer o pedido é obrigatório incluir pelo menos 1 item de Artesanais, Combos, Misto Quente ou Beach Podrão. Bebidas e doces não podem ser pedidos sozinhos.");
+  alert("Para fazer o pedido é obrigatório incluir pelo menos 1 item de uma categoria principal. Itens de categorias com regra de bebidas não podem ser pedidos sozinhos.");
   return false;
 }
 
@@ -200,13 +198,51 @@ function icone(c){return c==="Mistos Quentes"?"🥪":c==="Combos"?"📦":c==="Be
 
 async function carregarCatalogo(){
   try{
-    const r=await fetch("/api/orders",{method:"GET",cache:"no-store"});
+    // V31.8: o cardápio do Cliente (/cardapio) também busca categorias
+    // diretamente do cadastro do Admin, sem depender de produtos.
+    let categoriasServidor=[];
+    try{
+      const rc=await fetch(`/api/orders?categories_only=1&_=${Date.now()}`,{
+        method:"GET",
+        cache:"no-store",
+        headers:{"Cache-Control":"no-cache"}
+      });
+      const jc=await rc.json();
+      if(rc.ok && jc.ok && Array.isArray(jc.categories)){
+        categoriasServidor=jc.categories;
+      }
+    }catch(e){
+      console.warn("Categorias do cardápio:",e.message);
+    }
+
+    const r=await fetch(`/api/orders?_=${Date.now()}`,{
+      method:"GET",
+      cache:"no-store",
+      headers:{"Cache-Control":"no-cache"}
+    });
     const j=await r.json();
+
     if(j.store){
       estadoLojaV16=j.store;
       localStorage.setItem("bb_store_state",JSON.stringify(j.store));
       aplicarEstadoLojaCardapioV16();
     }
+
+    const mapaCategorias=new Map();
+    for(const c of [
+      ...categoriasServidor,
+      ...(Array.isArray(j.categories)?j.categories:[])
+    ]){
+      const nome=String(c?.name||"").trim();
+      if(!nome)continue;
+      mapaCategorias.set(nome,{
+        name:nome,
+        rule:String(c?.rule||"artesanais"),
+        sort_order:Number(c?.sort_order||0),
+        active:c?.active!==false
+      });
+    }
+
     const lista=j.catalog||j.products||[];
     if(Array.isArray(lista)&&lista.length){
       lista.forEach(p=>{
@@ -217,6 +253,16 @@ async function carregarCatalogo(){
         const preco=Number(p.preco??p.price??0);
         const ativo=(p.ativo??p.active)!==false;
         const disponivel=(p.disponivel??p.available)!==false;
+        const permiteAdicionais=(p.permiteAdicionais??p.allows_addons)===true;
+
+        if(categoria && !mapaCategorias.has(categoria)){
+          mapaCategorias.set(categoria,{
+            name:categoria,
+            rule:["Bebidas","Doces"].includes(categoria)?"bebidas":"artesanais",
+            sort_order:9999,
+            active:true
+          });
+        }
 
         let alvo=dados.produtos.find(x=>Number(x.id)===id);
         if(alvo){
@@ -226,18 +272,51 @@ async function carregarCatalogo(){
           alvo.preco=preco;
           alvo.ativo=ativo;
           alvo.disponivel=disponivel;
+          alvo.permiteAdicionais=permiteAdicionais;
         }else{
-          dados.produtos.push({id,categoria,nome,descricao,preco,ativo,disponivel});
+          dados.produtos.push({
+            id,categoria,nome,descricao,preco,ativo,disponivel,
+            permiteAdicionais
+          });
         }
       });
     }
-  }catch{}
-  renderAbas();renderProdutos();
+
+    const categoriasAtivas=[...mapaCategorias.values()]
+      .filter(c=>c.active!==false)
+      .sort((a,b)=>a.sort_order-b.sort_order || a.name.localeCompare(b.name,"pt-BR"));
+
+    if(categoriasAtivas.length){
+      CATEGORIAS=categoriasAtivas.map(c=>c.name);
+      REGRAS_CATEGORIAS=Object.fromEntries(
+        categoriasAtivas.map(c=>[c.name,c.rule])
+      );
+      if(!CATEGORIAS.includes(categoriaAtual)){
+        categoriaAtual=CATEGORIAS[0]||"Artesanais";
+      }
+    }
+  }catch(e){
+    console.warn("Não foi possível carregar o cardápio:",e.message);
+  }
+
+  renderAbas();
+  renderProdutos();
 }
 
 function renderAbas(){
-  $("abasV7").innerHTML=CATEGORIAS.map(c=>`<button class="${c===categoriaAtual?"ativa":""}" data-cat="${c}">${c}</button>`).join("");
-  $("abasV7").querySelectorAll("button").forEach(b=>b.onclick=()=>{categoriaAtual=b.dataset.cat;renderAbas();renderProdutos()});
+  const el=$("abasV7");
+  if(!el)return;
+  el.innerHTML=CATEGORIAS.map((c,i)=>`<button class="${c===categoriaAtual?"ativa":""}" data-cat-index="${i}">${c}</button>`).join("");
+  el.querySelectorAll("button[data-cat-index]").forEach(b=>{
+    b.onclick=()=>{
+      const idx=Number(b.dataset.catIndex);
+      const cat=CATEGORIAS[idx];
+      if(!cat)return;
+      categoriaAtual=cat;
+      renderAbas();
+      renderProdutos();
+    };
+  });
 }
 function renderProdutos(){
   const lista=dados.produtos.filter(p=>p.categoria===categoriaAtual&&p.ativo);

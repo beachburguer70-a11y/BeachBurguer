@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+  <base href="/cliente-app/">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cardápio • Beach Burguer</title>
@@ -89,6 +90,10 @@ body.cardapio-page-v7{background:#080808;color:#fff;min-height:100vh;padding-bot
   cursor:not-allowed;
 }
 </style>
+  <link rel="manifest" href="/cliente-app/manifest.json">
+  <meta name="application-name" content="Beach Burguer">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Beach Burguer">
 </head>
 <body class="cardapio-page-v7">
 <header class="cardapio-top-v7">
@@ -102,7 +107,7 @@ body.cardapio-page-v7{background:#080808;color:#fff;min-height:100vh;padding-bot
         <span id="tipoPedidoBadgeV7" class="cardapio-tipo-v7"></span>
         <button id="alterarTipoPedidoV10" type="button" class="alterar-tipo-v10">Alterar</button>
       </div>
-      <a href="/" class="cardapio-voltar-v7">← Início</a>
+      <a href="/cliente-app/" class="cardapio-voltar-v7">← Início</a>
     </div>
   </div>
 </header>

@@ -2,7 +2,7 @@
   "id": "/loja-app/",
   "name": "Beach Burguer Loja",
   "short_name": "BB Loja",
-  "description": "Sistema interno da Beach Burguer.",
+  "description": "Sistema interno Beach Burguer",
   "start_url": "/loja-app/",
   "scope": "/loja-app/",
   "display": "standalone",
@@ -27,23 +27,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Loja",
-      "short_name": "Loja",
-      "url": "/loja-app/"
-    },
-    {
-      "name": "Garçom",
-      "short_name": "Garçom",
-      "url": "/loja-app/garcom.html"
-    },
-    {
-      "name": "Relatórios",
-      "short_name": "Relatórios",
-      "url": "/loja-app/relatorios.html"
     }
   ]
 }

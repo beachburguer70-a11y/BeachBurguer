@@ -89,9 +89,6 @@
 
   addEventListener("DOMContentLoaded",build);
 
-  if("serviceWorker" in navigator){
-    addEventListener("load",()=>{
-      navigator.serviceWorker.register("/sw.js?v=31_3",{updateViaCache:"none"}).catch(()=>{});
-    });
+  );
   }
 })();

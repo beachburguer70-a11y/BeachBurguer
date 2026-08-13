@@ -1,0 +1,18 @@
+BEACH BURGUER PRODUÇÃO V31.8
+
+CORREÇÃO DEFINITIVA DAS CATEGORIAS NO CARDÁPIO DO CLIENTE
+
+Diagnóstico:
+- A página mostrada ao cliente é /cardapio, que usa cardapio.js.
+- As correções anteriores tinham sido aplicadas principalmente em script.js da página inicial.
+- Por isso o Garçom recebia a categoria nova, mas /cardapio continuava usando a lista fixa.
+
+Correções:
+- cardapio.js agora carrega as categorias cadastradas no Admin.
+- Categoria nova aparece no Cliente mesmo sem produto.
+- Regra Artesanais/Bebidas é respeitada no Cliente.
+- Regra de adicionais passa a usar o campo individual do produto.
+- Consulta sem cache.
+- Atualiza ao voltar para a aba.
+- Versão de cardapio.js e Service Worker atualizadas para evitar arquivo antigo no PWA.
+- Nenhum SQL novo é necessário.

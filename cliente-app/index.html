@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <base href="/">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#070707">
@@ -34,6 +35,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Beach Burguer">
   <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/cliente-app/manifest.json">
+  <meta name="application-name" content="Beach Burguer">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Beach Burguer">
 </head>
 <body class="dev-fluxo-v4">
 <header id="homeTopoV6" class="topo home-only-v6">
@@ -482,5 +487,6 @@
   </div>
 </div>
 <script src="redesign-dev.js?v=17"></script>
-  </body>
+    <script defer src="/cliente-app/install.js?v=31_9"></script>
+</body>
 </html>

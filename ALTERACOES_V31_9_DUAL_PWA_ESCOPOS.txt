@@ -1,0 +1,29 @@
+BEACH BURGUER PRODUÇÃO V31.9 - DOIS PWAs REALMENTE SEPARADOS
+
+Objetivo:
+Permitir instalar simultaneamente:
+1. Beach Burguer (Cliente)
+2. Beach Burguer Loja
+
+Estrutura definitiva:
+- Cliente: /cliente-app/
+  Manifest: /cliente-app/manifest.json
+  Service Worker: /cliente-app/sw.js
+  Scope: /cliente-app/
+
+- Loja: /loja-app/
+  Manifest: /loja-app/manifest.json
+  Service Worker: /loja-app/sw.js
+  Scope: /loja-app/
+
+IMPORTANTE:
+O app Cliente antigo foi instalado com escopo amplo (/).
+Para o Android reconhecer os dois apps separados:
+1. Desinstale UMA ÚNICA VEZ o Beach Burguer Cliente antigo.
+2. Publique a V31.9.
+3. Abra /cliente-app/ e instale Beach Burguer.
+4. Abra /loja-app/ e instale Beach Burguer Loja.
+Depois disso os dois podem permanecer instalados juntos.
+
+Nenhum SQL novo é necessário.
+As funções do site, categorias, pedidos e relatórios permanecem.
