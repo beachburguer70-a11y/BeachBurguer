@@ -1,0 +1,11 @@
+BEACH BURGUER PRODUÇÃO V31.11
+
+CORREÇÃO:
+- O cardápio do Cliente deixa de usar uma lógica própria para montar categorias.
+- Agora ele usa a MESMA resposta /api/orders e a MESMA lógica já funcional do Garçom:
+  CATEGORIAS = r.categories.filter(...).map(...)
+  REGRAS_CATEGORIAS = Object.fromEntries(...)
+- A alteração foi limitada ao carregamento/renderização das categorias e catálogo do Cliente.
+- Carrinho, pedido, pagamento, Loja, Garçom, Admin, Relatórios e PWAs foram preservados.
+- Cache do cardapio.js e do PWA Cliente foi atualizado.
+- Nenhum SQL novo é necessário.

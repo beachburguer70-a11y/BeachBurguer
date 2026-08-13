@@ -38,7 +38,7 @@ const ADICIONAIS=[
   {nome:"Ovo",preco:2},{nome:"Calabresa",preco:2},{nome:"Bacon",preco:3},{nome:"Picles",preco:2},{nome:"Batata",preco:7}
 ];
 const SEM_ADICIONAIS=["Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
-const CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
+let CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
 
 let dados=structuredClone(PADRAO);
 let carrinho=[];
@@ -198,111 +198,43 @@ function icone(c){return c==="Mistos Quentes"?"🥪":c==="Combos"?"📦":c==="Be
 
 async function carregarCatalogo(){
   try{
-    // V31.10: o Cliente passa a usar a mesma origem de categorias do Garçom.
-    // Primeiro lê a resposta normal /api/orders, que já abastece o Garçom.
-    // Depois consulta categories_only apenas como reforço/fallback.
-    const [respCatalogo, respCategorias] = await Promise.all([
-      fetch(`/api/orders?_=${Date.now()}`,{
-        method:"GET",
-        cache:"no-store",
-        headers:{"Cache-Control":"no-cache","Pragma":"no-cache"}
-      }),
-      fetch(`/api/orders?categories_only=1&_=${Date.now()}`,{
-        method:"GET",
-        cache:"no-store",
-        headers:{"Cache-Control":"no-cache","Pragma":"no-cache"}
-      })
-    ]);
+    // V31.11: mesma fonte e mesma lógica de categorias usada pelo Garçom.
+    const resposta=await fetch(`/api/orders?_=${Date.now()}`,{
+      method:"GET",
+      cache:"no-store",
+      headers:{"Cache-Control":"no-cache","Pragma":"no-cache"}
+    });
+    const r=await resposta.json();
 
-    const j = await respCatalogo.json();
-    let jc = {categories:[]};
-    try{ jc = await respCategorias.json(); }catch{}
-
-    if(j.store){
-      estadoLojaV16=j.store;
-      localStorage.setItem("bb_store_state",JSON.stringify(j.store));
+    if(r.store){
+      estadoLojaV16=r.store;
+      localStorage.setItem("bb_store_state",JSON.stringify(r.store));
       aplicarEstadoLojaCardapioV16();
     }
 
-    const mapaCategorias=new Map();
-
-    // Mesma lista que o Garçom recebe da resposta normal.
-    for(const c of (Array.isArray(j.categories)?j.categories:[])){
-      const nome=String(c?.name||"").trim();
-      if(!nome)continue;
-      mapaCategorias.set(nome,{
-        name:nome,
-        rule:String(c?.rule||"artesanais"),
-        sort_order:Number(c?.sort_order||0),
-        active:c?.active!==false
-      });
+    // CÓPIA DA REGRA QUE JÁ FUNCIONA NO GARÇOM
+    if(Array.isArray(r.categories)&&r.categories.length){
+      CATEGORIAS=r.categories.filter(c=>c.active!==false).map(c=>c.name);
+      REGRAS_CATEGORIAS=Object.fromEntries(r.categories.map(c=>[c.name,c.rule]));
+      if(!CATEGORIAS.includes(categoriaAtual))categoriaAtual=CATEGORIAS[0]||"Artesanais";
+      renderAbas();
     }
 
-    // Fallback/garantia: endpoint exclusivo.
-    for(const c of (Array.isArray(jc.categories)?jc.categories:[])){
-      const nome=String(c?.name||"").trim();
-      if(!nome)continue;
-      mapaCategorias.set(nome,{
-        name:nome,
-        rule:String(c?.rule||"artesanais"),
-        sort_order:Number(c?.sort_order||0),
-        active:c?.active!==false
-      });
+    const lista=r.catalog||r.products||[];
+    if(Array.isArray(lista)&&lista.length){
+      dados.produtos=lista.map(p=>({
+        id:Number(p.id||p.product_id),
+        categoria:p.category||p.categoria||"",
+        nome:p.name||p.nome||"Produto",
+        descricao:p.description||p.descricao||"",
+        preco:Number(p.price??p.preco??0),
+        ativo:(p.active??p.ativo)!==false,
+        disponivel:(p.available??p.disponivel)!==false,
+        permiteAdicionais:(p.allows_addons??p.permiteAdicionais)===true
+      }));
     }
 
-    const lista=Array.isArray(j.catalog)?j.catalog:(Array.isArray(j.products)?j.products:[]);
-
-    // Produtos também podem revelar uma categoria por segurança.
-    for(const p of lista){
-      const id=Number(p.id||p.product_id);
-      const categoria=String(p.categoria||p.category||"").trim();
-      const nome=p.nome||p.name||"Produto";
-      const descricao=p.descricao||p.description||"";
-      const preco=Number(p.preco??p.price??0);
-      const ativo=(p.ativo??p.active)!==false;
-      const disponivel=(p.disponivel??p.available)!==false;
-      const permiteAdicionais=(p.permiteAdicionais??p.allows_addons)===true;
-
-      if(categoria && !mapaCategorias.has(categoria)){
-        mapaCategorias.set(categoria,{
-          name:categoria,
-          rule:["Bebidas","Doces"].includes(categoria)?"bebidas":"artesanais",
-          sort_order:9999,
-          active:true
-        });
-      }
-
-      let alvo=dados.produtos.find(x=>Number(x.id)===id);
-      if(alvo){
-        alvo.categoria=categoria||alvo.categoria;
-        alvo.nome=nome||alvo.nome;
-        alvo.descricao=descricao;
-        alvo.preco=preco;
-        alvo.ativo=ativo;
-        alvo.disponivel=disponivel;
-        alvo.permiteAdicionais=permiteAdicionais;
-      }else if(id){
-        dados.produtos.push({
-          id,categoria,nome,descricao,preco,ativo,disponivel,permiteAdicionais
-        });
-      }
-    }
-
-    const categoriasAtivas=[...mapaCategorias.values()]
-      .filter(c=>c.active!==false)
-      .sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0) || a.name.localeCompare(b.name,"pt-BR"));
-
-    if(categoriasAtivas.length){
-      CATEGORIAS=categoriasAtivas.map(c=>c.name);
-      REGRAS_CATEGORIAS=Object.fromEntries(
-        categoriasAtivas.map(c=>[c.name,c.rule])
-      );
-
-      if(!CATEGORIAS.includes(categoriaAtual)){
-        categoriaAtual=CATEGORIAS[0]||"Artesanais";
-      }
-    }
-
+    console.info("V31.11 categorias Cliente:",CATEGORIAS);
     renderAbas();
     renderProdutos();
   }catch(e){
