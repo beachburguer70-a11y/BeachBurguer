@@ -128,8 +128,33 @@
       </div>
     </section>
   </div>
+
+  <section id="movimentoClientesRelatorio" class="card" style="margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+      <div>
+        <h2 style="margin:0 0 4px">📈 Movimento de clientes</h2>
+        <div class="muted">Acessos únicos à página do cliente e conversão em pedidos.</div>
+      </div>
+      <input id="dataMetricasRelatorio" type="date" style="padding:9px 10px;border-radius:8px;background:#080808;color:#fff;border:1px solid #444">
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px">
+      <div class="metric">
+        <div class="muted">👥 Visitantes únicos</div>
+        <strong id="metricaVisitantesRelatorio" style="font-size:28px">0</strong>
+      </div>
+      <div class="metric">
+        <div class="muted">🧾 Pedidos realizados</div>
+        <strong id="metricaPedidosRelatorio" style="font-size:28px">0</strong>
+      </div>
+      <div class="metric">
+        <div class="muted">📊 Taxa de conversão</div>
+        <strong id="metricaConversaoRelatorio" style="font-size:28px">0,0%</strong>
+      </div>
+    </div>
+  </section>
+
 </main>
 </div>
-<script src="relatorios.js?v=856"></script>
+<script src="relatorios.js?v=31_2"></script>
 </body>
 </html>

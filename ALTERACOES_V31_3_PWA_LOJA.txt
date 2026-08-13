@@ -1,0 +1,12 @@
+BEACH BURGUER PRODUÇÃO V31.3 - PWA LOJA
+
+Base: V31.2 Métricas nos Relatórios.
+
+- Página Loja agora também pode ser instalada como PWA no celular.
+- App instalado: "Beach Burguer Loja".
+- Abre diretamente em /loja.
+- Possui atalhos para Loja, Garçom e Relatórios quando suportados pelo aparelho.
+- Android usa o prompt nativo de instalação.
+- iPhone/iPad recebe instruções de Adicionar à Tela de Início.
+- O PWA do Cliente continua separado e funcionando como antes.
+- Nenhum SQL novo é necessário para esta alteração.

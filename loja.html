@@ -35,6 +35,13 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     .manual-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.manual-actions .btn{flex:1}
     @media(max-width:650px){.horario-row{grid-template-columns:1fr 80px 1fr 1fr;font-size:13px}}
   </style>
+  <link rel="manifest" href="/manifest-loja.json">
+  <link rel="apple-touch-icon" href="/assets/loja-apple-touch-icon.png">
+  <meta name="application-name" content="Beach Burguer Loja">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Beach Burguer Loja">
+  <meta name="mobile-web-app-capable" content="yes">
 </head>
 <body>
 <div id="login" class="login">
@@ -102,6 +109,41 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     </div>
     <p id="statusHorarioLoja" class="muted"></p>
   </div>
+</div>
+
+
+<div id="modalAdminLoja" class="modal-store hidden">
+ <div class="modal-store-box" style="width:min(980px,96vw)">
+  <button id="fecharAdminLoja" class="modal-x">×</button>
+  <h2>⚙️ Administração do cardápio</h2>
+
+  <section style="border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px">
+   <h3>Cadastrar categoria</h3>
+   <div style="display:grid;grid-template-columns:1fr 220px auto;gap:8px">
+    <input id="catNome" placeholder="Nome da categoria" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+    <select id="catRegra" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+     <option value="artesanais">Regra de Artesanais</option>
+     <option value="bebidas">Regra de Bebidas (não compra sozinha)</option>
+    </select>
+    <button id="criarCategoria" class="btn green">Cadastrar</button>
+   </div>
+   <div id="listaCategoriasAdmin" style="margin-top:12px"></div>
+  </section>
+
+  <section style="border:1px solid #333;border-radius:12px;padding:14px">
+   <h3>Cadastrar novo produto</h3>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <select id="prodCategoria" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px"></select>
+    <input id="prodNome" placeholder="Nome" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+    <input id="prodPreco" type="number" step=".01" min="0" placeholder="Preço" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+    <input id="prodDescricao" placeholder="Descrição / ingredientes" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+   </div>
+   <label style="display:block;margin:10px 0"><input id="prodAdicionais" type="checkbox"> Este produto tem adicionais</label>
+   <button id="criarProduto" class="btn green">Cadastrar produto</button>
+   <h3 style="margin-top:22px">Produtos cadastrados</h3>
+   <div id="listaProdutosAdminLoja"></div>
+  </section>
+ </div>
 </div>
 
 <script>
@@ -241,7 +283,6 @@ async function entrar(){
     if(intervalo)clearInterval(intervalo);
     await carregarConfigLoja();
     await atualizarClientesOnlineLojaV27();
-    await carregarMetricasV31();
     intervalo=setInterval(carregarPedidos,3000);
     setInterval(carregarConfigLoja,30000);
   }catch(e){alert("Senha incorreta ou conexão indisponível.");}
@@ -386,63 +427,26 @@ window.salvarProdutoV31=async id=>{try{
 }catch(e){alert(e.message)}};
 window.excluirProdutoV31=async id=>{if(!confirm("Tem certeza que deseja excluir este produto?"))return;try{await apiAdminV31({action:"delete_product",id});await carregarAdminV31()}catch(e){alert(e.message)}};
 
-$("adminLojaBtn").onclick=async()=>{try{await carregarAdminV31();$("modalAdminLoja").classList.remove("hidden")}catch(e){alert("Não foi possível abrir o Admin: "+e.message)}};
-$("fecharAdminLoja").onclick=()=>$("modalAdminLoja").classList.add("hidden");
-$("criarCategoria").onclick=async()=>{try{await apiAdminV31({action:"create_category",name:$("catNome").value,rule:$("catRegra").value});$("catNome").value="";await carregarAdminV31();alert("Categoria cadastrada.")}catch(e){alert(e.message)}};
-$("criarProduto").onclick=async()=>{try{
+const adminLojaBtnV31=$("adminLojaBtn");
+if(adminLojaBtnV31) adminLojaBtnV31.onclick=async()=>{try{await carregarAdminV31();$("modalAdminLoja").classList.remove("hidden")}catch(e){alert("Não foi possível abrir o Admin: "+e.message)}};
+const fecharAdminLojaV31=$("fecharAdminLoja");
+if(fecharAdminLojaV31) fecharAdminLojaV31.onclick=()=>{$("modalAdminLoja").classList.add("hidden");};
+const modalAdminLojaV31=$("modalAdminLoja");
+if(modalAdminLojaV31) modalAdminLojaV31.addEventListener("click",e=>{
+  if(e.target===modalAdminLojaV31) modalAdminLojaV31.classList.add("hidden");
+});
+const criarCategoriaV31=$("criarCategoria");
+if(criarCategoriaV31) criarCategoriaV31.onclick=async()=>{try{await apiAdminV31({action:"create_category",name:$("catNome").value,rule:$("catRegra").value});$("catNome").value="";await carregarAdminV31();alert("Categoria cadastrada.")}catch(e){alert(e.message)}};
+const criarProdutoV31=$("criarProduto");
+if(criarProdutoV31) criarProdutoV31.onclick=async()=>{try{
  await apiAdminV31({action:"create_product",category:$("prodCategoria").value,name:$("prodNome").value,description:$("prodDescricao").value,price:Number($("prodPreco").value||0),allows_addons:$("prodAdicionais").checked});
  $("prodNome").value="";$("prodDescricao").value="";$("prodPreco").value="";$("prodAdicionais").checked=false;
  await carregarAdminV31();alert("Produto cadastrado.");
 }catch(e){alert(e.message)}};
 
-function hojeBRV31(){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())}
-async function carregarMetricasV31(){
- const date=$("dataMetricasLoja").value||hojeBRV31();
- try{
-  const d=await apiAdminV31({action:"daily_metrics",date});
-  $("metricaVisitantes").textContent=d.visitantes||0;
-  $("metricaPedidos").textContent=d.pedidos||0;
-  $("metricaConversao").textContent=Number(d.conversao||0).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%";
- }catch(e){console.warn("Métricas:",e.message)}
-}
-$("dataMetricasLoja").value=hojeBRV31();
-$("dataMetricasLoja").onchange=carregarMetricasV31;
-setInterval(carregarMetricasV31,15000);
 
 </script>
 
-<div id="modalAdminLoja" class="modal-store hidden">
- <div class="modal-store-box" style="width:min(980px,96vw)">
-  <button id="fecharAdminLoja" class="modal-x">×</button>
-  <h2>⚙️ Administração do cardápio</h2>
-
-  <section style="border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px">
-   <h3>Cadastrar categoria</h3>
-   <div style="display:grid;grid-template-columns:1fr 220px auto;gap:8px">
-    <input id="catNome" placeholder="Nome da categoria" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
-    <select id="catRegra" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
-     <option value="artesanais">Regra de Artesanais</option>
-     <option value="bebidas">Regra de Bebidas (não compra sozinha)</option>
-    </select>
-    <button id="criarCategoria" class="btn green">Cadastrar</button>
-   </div>
-   <div id="listaCategoriasAdmin" style="margin-top:12px"></div>
-  </section>
-
-  <section style="border:1px solid #333;border-radius:12px;padding:14px">
-   <h3>Cadastrar novo produto</h3>
-   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <select id="prodCategoria" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px"></select>
-    <input id="prodNome" placeholder="Nome" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
-    <input id="prodPreco" type="number" step=".01" min="0" placeholder="Preço" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
-    <input id="prodDescricao" placeholder="Descrição / ingredientes" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
-   </div>
-   <label style="display:block;margin:10px 0"><input id="prodAdicionais" type="checkbox"> Este produto tem adicionais</label>
-   <button id="criarProduto" class="btn green">Cadastrar produto</button>
-   <h3 style="margin-top:22px">Produtos cadastrados</h3>
-   <div id="listaProdutosAdminLoja"></div>
-  </section>
- </div>
-</div>
+  <script defer src="/pwa-loja-install.js?v=31_3"></script>
 </body>
 </html>

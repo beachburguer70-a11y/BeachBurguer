@@ -279,3 +279,54 @@ async function carregar(){
 }
 
 if(token)entrar();
+
+
+// V31.2 - Movimento de clientes transferido da Loja para Relatórios
+function hojeBRMetricasV312(){
+  return new Intl.DateTimeFormat("en-CA",{
+    timeZone:"America/Sao_Paulo",
+    year:"numeric",month:"2-digit",day:"2-digit"
+  }).format(new Date());
+}
+
+async function carregarMetricasClientesV312(){
+  const input=document.getElementById("dataMetricasRelatorio");
+  if(!input)return;
+
+  const date=input.value||hojeBRMetricasV312();
+  const tokenRel=
+    localStorage.getItem("bb_store_token") ||
+    localStorage.getItem("beach_store_token") ||
+    localStorage.getItem("store_token") || "";
+
+  try{
+    const resp=await fetch("/api/orders",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        ...(tokenRel?{"X-Store-Token":tokenRel}:{})
+      },
+      body:JSON.stringify({action:"daily_metrics",date}),
+      cache:"no-store"
+    });
+
+    const data=await resp.json();
+    if(!resp.ok||!data.ok)throw new Error(data.error||"Erro ao carregar movimento de clientes.");
+
+    document.getElementById("metricaVisitantesRelatorio").textContent=Number(data.visitantes||0).toLocaleString("pt-BR");
+    document.getElementById("metricaPedidosRelatorio").textContent=Number(data.pedidos||0).toLocaleString("pt-BR");
+    document.getElementById("metricaConversaoRelatorio").textContent=
+      Number(data.conversao||0).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%";
+  }catch(e){
+    console.warn("Movimento de clientes:",e.message);
+  }
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const input=document.getElementById("dataMetricasRelatorio");
+  if(!input)return;
+  input.value=hojeBRMetricasV312();
+  input.addEventListener("change",carregarMetricasClientesV312);
+  carregarMetricasClientesV312();
+  setInterval(carregarMetricasClientesV312,15000);
+});

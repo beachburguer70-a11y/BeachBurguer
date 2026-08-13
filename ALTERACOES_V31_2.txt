@@ -1,0 +1,16 @@
+BEACH BURGUER PRODUÇÃO V31.2
+
+Base: V31.1 Admin corrigido.
+
+ALTERAÇÃO:
+- O bloco "Movimento de clientes" foi removido da página Loja.
+- O mesmo bloco foi transferido para a página Relatórios.
+- Mantidos:
+  * Visitantes únicos do dia;
+  * Pedidos realizados;
+  * Taxa de conversão;
+  * Seleção de data;
+  * Atualização automática a cada 15 segundos.
+- Nenhuma outra funcionalidade foi alterada.
+- O SQL continua sendo o mesmo da V31:
+  supabase/ATUALIZAR_V31_ADMIN_CATEGORIAS_RELATORIO.sql

@@ -1,0 +1,9 @@
+V31.1 - CORREÇÃO ADMIN LOJA
+- Corrigido botão Cadastrar produto.
+- Corrigido botão Cadastrar categoria.
+- Corrigido X do modal Admin.
+- Corrigido travamento da tela ao tentar fechar.
+- Adicionada proteção para os eventos do Admin não interromperem o restante da página Loja.
+- Clicar fora da janela Admin também fecha o modal.
+- Nenhuma regra de produtos, categorias, PWA, pedidos ou relatórios foi removida.
+- O SQL da V31 continua sendo o mesmo: supabase/ATUALIZAR_V31_ADMIN_CATEGORIAS_RELATORIO.sql
