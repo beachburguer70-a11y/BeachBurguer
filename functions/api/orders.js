@@ -378,10 +378,11 @@ export async function onRequestGet({ request, env }) {
     try {
       const catalog = await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order&order=sort_order.asc,id.asc"
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons&order=sort_order.asc,id.asc"
       );
       const store=await obterEstadoLoja(env);
-      return json({ ok:true, catalog:catalog || [], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})), store });
+      const categories=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&active=eq.true&order=sort_order.asc,id.asc");
+      return json({ ok:true, catalog:catalog || [], categories:categories||[], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})), store });
     } catch {
       // Compatibilidade caso a migração V8.24 ainda não tenha sido executada.
       const products = await supabaseRequest(
@@ -429,10 +430,16 @@ export async function onRequestPost({ request, env }) {
         return json({ ok:false, error:"Adicione pelo menos um produto ao pedido." }, 400);
       }
 
-      const temLanche = body.itens.some(item =>
-        !["bebidas","doces"].includes(String(item?.categoria || "").trim().toLowerCase()) &&
-        String(item?.categoria || "").trim() !== ""
-      );
+      let categoriasRegra={};
+      try{
+        const cats=await supabaseRequest(env,"categories?select=name,rule&active=eq.true");
+        categoriasRegra=Object.fromEntries((cats||[]).map(c=>[String(c.name).toLowerCase(),c.rule]));
+      }catch{}
+      const temLanche = body.itens.some(item => {
+        const cat=String(item?.categoria||"").trim().toLowerCase();
+        const regra=categoriasRegra[cat] || (["bebidas","doces"].includes(cat)?"bebidas":"artesanais");
+        return cat && regra==="artesanais";
+      });
 
       if (!isGarcom && !temLanche) {
         return json({
@@ -687,9 +694,10 @@ export async function onRequestPost({ request, env }) {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
       const catalog = await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order&order=sort_order.asc,id.asc"
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons&order=sort_order.asc,id.asc"
       );
-      return json({ ok:true, catalog:catalog || [], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})) });
+      const categories=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&order=sort_order.asc,id.asc");
+      return json({ ok:true, catalog:catalog || [], categories:categories||[], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})) });
     }
 
     if (action === "create_product") {
@@ -698,13 +706,14 @@ export async function onRequestPost({ request, env }) {
       const name=String(body.name||"").trim();
       const description=String(body.description||"").trim();
       const price=Number(body.price||0);
+      const allowsAddons=body.allows_addons===true;
       if(!category||!name||price<0) return json({ok:false,error:"Preencha categoria, nome e preço."},400);
 
       const maxRows=await supabaseRequest(env,"products?select=sort_order&order=sort_order.desc&limit=1");
       const sortOrder=Number(maxRows?.[0]?.sort_order||0)+1;
       const inserted=await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order",
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons",
         {
           method:"POST",
           headers:{Prefer:"return=representation"},
@@ -716,6 +725,7 @@ export async function onRequestPost({ request, env }) {
             active:true,
             available:true,
             sort_order:sortOrder,
+            allows_addons:allowsAddons,
             updated_at:new Date().toISOString()
           })
         }
@@ -750,11 +760,83 @@ export async function onRequestPost({ request, env }) {
         if(!id) continue;
         await supabaseRequest(env,`products?id=eq.${id}`,{
           method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({
-            price:Number(p.price||0),active:p.active!==false,available:p.available!==false,updated_at:new Date().toISOString()
+            category:String(p.category||"").trim() || undefined,
+            name:String(p.name||"").trim() || undefined,
+            description:String(p.description||""),
+            price:Number(p.price||0),
+            active:p.active!==false,
+            available:p.available!==false,
+            allows_addons:p.allows_addons===true,
+            updated_at:new Date().toISOString()
           })
         });
       }
       return json({ok:true});
+    }
+
+
+    if (action === "create_category") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const name=String(body.name||"").trim();
+      const rule=String(body.rule||"artesanais")==="bebidas"?"bebidas":"artesanais";
+      if(!name)return json({ok:false,error:"Informe o nome da categoria."},400);
+      const mx=await supabaseRequest(env,"categories?select=sort_order&order=sort_order.desc&limit=1");
+      const rows=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active",{
+        method:"POST",headers:{Prefer:"return=representation"},
+        body:JSON.stringify({name,rule,sort_order:Number(mx?.[0]?.sort_order||0)+1,active:true,updated_at:new Date().toISOString()})
+      });
+      return json({ok:true,category:rows?.[0]||rows});
+    }
+
+    if (action === "save_category") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const id=Number(body.id), name=String(body.name||"").trim();
+      const rule=String(body.rule||"artesanais")==="bebidas"?"bebidas":"artesanais";
+      if(!id||!name)return json({ok:false,error:"Categoria inválida."},400);
+      const current=await supabaseRequest(env,`categories?select=name&id=eq.${id}&limit=1`);
+      const oldName=current?.[0]?.name;
+      await supabaseRequest(env,`categories?id=eq.${id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({name,rule,updated_at:new Date().toISOString()})});
+      if(oldName && oldName!==name){
+        await supabaseRequest(env,`products?category=eq.${encodeURIComponent(oldName)}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({category:name,updated_at:new Date().toISOString()})});
+      }
+      return json({ok:true});
+    }
+
+    if (action === "delete_category") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const id=Number(body.id);
+      const current=await supabaseRequest(env,`categories?select=name&id=eq.${id}&limit=1`);
+      const name=current?.[0]?.name;
+      if(!name)return json({ok:false,error:"Categoria não encontrada."},404);
+      const products=await supabaseRequest(env,`products?select=id&category=eq.${encodeURIComponent(name)}&limit=1`);
+      if(products?.length)return json({ok:false,error:"Esta categoria ainda possui produtos. Altere ou exclua os produtos primeiro."},400);
+      await supabaseRequest(env,`categories?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});
+      return json({ok:true});
+    }
+
+    if (action === "delete_product") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const id=Number(body.id);
+      if(!id)return json({ok:false,error:"Produto inválido."},400);
+      await supabaseRequest(env,`product_availability?product_id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});
+      await supabaseRequest(env,`products?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});
+      return json({ok:true});
+    }
+
+    if (action === "daily_metrics") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const date=String(body.date||"").trim();
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return json({ok:false,error:"Data inválida."},400);
+      const visits=await supabaseRequest(env,`client_daily_visits?select=session_id&visit_date=eq.${date}`);
+      // Limites UTC que correspondem à meia-noite de Brasília (UTC-3).
+      const start=`${date}T03:00:00.000Z`;
+      const next=new Date(start); next.setUTCDate(next.getUTCDate()+1);
+      const orders=await supabaseRequest(env,
+        `orders?select=id&origem=eq.cliente&created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(next.toISOString())}`
+      );
+      const visitantes=(visits||[]).length;
+      const pedidos=(orders||[]).length;
+      return json({ok:true,date,visitantes,pedidos,conversao:visitantes?Number(((pedidos/visitantes)*100).toFixed(1)):0});
     }
 
     if (action === "update_products") {

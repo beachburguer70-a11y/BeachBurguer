@@ -58,8 +58,8 @@ const ADICIONAIS=[
   {nome:"Batata",preco:7}
 ];
 
-const CATEGORIAS_SEM_ADICIONAIS=["Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
-const CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
+let CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
+let REGRAS_CATEGORIAS={Artesanais:"artesanais",Combos:"artesanais","Mistos Quentes":"artesanais","Beach Podrão":"artesanais",Bebidas:"bebidas",Doces:"bebidas"};
 
 let dados=carregarDadosLocais();
 let carrinho=JSON.parse(localStorage.getItem("bb_carrinho")||"[]");
@@ -184,8 +184,14 @@ async function carregarDisponibilidade(){
     if(Array.isArray(resultado.catalog)&&resultado.catalog.length){
       dados.produtos=resultado.catalog.map(p=>({
         id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",
-        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false
+        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false,permiteAdicionais:p.allows_addons===true
       }));
+      if(Array.isArray(resultado.categories)&&resultado.categories.length){
+        CATEGORIAS=resultado.categories.filter(c=>c.active!==false).map(c=>c.name);
+        REGRAS_CATEGORIAS=Object.fromEntries(resultado.categories.map(c=>[c.name,c.rule]));
+        if(!CATEGORIAS.includes(categoriaAtual))categoriaAtual=CATEGORIAS[0]||"Artesanais";
+        renderAbas();
+      }
       if(resultado.store){estadoLojaCliente=resultado.store;aplicarStatusLojaCliente();}
       return;
     }
@@ -356,7 +362,7 @@ function abrirProduto(id){
   $("produtoQtd").value=1;$("produtoObs").value="";
   if($("confirmarProduto"))$("confirmarProduto").textContent="Adicionar ao pedido";
 
-  const aceitaAdicionais=!CATEGORIAS_SEM_ADICIONAIS.includes(produtoSelecionado.categoria);
+  const aceitaAdicionais=produtoSelecionado.permiteAdicionais===true;
   $("tituloAdicionais").hidden=!aceitaAdicionais;
   $("listaAdicionais").hidden=!aceitaAdicionais;
   $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>`
@@ -472,7 +478,7 @@ function editarItemCliente(uid){
   $("produtoQtd").value=item.quantidade||1;
   $("produtoObs").value=item.observacao||"";
 
-  const aceitaAdicionais=!CATEGORIAS_SEM_ADICIONAIS.includes(produtoSelecionado.categoria);
+  const aceitaAdicionais=produtoSelecionado.permiteAdicionais===true;
   $("tituloAdicionais").hidden=!aceitaAdicionais;
   $("listaAdicionais").hidden=!aceitaAdicionais;
   $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>{
@@ -1091,7 +1097,7 @@ $("enviarPedido").onclick=async()=>{
   finally{botao.disabled=false;botao.textContent=original}
 };
 $("limparCarrinho").onclick=()=>{if(confirm("Limpar o carrinho?")){carrinho=[];resetarConfirmacaoPix();salvarCarrinho()}};
-$("abrirAdmin").onclick=()=>{$("modalAdmin").classList.add("ativo");$("loginAdmin").hidden=false;$("conteudoAdmin").hidden=true;$("senhaAdmin").value=""};
+if($("abrirAdmin")) $("abrirAdmin").onclick=()=>{$("modalAdmin").classList.add("ativo");$("loginAdmin").hidden=false;$("conteudoAdmin").hidden=true;$("senhaAdmin").value=""};
 $("fecharAdmin").onclick=()=>$("modalAdmin").classList.remove("ativo");
 $("entrarAdmin").onclick=entrarAdmin;
 $("salvarAdmin").onclick=salvarAdmin;

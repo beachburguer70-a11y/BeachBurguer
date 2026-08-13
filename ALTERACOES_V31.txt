@@ -1,0 +1,22 @@
+BEACH BURGUER PRODUÇÃO V31
+
+Base: V30.4 PWA Android corrigido.
+
+ALTERAÇÕES:
+- Admin removido do menu do cliente e centralizado na página Loja.
+- Loja ganhou botão Garçom; Garçom ganhou Voltar para Loja.
+- Produtos do Admin agora podem ser Alterados e Excluídos.
+- Cadastro/alteração de produto possui "Este produto tem adicionais".
+- Cadastro, alteração e exclusão de categorias.
+- Categoria escolhe Regra de Artesanais ou Regra de Bebidas.
+- Categorias cadastradas aparecem dinamicamente no Cliente e no Garçom.
+- Regra Bebidas impede pedido somente com itens dessas categorias.
+- Relatório diário na Loja:
+  * visitantes únicos por dispositivo/sessão no dia;
+  * pedidos realizados (cada pedido conta);
+  * taxa de conversão = pedidos / visitantes únicos x 100.
+- Preservadas as funções da V30.4, inclusive PWA corrigido.
+
+ANTES DE PUBLICAR:
+Execute no Supabase SQL Editor:
+supabase/ATUALIZAR_V31_ADMIN_CATEGORIAS_RELATORIO.sql

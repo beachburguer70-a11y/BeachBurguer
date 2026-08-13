@@ -57,8 +57,8 @@ const ADICIONAIS = [
   {nome:"Batata",preco:7}
 ];
 
-const CATEGORIAS_SEM_ADICIONAIS=["Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
-const CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
+let CATEGORIAS=["Artesanais","Combos","Mistos Quentes","Beach Podrão","Bebidas","Doces"];
+let REGRAS_CATEGORIAS={Artesanais:"artesanais",Combos:"artesanais","Mistos Quentes":"artesanais","Beach Podrão":"artesanais",Bebidas:"bebidas",Doces:"bebidas"};
 const TOKEN_KEY="bb_store_token";
 const GARCOM_CART_KEY="bb_carrinho_garcom";
 
@@ -134,8 +134,14 @@ async function carregarDisponibilidade(){
     if(Array.isArray(r.catalog)&&r.catalog.length){
       dados.produtos=r.catalog.map(p=>({
         id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",
-        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false
+        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false,permiteAdicionais:p.allows_addons===true
       }));
+      if(Array.isArray(r.categories)&&r.categories.length){
+        CATEGORIAS=r.categories.filter(c=>c.active!==false).map(c=>c.name);
+        REGRAS_CATEGORIAS=Object.fromEntries(r.categories.map(c=>[c.name,c.rule]));
+        if(!CATEGORIAS.includes(categoriaAtual))categoriaAtual=CATEGORIAS[0]||"Artesanais";
+        renderAbas();
+      }
       return;
     }
     (r.products||[]).forEach(st=>{
@@ -568,7 +574,7 @@ function abrirProdutoGarcom(id){
   $("produtoObsGarcom").value="";
   $("confirmarProdutoGarcom").textContent="Adicionar ao pedido";
 
-  const aceita=!CATEGORIAS_SEM_ADICIONAIS.includes(produtoSelecionado.categoria);
+  const aceita=produtoSelecionado.permiteAdicionais===true;
   $("tituloAdicionaisGarcom").hidden=!aceita;
   $("listaAdicionaisGarcom").hidden=!aceita;
   $("listaAdicionaisGarcom").innerHTML=aceita?ADICIONAIS.map((a,i)=>`
@@ -612,7 +618,7 @@ function editarItemGarcom(uid){
   $("produtoPrecoGarcom").textContent=moeda(produtoSelecionado.preco);
   $("produtoQtdGarcom").value=i.quantidade||1;
   $("produtoObsGarcom").value=i.observacao||"";
-  const aceita=!CATEGORIAS_SEM_ADICIONAIS.includes(produtoSelecionado.categoria);
+  const aceita=produtoSelecionado.permiteAdicionais===true;
   $("tituloAdicionaisGarcom").hidden=!aceita; $("listaAdicionaisGarcom").hidden=!aceita;
   $("listaAdicionaisGarcom").innerHTML=aceita?ADICIONAIS.map((a,n)=>{
     const marcado=(i.adicionais||[]).some(x=>x.nome===a.nome);

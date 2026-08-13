@@ -17,6 +17,23 @@ export async function onRequestPost({request,env}){
         body:JSON.stringify({session_id:id,last_seen:new Date().toISOString()})
       }
     );
+    // V31: registra uma única visita por dispositivo/sessão por dia no horário de Brasília.
+    const dateBR=new Intl.DateTimeFormat("en-CA",{
+      timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"
+    }).format(new Date());
+    await supabaseRequest(
+      env,
+      "client_daily_visits?on_conflict=visit_date,session_id",
+      {
+        method:"POST",
+        headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
+        body:JSON.stringify({
+          visit_date:dateBR,
+          session_id:id,
+          last_seen:new Date().toISOString()
+        })
+      }
+    );
     return json({ok:true});
   }catch(e){
     console.error("PRESENCE POST:",e);
