@@ -667,3 +667,18 @@ body.modo-cardapio-v6 #cardapio{
 body.modo-cardapio-v6{
   background:#080808!important;
 }
+
+/* PWA Beach Burguer */
+.pwa-install-bar{position:fixed;left:12px;right:12px;bottom:14px;z-index:10020;max-width:680px;margin:auto}
+.pwa-install-inner{display:flex;align-items:center;gap:11px;background:#111;color:#fff;border:1px solid #353535;border-radius:16px;padding:10px 11px;box-shadow:0 14px 44px rgba(0,0,0,.55)}
+.pwa-install-icon{width:48px;height:48px;border-radius:12px;object-fit:cover}
+.pwa-install-copy{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.pwa-install-copy strong{font-size:14px;color:#ffb800}.pwa-install-copy span{font-size:12px;color:#d7d7d7}
+.pwa-install-btn,.pwa-ios-ok{border:0;border-radius:10px;padding:10px 14px;background:#ffb800;color:#111;font-weight:900;cursor:pointer}
+.pwa-install-close,.pwa-ios-x{border:0;background:transparent;color:#aaa;font-size:25px;cursor:pointer}
+.pwa-ios-modal{position:fixed;inset:0;z-index:10030;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:18px}
+.pwa-ios-card{position:relative;width:min(410px,96vw);background:#111;color:#fff;border:1px solid #3c3c3c;border-radius:20px;padding:24px}
+.pwa-ios-logo{width:72px;height:72px;border-radius:16px;display:block;margin:0 auto 10px}.pwa-ios-card h2{text-align:center;color:#ffb800}
+.pwa-ios-x{position:absolute;right:10px;top:8px}.pwa-ios-ok{width:100%}
+@media(max-width:520px){.pwa-install-copy span{display:none}}
+@media(display-mode:standalone){.pwa-install-bar,.pwa-ios-modal{display:none!important}}

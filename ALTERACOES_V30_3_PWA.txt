@@ -1,0 +1,8 @@
+PRODUÇÃO V30.3 - PWA CLIENTE
+- Criada em cima da versão correta: V30.2 CLIENTES HISTÓRICO.
+- Mantidas as funções existentes da V30.2.
+- Adicionado PWA instalável para clientes.
+- Android: prompt nativo de instalação quando disponível.
+- iPhone/iPad: orientação para Adicionar à Tela de Início.
+- Ícones próprios e modo standalone.
+- Sem SQL novo para o PWA.
