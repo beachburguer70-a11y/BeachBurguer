@@ -43,13 +43,22 @@
 
     document.getElementById("pwaLojaInstallBtn").onclick=async()=>{
       if(deferredPrompt){
-        const p=deferredPrompt; deferredPrompt=null;
+        const p=deferredPrompt;
+        deferredPrompt=null;
         p.prompt();
         try{await p.userChoice}catch{}
         hide(bar);
-      } else if(isiOS()){
-        show(modal,"flex");
+        return;
       }
+
+      if(isiOS()){
+        show(modal,"flex");
+        return;
+      }
+
+      // Android/Chromium: if the native prompt has not fired yet,
+      // never leave the user with a button that appears to do nothing.
+      alert('Se a instalação não abriu automaticamente, toque no menu ⋮ do navegador e escolha "Instalar app" ou "Adicionar à tela inicial".');
     };
 
     if(isiOS()&&!sessionStorage.getItem("bb_loja_app_closed"))show(bar);
@@ -68,9 +77,18 @@
     hide(document.getElementById("pwaLojaInstallBar"));
   });
 
-  addEventListener("DOMContentLoaded",build);
+  addEventListener("DOMContentLoaded",()=>{
+    build();
+    const params=new URLSearchParams(location.search);
+    if(params.get("install")==="1"){
+      setTimeout(()=>{
+        const bar=document.getElementById("pwaLojaInstallBar");
+        if(bar)show(bar);
+      },250);
+    }
+  });
 
   if("serviceWorker" in navigator){
-    addEventListener("load",()=>navigator.serviceWorker.register("/loja-app/sw.js",{scope:"/loja-app/",updateViaCache:"none"}).catch(()=>{}));
+    addEventListener("load",()=>navigator.serviceWorker.register("/loja-app/sw.js?v=31_6",{scope:"/loja-app/",updateViaCache:"none"}).catch(()=>{}));
   }
 })();

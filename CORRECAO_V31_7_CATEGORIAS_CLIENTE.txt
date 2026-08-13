@@ -1,0 +1,14 @@
+BEACH BURGUER PRODUÇÃO V31.7
+
+CORREÇÃO ESPECÍFICA: CATEGORIAS NOVAS NO CLIENTE
+
+- Criado endpoint público exclusivo /api/orders?categories_only=1.
+- A página Cliente não depende mais da resposta do catálogo para montar as categorias.
+- Categoria recém-criada aparece mesmo sem possuir produtos.
+- O Cliente faz união entre:
+  1. categorias cadastradas no Admin;
+  2. categorias retornadas pelo catálogo como segurança.
+- Recarrega categorias ao voltar para a página/aba.
+- Consulta sem cache e nova versão de script/Service Worker para evitar PWA antigo.
+- Garçom, Loja, PWA Loja, Relatórios e demais funções foram preservados.
+- Nenhum SQL novo é necessário além do SQL da V31 já executado.

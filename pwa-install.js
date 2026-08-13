@@ -136,7 +136,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("/sw.js?v=30_4", { updateViaCache: "none" })
+        .register("/sw.js?v=31_7", { updateViaCache: "none" })
         .catch(() => {});
     });
   }

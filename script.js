@@ -180,24 +180,69 @@ async function apiPedidos(method="GET",body=null,token=""){
 
 async function carregarDisponibilidade(){
   try{
+    // V31.7: categorias são buscadas por uma rota exclusiva, sem depender
+    // do catálogo de produtos e sem cache.
+    let categoriasServidor=[];
+    try{
+      const respCat=await fetch(`/api/orders?categories_only=1&_=${Date.now()}`,{
+        method:"GET",
+        cache:"no-store",
+        headers:{"Cache-Control":"no-cache"}
+      });
+      const dadosCat=await respCat.json();
+      if(respCat.ok && dadosCat.ok && Array.isArray(dadosCat.categories)){
+        categoriasServidor=dadosCat.categories;
+      }
+    }catch(e){
+      console.warn("Categorias do Cliente:",e.message);
+    }
+
     const resultado=await apiPedidos("GET",null,"");
 
-    // V31.4: categorias são independentes dos produtos.
-    // Qualquer categoria ativa cadastrada no Admin entra imediatamente no menu do Cliente.
-    if(Array.isArray(resultado.categories)){
-      const categoriasAtivas=resultado.categories
-        .filter(c=>c && c.active!==false && String(c.name||"").trim())
-        .sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
+    // Se por compatibilidade a resposta normal também trouxer categorias,
+    // faz união por nome. A chamada exclusiva sempre tem prioridade.
+    const mapaCategorias=new Map();
+    for(const c of [
+      ...categoriasServidor,
+      ...(Array.isArray(resultado.categories)?resultado.categories:[])
+    ]){
+      const nome=String(c?.name||"").trim();
+      if(!nome)continue;
+      mapaCategorias.set(nome,{
+        name:nome,
+        rule:String(c?.rule||"artesanais"),
+        sort_order:Number(c?.sort_order||0),
+        active:c?.active!==false
+      });
+    }
 
-      if(categoriasAtivas.length){
-        CATEGORIAS=categoriasAtivas.map(c=>String(c.name).trim());
-        REGRAS_CATEGORIAS=Object.fromEntries(
-          categoriasAtivas.map(c=>[String(c.name).trim(),String(c.rule||"artesanais")])
-        );
-
-        if(!CATEGORIAS.includes(categoriaAtual)){
-          categoriaAtual=CATEGORIAS[0]||"Artesanais";
+    // Também inclui como segurança qualquer categoria encontrada em produtos.
+    if(Array.isArray(resultado.catalog)){
+      for(const p of resultado.catalog){
+        const nome=String(p?.category||"").trim();
+        if(nome && !mapaCategorias.has(nome)){
+          mapaCategorias.set(nome,{
+            name:nome,
+            rule:["Bebidas","Doces"].includes(nome)?"bebidas":"artesanais",
+            sort_order:9999,
+            active:true
+          });
         }
+      }
+    }
+
+    const categoriasAtivas=[...mapaCategorias.values()]
+      .filter(c=>c.active!==false)
+      .sort((a,b)=>a.sort_order-b.sort_order || a.name.localeCompare(b.name,"pt-BR"));
+
+    if(categoriasAtivas.length){
+      CATEGORIAS=categoriasAtivas.map(c=>c.name);
+      REGRAS_CATEGORIAS=Object.fromEntries(
+        categoriasAtivas.map(c=>[c.name,c.rule])
+      );
+
+      if(!CATEGORIAS.includes(categoriaAtual)){
+        categoriaAtual=CATEGORIAS[0]||"Artesanais";
       }
     }
 

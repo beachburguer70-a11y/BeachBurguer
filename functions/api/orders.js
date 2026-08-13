@@ -243,6 +243,18 @@ export async function onRequestOptions() {
 export async function onRequestGet({ request, env }) {
   try {
     const url=new URL(request.url);
+
+    // V31.7: endpoint público e independente para o menu de categorias do Cliente.
+    // Não depende da consulta de produtos; assim uma categoria recém-criada aparece
+    // mesmo quando ainda não possui nenhum produto.
+    if(url.searchParams.get("categories_only")==="1"){
+      const categories=await supabaseRequest(
+        env,
+        "categories?select=id,name,rule,sort_order,active&active=eq.true&order=sort_order.asc,id.asc"
+      );
+      return json({ok:true,categories:categories||[]});
+    }
+
     const customerPhone=String(url.searchParams.get("customer_phone")||"").replace(/\D/g,"");
     if(customerPhone){
       if(customerPhone.length!==10&&customerPhone.length!==11)return json({ok:false,error:"Telefone inválido."},400);

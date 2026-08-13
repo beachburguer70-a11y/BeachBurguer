@@ -58,7 +58,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small><br><strong id="clientesOnlineLoja" style="color:#8ee59a">🟢 Clientes online: 0</strong></div></div>
     <div class="controls">
       <a href="/garcom" class="btn yellow" style="text-decoration:none">👨‍🍳 Garçom</a>
-      <a href="/loja-app/" class="btn dark" style="text-decoration:none">📱 Instalar App Loja</a>
+      <button id="abrirInstalacaoLojaApp" class="btn dark" type="button">📱 Instalar App Loja</button>
       <button id="adminLojaBtn" class="btn dark">⚙️ Admin</button>
       <a href="/relatorios" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
       <button id="horariosBtn" class="btn dark">🕒 Horários</button>
@@ -437,5 +437,17 @@ if(criarProdutoV31) criarProdutoV31.onclick=async()=>{try{
 
 </script>
 
-  </body>
+  
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const b=document.getElementById("abrirInstalacaoLojaApp");
+  if(b){
+    b.addEventListener("click",()=>{
+      window.location.assign("/loja-app/index.html?install=1");
+    });
+  }
+});
+</script>
+
+</body>
 </html>

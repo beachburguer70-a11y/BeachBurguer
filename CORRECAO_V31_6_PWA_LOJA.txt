@@ -1,0 +1,11 @@
+BEACH BURGUER PRODUÇÃO V31.6
+
+CORREÇÃO DA INSTALAÇÃO DO PWA LOJA
+- O botão "Instalar App Loja" agora usa navegação JavaScript explícita.
+- Abre diretamente /loja-app/index.html?install=1.
+- A tela de instalação da Loja é exibida imediatamente ao entrar por esse botão.
+- Se o Android ainda não fornecer o prompt nativo, o botão Instalar mostra uma orientação clara
+  para usar o menu do navegador > Instalar app / Adicionar à tela inicial.
+- O app Cliente continua separado do app Loja.
+- Manifest e Service Worker da Loja continuam em escopo próprio /loja-app/.
+- Nenhum SQL novo é necessário.

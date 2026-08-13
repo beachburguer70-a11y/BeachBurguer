@@ -1,4 +1,4 @@
-const CACHE="beach-burguer-loja-app-v31-5";
+const CACHE="beach-burguer-loja-app-v31-6";
 const STATIC=[
   "/loja-app/",
   "/loja-app/garcom.html",
