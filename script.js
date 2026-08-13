@@ -169,7 +169,7 @@ function preencherClientePeloTelefone(){
 }
 
 async function apiPedidos(method="GET",body=null,token=""){
-  const options={method,headers:{"Content-Type":"application/json"}};
+  const options={method,headers:{"Content-Type":"application/json"},cache:"no-store"};
   if(token)options.headers["X-Store-Token"]=token;
   if(body)options.body=JSON.stringify(body);
   const resposta=await fetch("/api/orders",options);
@@ -181,27 +181,51 @@ async function apiPedidos(method="GET",body=null,token=""){
 async function carregarDisponibilidade(){
   try{
     const resultado=await apiPedidos("GET",null,"");
-    if(Array.isArray(resultado.catalog)&&resultado.catalog.length){
-      dados.produtos=resultado.catalog.map(p=>({
-        id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",
-        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false,permiteAdicionais:p.allows_addons===true
-      }));
-      if(Array.isArray(resultado.categories)&&resultado.categories.length){
-        CATEGORIAS=resultado.categories.filter(c=>c.active!==false).map(c=>c.name);
-        REGRAS_CATEGORIAS=Object.fromEntries(resultado.categories.map(c=>[c.name,c.rule]));
-        if(!CATEGORIAS.includes(categoriaAtual))categoriaAtual=CATEGORIAS[0]||"Artesanais";
-        renderAbas();
+
+    // V31.4: categorias são independentes dos produtos.
+    // Qualquer categoria ativa cadastrada no Admin entra imediatamente no menu do Cliente.
+    if(Array.isArray(resultado.categories)){
+      const categoriasAtivas=resultado.categories
+        .filter(c=>c && c.active!==false && String(c.name||"").trim())
+        .sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
+
+      if(categoriasAtivas.length){
+        CATEGORIAS=categoriasAtivas.map(c=>String(c.name).trim());
+        REGRAS_CATEGORIAS=Object.fromEntries(
+          categoriasAtivas.map(c=>[String(c.name).trim(),String(c.rule||"artesanais")])
+        );
+
+        if(!CATEGORIAS.includes(categoriaAtual)){
+          categoriaAtual=CATEGORIAS[0]||"Artesanais";
+        }
       }
-      if(resultado.store){estadoLojaCliente=resultado.store;aplicarStatusLojaCliente();}
-      return;
     }
-    if(resultado.store){estadoLojaCliente=resultado.store;aplicarStatusLojaCliente();}
-    if(Array.isArray(resultado.products)){
+
+    if(Array.isArray(resultado.catalog)){
+      dados.produtos=resultado.catalog.map(p=>({
+        id:Number(p.id),
+        categoria:p.category,
+        nome:p.name,
+        descricao:p.description||"",
+        preco:Number(p.price||0),
+        ativo:p.active!==false,
+        disponivel:p.available!==false,
+        permiteAdicionais:p.allows_addons===true
+      }));
+    }else if(Array.isArray(resultado.products)){
       resultado.products.forEach(status=>{
         const produto=dados.produtos.find(p=>p.id===Number(status.product_id));
         if(produto)produto.disponivel=status.available!==false;
       });
     }
+
+    if(resultado.store){
+      estadoLojaCliente=resultado.store;
+      aplicarStatusLojaCliente();
+    }
+
+    renderAbas();
+    renderProdutos();
   }catch(erro){
     console.warn("Não foi possível consultar catálogo:",erro.message);
   }
@@ -322,9 +346,22 @@ function renderTaxas(){
   $("taxaEntrega").innerHTML=dados.taxas.map(t=>`<option value="${t.valor}">${t.nome}${t.valor?` — ${moeda(t.valor)}`:""}</option>`).join("");
 }
 function renderAbas(){
-  $("abas").innerHTML=CATEGORIAS.map(c=>`<button class="aba ${c===categoriaAtual?"ativa":""}" onclick="selecionarCategoria('${c}')">${c}</button>`).join("");
+  const el=$("abas");
+  if(!el)return;
+  el.innerHTML=CATEGORIAS.map((c,i)=>`<button class="aba ${c===categoriaAtual?"ativa":""}" data-cat-index="${i}">${c}</button>`).join("");
+  el.querySelectorAll("[data-cat-index]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const idx=Number(btn.dataset.catIndex);
+      selecionarCategoria(CATEGORIAS[idx]);
+    });
+  });
 }
-function selecionarCategoria(c){categoriaAtual=c;renderAbas();renderProdutos()}
+function selecionarCategoria(c){
+  if(!CATEGORIAS.includes(c))return;
+  categoriaAtual=c;
+  renderAbas();
+  renderProdutos();
+}
 
 function iconeProduto(categoria){
   if(categoria==="Mistos Quentes")return "🥪";

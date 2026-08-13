@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <base href="/">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080808">
@@ -41,6 +42,12 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Beach Burguer Loja">
   <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="/loja-app/manifest.json">
+  <link rel="apple-touch-icon" href="/assets/loja-apple-touch-icon.png">
+  <meta name="application-name" content="Beach Burguer Loja">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Beach Burguer Loja">
 </head>
 <body>
 <div id="login" class="login">
@@ -57,10 +64,9 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
   <div class="container top">
     <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small><br><strong id="clientesOnlineLoja" style="color:#8ee59a">🟢 Clientes online: 0</strong></div></div>
     <div class="controls">
-      <a href="/garcom" class="btn yellow" style="text-decoration:none">👨‍🍳 Garçom</a>
-      <a href="/loja-app/" class="btn dark" style="text-decoration:none">📱 Instalar App Loja</a>
+      <a href="/loja-app/garcom.html" class="btn yellow" style="text-decoration:none">👨‍🍳 Garçom</a>
       <button id="adminLojaBtn" class="btn dark">⚙️ Admin</button>
-      <a href="/relatorios" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
+      <a href="/loja-app/relatorios.html" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
       <button id="horariosBtn" class="btn dark">🕒 Horários</button>
       <button id="fecharLojaBtn" class="btn red">🔴 Fechar loja</button>
       <button id="finalizarExpediente" class="btn finalizar-expediente">🌙 Finalizar expediente</button>
@@ -437,5 +443,6 @@ if(criarProdutoV31) criarProdutoV31.onclick=async()=>{try{
 
 </script>
 
-  </body>
+    <script defer src="/loja-app/install.js?v=31_5"></script>
+</body>
 </html>

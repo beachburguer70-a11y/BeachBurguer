@@ -1,0 +1,13 @@
+BEACH BURGUER PRODUÇÃO V31.4
+
+Base: V31.3 PWA Loja.
+
+CORREÇÕES:
+1. Categorias cadastradas no Admin agora são carregadas independentemente dos produtos
+   e aparecem automaticamente no menu da página Cliente, assim como já apareciam no Garçom.
+2. Menu de categorias do Cliente foi reforçado para aceitar qualquer nome de categoria.
+3. Consulta do catálogo do Cliente usa no-store e script.js recebeu nova versão para evitar cache antigo.
+4. "Movimento de clientes" foi removido completamente da página Loja.
+5. "Movimento de clientes" permanece somente na página Relatórios.
+6. PWA Cliente e PWA Loja foram preservados.
+7. Nenhum SQL novo é necessário. Continua valendo o SQL da V31 já executado.

@@ -1,0 +1,21 @@
+BEACH BURGUER PRODUÇÃO V31.5 - DOIS PWAs NO MESMO CELULAR
+
+Base: V31.4.
+
+CORREÇÃO:
+- Cliente e Loja agora possuem identidades e escopos PWA separados.
+- PWA Cliente continua em /.
+- PWA Loja passa a ser um app independente em /loja-app/.
+- Manifest Loja: /loja-app/manifest.json
+- Service Worker Loja: /loja-app/sw.js com scope /loja-app/
+- O app Loja possui páginas internas próprias para Loja, Garçom e Relatórios.
+- Na página Loja foi adicionado botão "Instalar App Loja" que abre /loja-app/.
+- Isso permite manter o app Beach Burguer Cliente e o app Beach Burguer Loja instalados simultaneamente.
+- Nenhum SQL novo é necessário.
+
+TESTE:
+1. Mantenha o app Cliente instalado.
+2. Abra a página Loja normal.
+3. Toque em "Instalar App Loja".
+4. Na tela /loja-app/, instale "Beach Burguer Loja".
+5. Devem aparecer dois ícones separados no celular.

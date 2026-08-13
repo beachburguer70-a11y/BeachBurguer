@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base href="/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070707">
+  <title>Beach Burguer | Garçom</title>
+  <link rel="icon" href="assets/logo.png">
+  <link rel="stylesheet" href="style.css?v=900">
+  <style>
+    body{background:#080808}
+    .garcom-topo{position:sticky;top:0;z-index:30;background:#050505;border-bottom:1px solid #262626}
+    .garcom-barra{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0}
+    .garcom-acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .selo-garcom{background:#ffb800;color:#111;font-weight:900;border-radius:999px;padding:8px 12px}
+    .garcom-main{padding:24px 0 60px}
+    .garcom-layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+    .garcom-card{background:#111;border:1px solid #292929;border-radius:18px;padding:20px}
+    .tipo-presencial,.pagamento-presencial{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0 18px}
+    .tipo-btn,.pg-btn{border:1px solid #414141;background:#181818;color:#fff;border-radius:12px;padding:12px 15px;font-weight:900;cursor:pointer}
+    .tipo-btn.ativo,.pg-btn.ativo{background:#ffb800;border-color:#ffb800;color:#111}
+    .garcom-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .garcom-form label{display:grid;gap:6px;font-weight:800}
+    .garcom-form input,.garcom-form textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #3b3b3b;background:#0b0b0b;color:#fff}
+    .garcom-form .full{grid-column:1/-1}
+    .garcom-carrinho{position:sticky;top:92px}
+    .linha-garcom{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #292929}
+    .linha-garcom.total{font-size:23px;color:#ffb800;border-bottom:0}
+    .carrinho-vazio{color:#999;padding:18px 0}
+    .cart-item{padding:12px 0;border-bottom:1px solid #292929}
+    .cart-item-top{display:flex;justify-content:space-between;gap:10px}
+    .cart-controls{display:flex;gap:6px;margin-top:8px;align-items:center}
+    .cart-controls button{border:0;border-radius:8px;padding:7px 10px;font-weight:900;cursor:pointer}
+    .cart-controls .menos,.cart-controls .mais{background:#222;color:#fff}
+    .cart-controls .remover{background:#5c1717;color:#fff;margin-left:auto}
+    .login-garcom{position:fixed;inset:0;background:#050505;z-index:100;display:grid;place-items:center;padding:20px}
+    .login-garcom-box{width:min(420px,96%);background:#111;border:1px solid #333;border-radius:18px;padding:25px}
+    .login-garcom-box input{width:100%;padding:13px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff;margin:12px 0}
+    .hidden{display:none!important}
+    .garcom-produtos{margin-top:18px}
+    .garcom-status{font-size:13px;color:#aaa}
+    @media(max-width:950px){
+      .garcom-layout{grid-template-columns:1fr}
+      .garcom-carrinho{position:static}
+    }
+    @media(max-width:640px){
+      .garcom-form{grid-template-columns:1fr}
+      .garcom-form .full{grid-column:auto}
+      .garcom-barra{align-items:flex-start;flex-direction:column}
+    }
+  .modo-edicao-aviso{background:#2a2100;border:1px solid #ffb800;color:#ffcf4a;padding:10px 12px;border-radius:10px;margin-bottom:12px;font-weight:900}
+    .lista-pedidos-editar{display:grid;gap:10px;margin-top:14px;max-height:60vh;overflow:auto}
+    .pedido-editar-card{border:1px solid #333;background:#0b0b0b;border-radius:12px;padding:12px}
+    .pedido-editar-topo{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .pedido-editar-itens{font-size:13px;color:#bbb;margin:7px 0}
+    .modal-editar-pedido-garcom{max-width:650px}
+  
+    .pesquisa-garcom{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:8px;
+      margin:14px 0;
+    }
+    .pesquisa-garcom input{
+      width:100%;
+      padding:13px 14px;
+      border-radius:12px;
+      border:1px solid #444;
+      background:#0b0b0b;
+      color:#fff;
+      font-size:16px;
+      outline:none;
+    }
+    .pesquisa-garcom input:focus{
+      border-color:#ffb800;
+      box-shadow:0 0 0 2px rgba(255,184,0,.12);
+    }
+    @media(max-width:520px){
+      .pesquisa-garcom{grid-template-columns:1fr}
+    }
+  
+    .campo-troco-garcom{display:grid;gap:6px;font-weight:800;margin-top:8px}
+    .campo-troco-garcom input,.quantidade-modal-garcom input,.entrega-manual-garcom input{
+      padding:11px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff
+    }
+    .quantidade-modal-garcom{display:grid;gap:6px;font-weight:800;margin:12px 0}
+    .entrega-manual-garcom{align-items:center}
+    .entrega-manual-garcom input{width:125px;text-align:right}
+    .cart-controls .alterar{background:#ffb800;color:#111}
+  
+    .modal-confirmacao-adicional{max-width:430px;text-align:center}
+    .acoes-confirmacao-adicional{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+    #quantidadeComAdicional{width:100%;margin:10px 0;padding:12px;border-radius:10px;border:1px solid #444;background:#0b0b0b;color:#fff;font-size:18px;text-align:center}
+  
+    .troco-calculado-garcom{display:block;color:#ffcf4a;margin-top:6px;font-size:16px}
+  
+    /* V8.42 modal adicionais */
+    #modalConfirmacaoAdicional.ativo,
+    #modalQuantidadeAdicional.ativo{
+      display:flex !important;
+      align-items:center !important;
+      justify-content:center !important;
+      z-index:10050 !important;
+    }
+  
+    /* V8.44 GARCOM DIALOGO ADICIONAL */
+    #modalConfirmacaoAdicional.ativo,
+    #modalQuantidadeAdicional.ativo{
+      display:flex !important;
+      position:fixed !important;
+      inset:0 !important;
+      align-items:center !important;
+      justify-content:center !important;
+      background:rgba(0,0,0,.78) !important;
+      z-index:30000 !important;
+    }
+    #modalConfirmacaoAdicional .modal-box,
+    #modalQuantidadeAdicional .modal-box{
+      width:min(92vw,430px) !important;
+      max-width:430px !important;
+      z-index:30001 !important;
+    }
+  .produto.resultado-selecionado-v25{outline:3px solid #ffb800;outline-offset:2px}
+  </style>
+  <script defer src="garcom.js?v=8290"></script>
+
+<style>
+.resultados-pesquisa-garcom-v27{
+  position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5000;
+  background:#121212;border:1px solid #555;border-radius:12px;
+  box-shadow:0 14px 35px rgba(0,0,0,.55);max-height:360px;overflow:auto;
+}
+.resultados-pesquisa-garcom-v27.hidden{display:none}
+.resultado-pesquisa-v27{
+  width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 14px;border:0;border-bottom:1px solid #292929;background:#121212;
+  color:#fff;text-align:left;cursor:pointer;
+}
+.resultado-pesquisa-v27:last-child{border-bottom:0}
+.resultado-pesquisa-v27:hover,.resultado-pesquisa-v27.ativo{background:#ffb800;color:#111}
+.resultado-pesquisa-v27 .rp-info{display:flex;flex-direction:column;gap:2px}
+.resultado-pesquisa-v27 small{opacity:.75}
+.resultado-pesquisa-v27 strong:last-child{white-space:nowrap}
+.resultado-pesquisa-v27:disabled{opacity:.45;cursor:not-allowed}
+</style>
+
+<style id="menu-garcom-v29">
+/* V29 - categorias do Garçom: 3 em cima e 3 embaixo */
+#abasGarcom{
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  gap:8px !important;
+}
+#abasGarcom .aba{
+  width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  text-align:center !important;
+}
+@media(max-width:480px){
+  #abasGarcom{grid-template-columns:repeat(3,minmax(0,1fr)) !important}
+  #abasGarcom .aba{font-size:12px !important;padding-left:5px !important;padding-right:5px !important}
+}
+</style>
+  <link rel="manifest" href="/loja-app/manifest.json">
+  <link rel="apple-touch-icon" href="/assets/loja-apple-touch-icon.png">
+  <meta name="application-name" content="Beach Burguer Loja">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Beach Burguer Loja">
+</head>
+<body>
+<div id="loginGarcom" class="login-garcom">
+  <div class="login-garcom-box">
+    <div class="marca">
+      <img src="assets/logo.png" alt="Beach Burguer">
+      <div><strong>BEACH</strong><span>BURGUER</span></div>
+    </div>
+    <h2>Página do garçom</h2>
+    <p>Digite a senha da loja para abrir os pedidos presenciais.</p>
+    <input id="senhaGarcom" type="password" placeholder="Senha da loja">
+    <button id="entrarGarcom" class="btn btn-amarelo btn-largo">Entrar</button>
+  </div>
+</div>
+
+<div id="appGarcom" class="hidden">
+<header class="garcom-topo">
+  <div class="container garcom-barra">
+    <div class="marca">
+      <img src="assets/logo.png" alt="Beach Burguer">
+      <div><strong>BEACH</strong><span>BURGUER</span><br><small>PEDIDO PRESENCIAL</small></div>
+    </div>
+    <div class="garcom-acoes">
+      <a href="/loja-app/" class="btn btn-escuro" style="text-decoration:none">← Voltar para Loja</a>
+      <span class="selo-garcom">👨‍🍳 GARÇOM</span>
+      <button id="novoPedido" class="btn btn-escuro">Novo pedido</button>
+      <button id="editarPedidoGarcom" class="btn btn-escuro">✏️ Editar pedido</button>
+      <button id="sairGarcom" class="btn btn-escuro">Sair</button>
+    </div>
+  </div>
+</header>
+
+<main class="container garcom-main">
+  <div class="garcom-layout">
+    <section>
+      <div class="garcom-card">
+        <div class="pesquisa-garcom pesquisa-garcom-v27" style="margin-bottom:6px;position:relative">
+          <input id="pesquisaProdutoGarcom" type="search" placeholder="🔎 Pesquisar item pelo nome..." autocomplete="off">
+          <button id="limparPesquisaGarcom" type="button" class="btn btn-escuro">Limpar</button>
+          <div id="resultadosPesquisaGarcomV27" class="resultados-pesquisa-garcom-v27 hidden"></div>
+        </div>
+        <div id="clientesOnlineGarcom" style="margin-bottom:12px;color:#8ee59a;font-weight:900">🟢 Clientes online: 0</div>
+        <h2>Dados do pedido</h2>
+
+        <div class="tipo-presencial">
+          <button type="button" class="tipo-btn ativo" data-tipo="Consumir no local">🍽️ Consumir no local</button>
+          <button type="button" class="tipo-btn" data-tipo="Para viagem">🛍️ Para viagem</button>
+          <button type="button" class="tipo-btn" data-tipo="Entrega">🛵 Entrega</button>
+        </div>
+
+        <div class="garcom-form">
+          <label class="full">Nome do cliente *
+            <input id="nomeGarcom" placeholder="Nome do cliente">
+          </label>
+          <label class="full">Observações gerais
+            <textarea id="observacoesGarcom" placeholder="Ex.: mesa 4, sem talher, separar bebidas..."></textarea>
+          </label>
+        </div>
+
+        <h3>Pagamento</h3>
+        <div id="pagamentoPresencial" class="pagamento-presencial">
+          <button type="button" class="pg-btn ativo" data-pagamento="A pagar">⏳ A pagar</button>
+          <button type="button" class="pg-btn" data-pagamento="Pago">✅ Pago</button>
+        </div>
+        <label id="campoTrocoGarcom" class="campo-troco-garcom hidden">Troco para quanto?
+          <input id="trocoGarcom" inputmode="decimal" placeholder="Ex.: 50,00">
+          <strong id="valorTrocoCalculadoGarcom" class="troco-calculado-garcom"></strong>
+        </label>
+      </div>
+
+      <div class="garcom-card garcom-produtos">
+        <div class="titulo">
+          <h2>Cardápio</h2>
+          <p>Escolha os itens do pedido presencial.</p>
+        </div>
+        
+
+        <div id="abasGarcom" class="abas"></div>
+        <div id="produtosGarcom" class="grade-produtos"></div>
+      </div>
+    </section>
+
+    <aside class="garcom-card garcom-carrinho">
+      <h2>Pedido atual</h2>
+      <div id="itensGarcom"></div>
+      <div class="linha-garcom entrega-manual-garcom">
+        <span>Entrega</span>
+        <input id="valorEntregaGarcom" inputmode="decimal" placeholder="R$ 0,00">
+      </div>
+      <div class="linha-garcom total"><span>Total</span><strong id="totalGarcom">R$ 0,00</strong></div>
+      <button id="enviarGarcom" class="btn btn-verde btn-largo">ENVIAR PEDIDO</button>
+      <p id="statusGarcom" class="garcom-status"></p>
+    </aside>
+  </div>
+</main>
+
+<div id="modalEditarPedidoGarcom" class="modal">
+  <div class="modal-box modal-editar-pedido-garcom">
+    <button id="fecharEditarPedidoGarcom" class="fechar">×</button>
+    <h2>✏️ Editar pedido</h2>
+    <p>Selecione um pedido feito pelo garçom. Ao salvar, a comanda completa será impressa novamente.</p>
+    <button id="atualizarPedidosGarcom" class="btn btn-amarelo btn-largo">Atualizar lista</button>
+    <div id="listaPedidosEditarGarcom" class="lista-pedidos-editar"></div>
+  </div>
+</div>
+<div id="modalProdutoGarcom" class="modal">
+  <div class="modal-box">
+    <button id="fecharProdutoGarcom" class="fechar">×</button>
+    <h2 id="produtoNomeGarcom"></h2>
+    <p id="produtoDescricaoGarcom"></p>
+    <div id="produtoPrecoGarcom" class="preco-modal"></div>
+
+    <label class="quantidade-modal-garcom">Quantidade
+      <input id="produtoQtdGarcom" type="number" min="1" step="1" value="1">
+    </label>
+
+    <h3 id="tituloAdicionaisGarcom">Adicionais</h3>
+    <div id="listaAdicionaisGarcom"></div>
+
+    <label>Observação do item
+      <input id="produtoObsGarcom" placeholder="Ex.: sem salada">
+    </label>
+
+    <button id="confirmarProdutoGarcom" class="btn btn-amarelo btn-largo">Adicionar ao pedido</button>
+  </div>
+</div>
+</div>
+
+<div id="modalConfirmacaoAdicional" class="modal">
+  <div class="modal-box modal-confirmacao-adicional">
+    <h2>Aplicar adicionais?</h2>
+    <p id="textoConfirmacaoAdicional"></p>
+    <div class="acoes-confirmacao-adicional">
+      <button id="confirmacaoAdicionalSim" type="button" class="btn btn-amarelo">SIM</button>
+      <button id="confirmacaoAdicionalNao" type="button" class="btn btn-escuro">NÃO</button>
+    </div>
+  </div>
+</div>
+<div id="modalQuantidadeAdicional" class="modal">
+  <div class="modal-box modal-confirmacao-adicional">
+    <h2>Em quantas unidades?</h2>
+    <p id="textoQuantidadeAdicional"></p>
+    <input id="quantidadeComAdicional" type="number" min="0" step="1" value="1">
+    <div class="acoes-confirmacao-adicional">
+      <button id="confirmarQuantidadeAdicional" type="button" class="btn btn-amarelo">CONFIRMAR</button>
+      <button id="cancelarQuantidadeAdicional" type="button" class="btn btn-escuro">CANCELAR</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
