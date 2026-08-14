@@ -1,0 +1,11 @@
+BEACH BURGUER - V31.13 - HISTÓRICO / EXPEDIENTE CORRIGIDO
+
+Correção aplicada:
+- A tela Loja agora busca somente os pedidos pertencentes ao expediente atual.
+- Pedidos antigos que permaneceram com status NOVO, PREPARO ou PRONTO não voltam mais para a fila da Loja.
+- Pedidos antigos continuam disponíveis no histórico/relatórios.
+- A correção V31.12 de PIX / pedido garantido foi preservada.
+- Nenhuma regra de pagamento, impressão, cardápio ou status foi alterada nesta correção.
+
+Arquivo alterado:
+- functions/api/orders.js (ação list_orders)

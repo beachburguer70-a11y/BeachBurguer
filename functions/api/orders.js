@@ -623,18 +623,14 @@ export async function onRequestPost({ request, env }) {
       const filtroInicio=inicioExpediente
         ? `&created_at=gte.${encodeURIComponent(inicioExpediente)}`
         : "";
-      // Pedidos do expediente + qualquer pedido ainda ativo. Assim um pedido novo
-      // nunca some da Loja por causa de um shift_started_at fora de sincronia.
-      const [shiftOrders, activeOrders] = await Promise.all([
-        supabaseRequest(env,`orders?select=*&order=created_at.desc&limit=${limit}${filtroInicio}`),
-        supabaseRequest(env,`orders?select=*&status=in.(novo,preparo,pronto)&order=created_at.desc&limit=${limit}`)
-      ]);
-      const map=new Map();
-      for(const o of [...(activeOrders||[]),...(shiftOrders||[])]) map.set(String(o.id),o);
-      const orders=[...map.values()]
-        .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))
-        .slice(0,limit);
-      return json({ ok:true, orders, shift_started_at:inicioExpediente });
+      // V31.13: a Loja deve exibir somente os pedidos do expediente atual.
+      // Não buscamos pedidos ativos de expedientes antigos, pois eles pertencem
+      // apenas ao histórico/relatórios e não podem reaparecer na fila da Loja.
+      const orders = await supabaseRequest(
+        env,
+        `orders?select=*&order=created_at.desc&limit=${limit}${filtroInicio}`
+      );
+      return json({ ok:true, orders:orders || [], shift_started_at:inicioExpediente });
     }
 
 
