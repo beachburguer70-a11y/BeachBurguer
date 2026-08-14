@@ -465,6 +465,15 @@ export async function onRequestPost({ request, env }) {
         const verified = await verifyApprovedPix(env, body.pix_payment_id, body.total);
         if (!verified.ok) return json({ ok:false, error:verified.error }, 400);
         pixPayment = verified.payment;
+
+        // Idempotência: webhook/polling podem já ter criado o pedido deste Pix.
+        const existingPixOrder = await supabaseRequest(
+          env,
+          `orders?select=*&pix_payment_id=eq.${encodeURIComponent(String(pixPayment.id))}&limit=1`
+        );
+        if (Array.isArray(existingPixOrder) && existingPixOrder[0]) {
+          return json({ ok:true, order:existingPixOrder[0], existing:true });
+        }
       }
 
       const order = {
@@ -614,11 +623,18 @@ export async function onRequestPost({ request, env }) {
       const filtroInicio=inicioExpediente
         ? `&created_at=gte.${encodeURIComponent(inicioExpediente)}`
         : "";
-      const orders = await supabaseRequest(
-        env,
-        `orders?select=*&order=created_at.desc&limit=${limit}${filtroInicio}`
-      );
-      return json({ ok:true, orders:orders || [], shift_started_at:inicioExpediente });
+      // Pedidos do expediente + qualquer pedido ainda ativo. Assim um pedido novo
+      // nunca some da Loja por causa de um shift_started_at fora de sincronia.
+      const [shiftOrders, activeOrders] = await Promise.all([
+        supabaseRequest(env,`orders?select=*&order=created_at.desc&limit=${limit}${filtroInicio}`),
+        supabaseRequest(env,`orders?select=*&status=in.(novo,preparo,pronto)&order=created_at.desc&limit=${limit}`)
+      ]);
+      const map=new Map();
+      for(const o of [...(activeOrders||[]),...(shiftOrders||[])]) map.set(String(o.id),o);
+      const orders=[...map.values()]
+        .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))
+        .slice(0,limit);
+      return json({ ok:true, orders, shift_started_at:inicioExpediente });
     }
 
 

@@ -1,5 +1,6 @@
 
 import { json, supabaseRequest, mpToken } from "./_shared.js";
+import { ensureOrderFromApprovedPix } from "./_pix-order.js";
 
 export async function onRequestOptions() {
   return json({}, 204);
@@ -41,6 +42,12 @@ export async function onRequestGet({ request, env }) {
       console.warn("Status MP OK; banco falhou:", dbError.message);
     }
 
+    let orderResult=null;
+    if(payment.status === "approved") {
+      try { orderResult=await ensureOrderFromApprovedPix(env,payment); }
+      catch(e){ console.error("Reconciliação Pix/pedido falhou:",e); }
+    }
+
     return json({
       ok:true,
       payment_id:String(payment.id),
@@ -48,7 +55,9 @@ export async function onRequestGet({ request, env }) {
       status_detail:String(payment.status_detail || ""),
       approved:payment.status === "approved",
       amount:Number(payment.transaction_amount || 0),
-      external_reference:String(payment.external_reference || "")
+      external_reference:String(payment.external_reference || ""),
+      order_id:orderResult?.order?.id || null,
+      order_created:Boolean(orderResult?.order)
     });
   } catch (error) {
     console.error(error);

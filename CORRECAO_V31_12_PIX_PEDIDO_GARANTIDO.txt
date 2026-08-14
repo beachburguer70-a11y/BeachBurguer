@@ -1,0 +1,19 @@
+BEACH BURGUER PRODUÇÃO V31.12
+
+CORREÇÃO CRÍTICA PIX
+- O rascunho completo do pedido passa a ser vinculado ao Pix no momento em que o QR Code é criado.
+- Quando o Mercado Pago confirma status approved, tanto o webhook quanto o polling tentam garantir a criação do pedido no Supabase.
+- A criação é idempotente pelo pix_payment_id: o mesmo Pix não gera dois pedidos.
+- O checkout continua tentando enviar normalmente após a aprovação; se o servidor já tiver criado, recebe o mesmo pedido existente.
+- Se o webhook falhar, o polling também reconcilia Pix aprovado -> pedido.
+- Se o navegador fechar depois do pagamento, o webhook ainda pode criar o pedido usando o rascunho salvo.
+
+LOJA / IMPRESSÃO
+- list_orders agora sempre inclui pedidos ativos (novo, preparo, pronto), mesmo se shift_started_at estiver fora de sincronia.
+- Isso evita pedido ativo invisível e, consequentemente, sem impressão automática.
+
+DINHEIRO E CARTÃO
+- Fluxos mantidos sem alteração estrutural.
+
+BANCO
+- Executar supabase/ATUALIZAR_V31_12_PIX_PEDIDO_GARANTIDO.sql antes do deploy.

@@ -1,5 +1,6 @@
 
 import { json, supabaseRequest, mpToken } from "./_shared.js";
+import { ensureOrderFromApprovedPix } from "./_pix-order.js";
 
 function hex(buffer) {
   return [...new Uint8Array(buffer)].map(b => b.toString(16).padStart(2,"0")).join("");
@@ -80,6 +81,11 @@ async function handle({ request, env }) {
         })
       }
     );
+
+    if(payment.status === "approved") {
+      try { await ensureOrderFromApprovedPix(env,payment); }
+      catch(e){ console.error("Webhook: criação do pedido pago falhou:",e); }
+    }
 
     return json({ ok:true });
   } catch (error) {

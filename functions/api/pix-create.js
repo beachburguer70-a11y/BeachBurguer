@@ -16,6 +16,7 @@ export async function onRequestPost({ request, env }) {
     const phone = String(body.phone || "").replace(/\D/g, "").slice(0, 11);
     const email = `cliente${phone ? `+${phone}` : ""}@beachburguer.pages.dev`;
     const name = String(body.name || "").trim();
+    const orderPayload = body.order && typeof body.order === "object" ? body.order : null;
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return json({ ok:false, error:"Valor inválido." }, 400);
@@ -75,6 +76,7 @@ export async function onRequestPost({ request, env }) {
             amount:Number(amount.toFixed(2)),
             payer_email:email,
             qr_code:qrCode,
+            order_payload:orderPayload,
             updated_at:new Date().toISOString()
           })
         }

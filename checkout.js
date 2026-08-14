@@ -530,7 +530,7 @@ async function gerarPix(){
   const d=dadosPedido();
   mostrarEtapa("etapaPix");
   $("pixStatusCheckout").textContent="Gerando Pix...";
-  const r=await fetch("/api/pix-create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:d.total,name:d.cliente,phone:d.telefone})});
+  const r=await fetch("/api/pix-create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:d.total,name:d.cliente,phone:d.telefone,order:d})});
   const data=await r.json();
   if(!r.ok||!data.ok){alert(data.error||"Erro ao gerar Pix.");mostrarEtapa("etapaPagamento");return}
   pixPaymentId=String(data.payment_id||data.id);
