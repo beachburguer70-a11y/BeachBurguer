@@ -27,6 +27,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 
     .finalizar-expediente{background:#7b1d1d;color:#fff;border:1px solid #b93a3a}
     .finalizar-expediente:hover{background:#982626}
+    .chuva-ativa{background:#1565c0!important;color:#fff!important;border:1px solid #64b5f6!important;box-shadow:0 0 0 2px rgba(100,181,246,.18)}
   
     .modal-store{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px}
     .modal-store-box{background:#111;border:1px solid #444;border-radius:16px;padding:20px;width:min(680px,96vw);max-height:90vh;overflow:auto;position:relative}
@@ -67,6 +68,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
       <button id="adminLojaBtn" class="btn dark">⚙️ Admin</button>
       <a href="/loja-app/relatorios.html" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
       <button id="horariosBtn" class="btn dark">🕒 Horários</button>
+      <button id="chuvaBtn" class="btn dark">🌧️ Chuva: DESATIVADA</button>
       <button id="fecharLojaBtn" class="btn red">🔴 Fechar loja</button>
       <button id="finalizarExpediente" class="btn finalizar-expediente">🌙 Finalizar expediente</button>
       <button id="somBtn" class="btn dark">🔔 Campainha ativada</button>
@@ -159,6 +161,7 @@ $("senha").value=token;
 $("entrar").onclick=entrar;
 $("senha").onkeydown=e=>{if(e.key==="Enter")entrar()};
 $("horariosBtn").onclick=async()=>{await carregarConfigLoja();abrirModalHorarios()};
+$("chuvaBtn").onclick=alternarModoChuva;
 $("fecharModalHorarios").onclick=()=>$("modalHorarios").classList.add("hidden");
 $("salvarHorarios").onclick=salvarHorarios;
 $("abrirHoje").onclick=async()=>{await definirModoLoja("open");alert("Loja aberta excepcionalmente hoje.")};
@@ -175,9 +178,13 @@ const NOMES_DIAS=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábad
 let storeConfig=null;
 let ultimoPromptFechamento="";
 
+function atualizarBotaoChuva(){const b=$("chuvaBtn");if(!b)return;const a=storeConfig?.rain_mode===true;b.textContent=a?"🌧️ Chuva: ATIVADA":"🌧️ Chuva: DESATIVADA";b.classList.toggle("chuva-ativa",a)}
+async function alternarModoChuva(){try{await carregarConfigLoja();const ativar=!(storeConfig?.rain_mode===true);const msg=ativar?"Ativar MODO CHUVA?\n\nEntrega ficará disponível somente para Atafona. São João da Barra e Chapéu do Sol ficarão somente para retirada.":"Desativar MODO CHUVA e liberar novamente as entregas normais?";if(!confirm(msg))return;const r=await api("POST",{action:"set_rain_mode",enabled:ativar});storeConfig=r.store||storeConfig;atualizarBotaoChuva();alert(ativar?"Modo Chuva ativado. Entrega somente para Atafona.":"Modo Chuva desativado. Entregas normais liberadas.")}catch(e){alert("Não foi possível alterar o Modo Chuva: "+e.message)}}
+
 async function carregarConfigLoja(){
   const r=await api("POST",{action:"get_store_config"});
   storeConfig=r.store;
+  atualizarBotaoChuva();
   atualizarStatusLoja();
   return storeConfig;
 }

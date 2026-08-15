@@ -1,4 +1,4 @@
-const CACHE="beach-burguer-loja-app-v31-9";
+const CACHE="beach-burguer-loja-app-v31-15-chuva";
 const STATIC=["/loja-app/","/loja-app/garcom.html","/loja-app/relatorios.html","/assets/logo.png","/assets/loja-pwa-192.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)).catch(()=>{}));self.skipWaiting();});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("beach-burguer-loja-app-")&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});

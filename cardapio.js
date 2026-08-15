@@ -55,7 +55,7 @@ function validarItemPrincipalV15(){
 }
 
 
-let estadoLojaV16={open:true,pickup_only:false,mode:"open"};
+let estadoLojaV16={open:true,pickup_only:false,rain_mode:false,mode:"open"};
 
 
 
@@ -173,6 +173,7 @@ let tipoPedido=localStorage.getItem("bb_tipo_pedido")||"Retirada";
 $("tipoPedidoBadgeV7").textContent=`📍 ${tipoPedido}`;
 
 function atualizarTipoPedidoV10(tipo){
+  if(estadoLojaV16.rain_mode===true&&tipo==="Entrega")alert("🌧️ Devido à chuva, estamos aceitando ENTREGA somente para Atafona. Para São João da Barra e Chapéu do Sol, escolha RETIRADA no local.");
   if(estadoLojaV16.pickup_only && tipo!=="Retirada"){
     alert("No momento a loja está aceitando somente retirada no local.");
     return;

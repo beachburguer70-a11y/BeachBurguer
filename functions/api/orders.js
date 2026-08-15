@@ -216,11 +216,11 @@ function calcularStatusLoja(state){
 }
 async function obterEstadoLoja(env){
   try{
-    const rows=await supabaseRequest(env,"store_state?select=id,shift_started_at,opening_hours,manual_mode,manual_date,updated_at&id=eq.1&limit=1");
+    const rows=await supabaseRequest(env,"store_state?select=id,shift_started_at,opening_hours,manual_mode,manual_date,rain_mode,updated_at&id=eq.1&limit=1");
     const row=rows?.[0]||{};
-    return {...row,...calcularStatusLoja(row)};
+    return {...row,rain_mode:row?.rain_mode===true,...calcularStatusLoja(row)};
   }catch{
-    return calcularStatusLoja({});
+    return {rain_mode:false,...calcularStatusLoja({})};
   }
 }
 
@@ -426,6 +426,10 @@ export async function onRequestPost({ request, env }) {
         if(store.pickup_only && String(body.tipo)!=="Retirada"){
           return json({ok:false,error:"Neste momento estamos aceitando pedidos somente para retirada no local."},403);
         }
+        if(store.rain_mode===true && String(body.tipo)==="Entrega"){
+          const localChuva=String(body.localidade||body.bairro||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+          if(localChuva!=="atafona") return json({ok:false,error:"Devido à chuva, estamos aceitando entrega somente para Atafona. Para São João da Barra e Chapéu do Sol, escolha retirada no local."},403);
+        }
       }
       const required = isGarcom ? ["cliente","itens","total","pagamento","tipo"] : ["cliente","telefone","itens","total","pagamento","tipo"];
       for (const field of required) {
@@ -614,6 +618,13 @@ export async function onRequestPost({ request, env }) {
         headers:{Prefer:"resolution=merge-duplicates,return=minimal"},
         body:JSON.stringify({id:1,manual_mode:mode,manual_date:sp.date,updated_at:agora})
       });
+      return json({ok:true,store:await obterEstadoLoja(env)});
+    }
+
+    if (action === "set_rain_mode") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+      const enabled=body.enabled===true;
+      await supabaseRequest(env,"store_state?on_conflict=id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:1,rain_mode:enabled,updated_at:new Date().toISOString()})});
       return json({ok:true,store:await obterEstadoLoja(env)});
     }
 

@@ -64,7 +64,7 @@ let pixPaymentId=null;
 let pixPolling=null;
 let enviando=false;
 
-let estadoLojaCheckoutV16={open:true,pickup_only:false,mode:"open"};
+let estadoLojaCheckoutV16={open:true,pickup_only:false,rain_mode:false,mode:"open"};
 
 
 
@@ -128,6 +128,8 @@ async function validarEstadoLojaAntesDeProsseguirV20(){
     return true;
   }
 
+  if(estadoLojaCheckoutV16?.rain_mode===true&&tipoPedido==="Entrega"){const local=String($("bairroCheckout")?.value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();if(local!=="atafona"){alert("🌧️ Devido à chuva, estamos aceitando entrega somente para Atafona ou retirada no local.");return false;}}
+
   return true;
 }
 
@@ -147,7 +149,9 @@ async function carregarEstadoLojaCheckoutV16(){
   aplicarBloqueioModalidadeCheckoutV16();
   atualizarTudo();
 }
+function aplicarModoChuvaCheckoutV31_15(){const sel=$("bairroCheckout");if(!sel)return;const chuva=estadoLojaCheckoutV16?.rain_mode===true;[...sel.options].forEach(op=>{if(!op.value)return;const n=String(op.value).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();const bloqueada=chuva&&n!=="atafona";op.disabled=bloqueada;op.hidden=bloqueada});if(chuva&&tipoPedido==="Entrega"){const atual=String(sel.value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();if(atual&&atual!=="atafona")sel.value=""}}
 function aplicarBloqueioModalidadeCheckoutV16(){
+  aplicarModoChuvaCheckoutV31_15();
   document.querySelectorAll(".tipo-opcao-checkout-v11").forEach(b=>{
     const bloqueada=estadoLojaCheckoutV16.pickup_only && b.dataset.tipo!=="Retirada";
     b.disabled=bloqueada;
@@ -333,6 +337,7 @@ function atualizarCalculoTrocoV10(){
 
 
 function atualizarModalidadeCheckoutV11(tipo){
+  if(estadoLojaCheckoutV16.rain_mode===true&&tipo==="Entrega")alert("🌧️ Devido à chuva, estamos aceitando ENTREGA somente para Atafona. Para São João da Barra e Chapéu do Sol, escolha RETIRADA no local.");
   if(estadoLojaCheckoutV16.pickup_only && tipo!=="Retirada"){
     alert("No momento a loja está aceitando somente retirada no local.");
     return;

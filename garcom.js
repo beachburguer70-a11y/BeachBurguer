@@ -193,11 +193,15 @@ function dialogoFechamentoGarcom(){
   });
 }
 
+function atualizarBotaoChuvaGarcom(){const b=$("chuvaBtnGarcom");if(!b)return;const a=storeConfigGarcom?.rain_mode===true;b.textContent=a?"🌧️ Chuva: ATIVADA":"🌧️ Chuva: DESATIVADA";b.classList.toggle("chuva-ativa",a)}
+async function alternarModoChuvaGarcom(){try{await carregarConfigHorarioGarcom();const ativar=!(storeConfigGarcom?.rain_mode===true);const msg=ativar?"Ativar MODO CHUVA?\n\nEntrega ficará disponível somente para Atafona. São João da Barra e Chapéu do Sol ficarão somente para retirada.":"Desativar MODO CHUVA e liberar novamente as entregas normais?";if(!confirm(msg))return;const r=await api("POST",{action:"set_rain_mode",enabled:ativar},true);storeConfigGarcom=r.store||storeConfigGarcom;atualizarBotaoChuvaGarcom();mostrarAvisoModoGarcom(ativar?"🌧️ Modo Chuva ativado: entrega somente para Atafona.":"☀️ Modo Chuva desativado: entregas normais liberadas.")}catch(e){alert("Não foi possível alterar o Modo Chuva: "+e.message)}}
+
 async function carregarConfigHorarioGarcom(){
   if(!token)return;
   try{
     const r=await api("POST",{action:"get_store_config"},true);
     storeConfigGarcom=r.store||null;
+    atualizarBotaoChuvaGarcom();
 
     // Limpa automaticamente um modo manual antigo deixado por testes ou pelo dia anterior.
     if(storeConfigGarcom?.manual_date &&
@@ -812,6 +816,7 @@ async function enviarPedido(){
 }
 
 $("senhaGarcom").value=token;
+if($("chuvaBtnGarcom")) $("chuvaBtnGarcom").onclick=alternarModoChuvaGarcom;
 $("entrarGarcom").onclick=entrar;
 $("senhaGarcom").onkeydown=e=>{if(e.key==="Enter")entrar()};
 $("sairGarcom").onclick=()=>{

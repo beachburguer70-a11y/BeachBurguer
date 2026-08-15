@@ -1,0 +1,10 @@
+BEACH BURGUER V31.15 — MODO CHUVA
+
+- Botão Chuva na Loja e no Garçom.
+- Estado sincronizado pelo Supabase.
+- Chuva ATIVADA: entrega somente para Atafona; São João da Barra e Chapéu do Sol indisponíveis para entrega; retirada normal.
+- Cliente/App recebe aviso ao escolher Entrega.
+- Checkout oculta São João da Barra e Chapéu do Sol durante a chuva.
+- API bloqueia entrega fora de Atafona.
+
+IMPORTANTE: execute supabase/ATUALIZAR_V31_15_MODO_CHUVA.sql antes de publicar.

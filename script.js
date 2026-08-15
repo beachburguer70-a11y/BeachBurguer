@@ -76,7 +76,7 @@ let pixPollingStartedAt=0;
 let pixFinalizacaoAutomaticaIniciada=false;
 let adminToken="";
 
-let estadoLojaCliente={open:true,pickup_only:false,mode:"open"};
+let estadoLojaCliente={open:true,pickup_only:false,rain_mode:false,mode:"open"};
 const $=id=>document.getElementById(id);
 const moeda=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
@@ -381,15 +381,14 @@ function aplicarStatusLojaCliente(){
   }else{
     localStorage.setItem("bb_store_state",JSON.stringify(estadoLojaCliente));
     box.className="status-loja-cliente";
-    box.textContent="🟢 Loja aberta — faça seu pedido.";
+    box.textContent=estadoLojaCliente.rain_mode===true?"🌧️ Modo chuva — entrega somente para Atafona ou retirada no local.":"🟢 Loja aberta — faça seu pedido.";
     document.querySelectorAll(".tipo-rapido").forEach(b=>b.disabled=false);
   }
+  renderTaxas();
   atualizarBotaoPedido();
 }
 
-function renderTaxas(){
-  $("taxaEntrega").innerHTML=dados.taxas.map(t=>`<option value="${t.valor}">${t.nome}${t.valor?` — ${moeda(t.valor)}`:""}</option>`).join("");
-}
+function renderTaxas(){const taxas=estadoLojaCliente.rain_mode===true?dados.taxas.filter(t=>String(t.nome||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()==="atafona"):dados.taxas;$("taxaEntrega").innerHTML=taxas.map(t=>`<option value="${t.valor}">${t.nome}${t.valor?` — ${moeda(t.valor)}`:""}</option>`).join("");}
 function renderAbas(){
   const el=$("abas");
   if(!el)return;
@@ -825,6 +824,7 @@ function atualizarCamposEntrega(){
 }
 
 function selecionarTipoPedido(tipo){
+  if(estadoLojaCliente.rain_mode===true&&tipo==="Entrega")alert("🌧️ Devido à chuva, estamos aceitando ENTREGA somente para Atafona. Para São João da Barra e Chapéu do Sol, escolha RETIRADA no local.");
   if(estadoLojaCliente.pickup_only&&tipo!=="Retirada"){
     alert("Neste momento estamos aceitando somente retirada no local.");
     return;
@@ -1121,6 +1121,7 @@ $("modalTipoPedido").onclick=e=>{if(e.target===$("modalTipoPedido"))$("modalTipo
 document.querySelectorAll(".opcao-pedido").forEach(btn=>btn.addEventListener("click",()=>selecionarTipoPedido(btn.dataset.tipo)));
 document.querySelectorAll(".tipo-rapido").forEach(btn=>btn.addEventListener("click",()=>{
   // Troca o tipo de pedido sem sair da tela de finalização.
+  if(estadoLojaCliente.rain_mode===true&&btn.dataset.tipoRapido==="Entrega")alert("🌧️ Devido à chuva, estamos aceitando ENTREGA somente para Atafona. Para São João da Barra e Chapéu do Sol, escolha RETIRADA no local.");
   $("tipoPedido").value=btn.dataset.tipoRapido;
   atualizarCamposEntrega();
   resetarConfirmacaoPix();

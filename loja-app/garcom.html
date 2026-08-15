@@ -14,6 +14,7 @@
     .garcom-barra{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0}
     .garcom-acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .selo-garcom{background:#ffb800;color:#111;font-weight:900;border-radius:999px;padding:8px 12px}
+    .chuva-ativa{background:#1565c0!important;color:#fff!important;border:1px solid #64b5f6!important;box-shadow:0 0 0 2px rgba(100,181,246,.18)}
     .garcom-main{padding:24px 0 60px}
     .garcom-layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
     .garcom-card{background:#111;border:1px solid #292929;border-radius:18px;padding:20px}
@@ -123,7 +124,7 @@
     }
   .produto.resultado-selecionado-v25{outline:3px solid #ffb800;outline-offset:2px}
   </style>
-  <script defer src="garcom.js?v=8290"></script>
+  <script defer src="garcom.js?v=31_15_chuva"></script>
 
 <style>
 .resultados-pesquisa-garcom-v27{
@@ -192,6 +193,7 @@
     <div class="garcom-acoes">
       <a href="/loja-app/" class="btn btn-escuro" style="text-decoration:none">← Voltar para Loja</a>
       <span class="selo-garcom">👨‍🍳 GARÇOM</span>
+      <button id="chuvaBtnGarcom" class="btn btn-escuro" type="button">🌧️ Chuva: DESATIVADA</button>
       <button id="novoPedido" class="btn btn-escuro">Novo pedido</button>
       <button id="editarPedidoGarcom" class="btn btn-escuro">✏️ Editar pedido</button>
       <button id="sairGarcom" class="btn btn-escuro">Sair</button>
