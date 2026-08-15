@@ -1,0 +1,12 @@
+V31.14 — BIA / WHATSAPP
+
+- Adicionada base da atendente virtual Bia.
+- Novo webhook oficial: /api/bia-whatsapp.
+- Integração com OpenAI Responses API.
+- Bia usa catálogo vivo do Supabase e ignora produtos indisponíveis.
+- Valores são recalculados no servidor; a IA não define preços.
+- Sessões por telefone em bia_sessions.
+- Deduplicação de mensagens em bia_processed_messages.
+- Fluxo Pix reaproveita a garantia de pedido da V31.12.
+- Pedidos da Bia passam a registrar origem = 'bia'.
+- Fluxos existentes de cliente/garçom/loja não foram substituídos.

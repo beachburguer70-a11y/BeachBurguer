@@ -1,0 +1,64 @@
+BEACH BURGUER — BIA V31.14
+==========================
+
+O que esta versão adiciona
+--------------------------
+- Webhook oficial do WhatsApp: /api/bia-whatsapp
+- Bia com IA via OpenAI Responses API
+- Consulta do cardápio real no Supabase
+- Respeita disponibilidade dos produtos
+- Monta carrinho sem confiar em preço calculado pela IA
+- Recalcula preços/adicionais/taxa no servidor
+- Entrega: Atafona, São João da Barra e Chapéu do Sol
+- Pagamentos: Pix, Dinheiro e Cartão
+- Pix: gera copia-e-cola e usa o fluxo existente de confirmação automática
+- Dinheiro/Cartão: envia ao mesmo /api/orders usado pelo site
+- Sessão persistente por telefone
+- Proteção contra webhook duplicado
+- Handoff para atendente humano quando solicitado
+
+1) RODAR NO SUPABASE
+--------------------
+Execute o arquivo:
+supabase/ATUALIZAR_V31_14_BIA_WHATSAPP.sql
+
+2) VARIÁVEIS NO CLOUDFLARE PAGES
+--------------------------------
+Além das que o projeto já usa, configure:
+
+OPENAI_API_KEY = sua chave da API OpenAI
+OPENAI_MODEL = gpt-5-mini
+WHATSAPP_VERIFY_TOKEN = crie uma senha/token de sua escolha
+WHATSAPP_GRAPH_VERSION = v23.0
+
+Estas já podem existir na V31.13:
+WHATSAPP_ACCESS_TOKEN
+WHATSAPP_PHONE_NUMBER_ID
+
+3) WEBHOOK NA META
+------------------
+Callback URL:
+https://SEU-DOMINIO/api/bia-whatsapp
+
+Verify token:
+o mesmo valor de WHATSAPP_VERIFY_TOKEN
+
+Assine o campo "messages" do WhatsApp.
+
+4) IMPORTANTE
+-------------
+- Não coloque OPENAI_API_KEY no JavaScript do navegador. Ela fica apenas no Cloudflare.
+- A Bia não calcula preços por conta própria: o servidor recalcula usando o banco.
+- O pedido só é criado após confirmação explícita do cliente.
+- Pix só vira pedido quando o Mercado Pago marcar o pagamento como aprovado, usando o fluxo V31.12 já existente.
+
+5) TESTE RECOMENDADO
+--------------------
+1. "Oi"
+2. "Quero um Açu e um Guaravita"
+3. Informar nome
+4. Informar Entrega/Retirada
+5. Se Entrega, informar localidade/endereço/número
+6. Informar pagamento
+7. Confirmar o resumo
+8. Conferir se pedido aparece na tela da loja e imprime normalmente

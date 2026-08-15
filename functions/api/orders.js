@@ -417,6 +417,7 @@ export async function onRequestPost({ request, env }) {
 
     if (action === "create") {
       const isGarcom = String(body.origem || "").toLowerCase() === "garcom";
+      const isBia = String(body.origem || "").toLowerCase() === "bia";
       if(!isGarcom){
         const store=await obterEstadoLoja(env);
         if(!store.open){
@@ -495,7 +496,7 @@ export async function onRequestPost({ request, env }) {
         total:Number(body.total || 0),
         pix_payment_id:pixPayment ? String(pixPayment.id) : null,
         pix_status:pixPayment ? String(pixPayment.status) : null,
-        origem:isGarcom ? "garcom" : "cliente"
+        origem:isGarcom ? "garcom" : (String(body.origem||"").toLowerCase()==="bia" ? "bia" : "cliente")
       };
 
       const inserted = await supabaseRequest(
@@ -511,7 +512,7 @@ export async function onRequestPost({ request, env }) {
 
       // Pedido do cliente: tenta enviar confirmação automática pelo WhatsApp.
       // A falha do WhatsApp nunca impede o pedido de ser criado.
-      if (!isGarcom && telefone) {
+      if (!isGarcom && !isBia && telefone) {
         await sendWhatsAppTemplate(
           env,
           telefone,

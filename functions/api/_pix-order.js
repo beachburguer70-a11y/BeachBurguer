@@ -42,7 +42,7 @@ export async function ensureOrderFromApprovedPix(env, payment) {
     total:expected,
     pix_payment_id:paymentId,
     pix_status:'approved',
-    origem:'cliente'
+    origem:String(d.origem||'').toLowerCase()==='bia'?'bia':'cliente'
   };
 
   if(!order.cliente || !telefone || !order.itens.length || !order.tipo){
