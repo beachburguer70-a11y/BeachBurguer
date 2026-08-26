@@ -46,7 +46,7 @@ const PADRAO = {
   ]
 };
 
-const ADICIONAIS=[
+let ADICIONAIS=[
   {nome:"Carne",preco:7},
   {nome:"Frango",preco:5},
   {nome:"Mussarela",preco:3},
@@ -198,6 +198,10 @@ async function carregarDisponibilidade(){
     }
 
     const resultado=await apiPedidos("GET",null,"");
+
+    if(Array.isArray(resultado.addons) && resultado.addons.length){
+      ADICIONAIS=resultado.addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
+    }
 
     // Se por compatibilidade a resposta normal também trouxer categorias,
     // faz união por nome. A chamada exclusiva sempre tem prioridade.

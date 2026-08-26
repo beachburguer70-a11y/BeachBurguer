@@ -1,0 +1,16 @@
+BEACH BURGUER - V31.17 - ADMIN ORGANIZADO EM PASTAS POR CATEGORIA
+
+Alteração realizada somente na apresentação da lista de produtos do Admin da Loja.
+
+- Produtos cadastrados agora aparecem agrupados dentro de suas respectivas categorias.
+- Cada categoria virou uma pasta recolhível (📁).
+- Ao clicar na pasta, ela abre e mostra somente os produtos daquela categoria.
+- A pasta mostra a quantidade de produtos cadastrados.
+- Categorias sem produtos continuam aparecendo e informam que estão vazias.
+- Produtos com categoria antiga/não cadastrada continuam visíveis em uma pasta própria, evitando que algum produto suma do Admin.
+- Categorias ocultas são identificadas no título da pasta.
+- Dentro da pasta continuam disponíveis todas as funções existentes: alterar nome, categoria, preço, descrição, adicionais, disponibilidade, exibição e exclusão.
+- A mesma organização foi aplicada à página Loja normal e ao App Loja.
+- Nenhuma regra de pedidos, pagamentos, Pix, impressão, Garçom, modo Chuva ou banco de dados foi alterada.
+
+Não é necessário executar SQL para esta atualização.

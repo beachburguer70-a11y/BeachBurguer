@@ -127,6 +127,17 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
    <div id="listaCategoriasAdmin" style="margin-top:12px"></div>
   </section>
 
+  <section style="border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:16px">
+   <h3>Adicionais</h3>
+   <p class="muted">Altere os valores dos adicionais atuais ou cadastre novos. As mudanças passam a valer no Cliente, App Cliente e Garçom.</p>
+   <div style="display:grid;grid-template-columns:1fr 180px auto;gap:8px">
+    <input id="addonNome" placeholder="Nome do adicional" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+    <input id="addonPreco" type="number" step=".01" min="0" placeholder="Preço" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+    <button id="criarAdicional" class="btn green">Cadastrar adicional</button>
+   </div>
+   <div id="listaAdicionaisAdmin" style="margin-top:12px"></div>
+  </section>
+
   <section style="border:1px solid #333;border-radius:12px;padding:14px">
    <h3>Cadastrar novo produto</h3>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -382,7 +393,7 @@ async function atualizarClientesOnlineLojaV27(){
 setInterval(atualizarClientesOnlineLojaV27,3000);
 
 // V31 - Admin centralizado na Loja + métricas
-let adminCategoriasV31=[], adminProdutosV31=[];
+let adminCategoriasV31=[], adminProdutosV31=[], adminAdicionaisV31=[];
 function escV31(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 async function apiAdminV31(body){
   const r=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json","X-Store-Token":token},body:JSON.stringify(body),cache:"no-store"});
@@ -390,7 +401,7 @@ async function apiAdminV31(body){
 }
 async function carregarAdminV31(){
   const d=await apiAdminV31({action:"list_products"});
-  adminCategoriasV31=d.categories||[]; adminProdutosV31=d.catalog||[];
+  adminCategoriasV31=d.categories||[]; adminProdutosV31=d.catalog||[]; adminAdicionaisV31=d.addons||[];
   const sel=$("prodCategoria");
   sel.innerHTML=adminCategoriasV31.filter(c=>c.active!==false).map(c=>`<option>${escV31(c.name)}</option>`).join("");
   $("listaCategoriasAdmin").innerHTML=adminCategoriasV31.map(c=>`
@@ -403,25 +414,61 @@ async function carregarAdminV31(){
       <button class="btn yellow" onclick="salvarCategoriaV31(${c.id})">Alterar</button>
       <button class="btn red" onclick="excluirCategoriaV31(${c.id})">Excluir</button>
     </div>`).join("");
-  $("listaProdutosAdminLoja").innerHTML=adminProdutosV31.map(p=>`
-    <div style="border:1px solid #333;border-radius:10px;padding:10px;margin:8px 0">
-      <div style="display:grid;grid-template-columns:1fr 1fr 120px;gap:7px">
-       <input id="pn${p.id}" value="${escV31(p.name)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
-       <select id="pc${p.id}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">${adminCategoriasV31.map(c=>`<option ${c.name===p.category?"selected":""}>${escV31(c.name)}</option>`).join("")}</select>
-       <input id="pp${p.id}" type="number" step=".01" value="${Number(p.price||0)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
-      </div>
-      <input id="pd${p.id}" value="${escV31(p.description||"")}" placeholder="Descrição" style="width:100%;margin-top:7px;padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
-       <label><input id="pa${p.id}" type="checkbox" ${p.allows_addons===true?"checked":""}> Tem adicionais</label>
-       <label><input id="pv${p.id}" type="checkbox" ${p.available!==false?"checked":""}> Disponível</label>
-       <label><input id="pe${p.id}" type="checkbox" ${p.active!==false?"checked":""}> Exibir</label>
-       <button class="btn yellow" onclick="salvarProdutoV31(${p.id})">Alterar</button>
-       <button class="btn red" onclick="excluirProdutoV31(${p.id})">Excluir</button>
-      </div>
-    </div>`).join("");
+  $("listaAdicionaisAdmin").innerHTML=adminAdicionaisV31.length?adminAdicionaisV31.map(a=>`
+    <div style="display:grid;grid-template-columns:minmax(160px,1fr) 150px auto auto;gap:7px;margin:7px 0;align-items:center">
+      <input id="an${a.id}" value="${escV31(a.name)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+      <input id="ap${a.id}" type="number" step=".01" min="0" value="${Number(a.price||0)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+      <button class="btn yellow" onclick="salvarAdicionalV31(${a.id})">Alterar</button>
+      <button class="btn red" onclick="excluirAdicionalV31(${a.id})">Excluir</button>
+    </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum adicional cadastrado. Execute o SQL da V31.18 se esta for a primeira publicação.</div>`;
+
+  // V31.17: produtos organizados em pastas por categoria no Admin.
+  // A ordem das pastas segue a ordem cadastrada das categorias e, dentro de
+  // cada pasta, os produtos seguem sort_order/id retornados pela API.
+  const categoriasAtivasEInativas=[...adminCategoriasV31];
+  const nomesCategorias=new Set(categoriasAtivasEInativas.map(c=>String(c.name||"").trim()).filter(Boolean));
+  const categoriasExtras=[];
+  adminProdutosV31.forEach(p=>{
+    const nome=String(p.category||"").trim()||"Sem categoria";
+    if(!nomesCategorias.has(nome) && !categoriasExtras.includes(nome)) categoriasExtras.push(nome);
+  });
+  const ordemPastas=[...categoriasAtivasEInativas.map(c=>c.name),...categoriasExtras];
+  const htmlPastas=ordemPastas.map((categoria,indice)=>{
+    const produtosDaCategoria=adminProdutosV31.filter(p=>(String(p.category||"").trim()||"Sem categoria")===categoria);
+    const catInfo=adminCategoriasV31.find(c=>c.name===categoria);
+    const statusCat=catInfo && catInfo.active===false ? `<span style="font-size:12px;color:#ff8a8a;margin-left:8px">Categoria oculta</span>` : "";
+    const produtosHtml=produtosDaCategoria.length ? produtosDaCategoria.map(p=>`
+      <div style="border:1px solid #333;border-radius:10px;padding:10px;margin:8px 0;background:#0b0b0b">
+        <div style="display:grid;grid-template-columns:minmax(160px,1fr) minmax(150px,1fr) 120px;gap:7px">
+         <input id="pn${p.id}" value="${escV31(p.name)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+         <select id="pc${p.id}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">${adminCategoriasV31.map(c=>`<option ${c.name===p.category?"selected":""}>${escV31(c.name)}</option>`).join("")}</select>
+         <input id="pp${p.id}" type="number" step=".01" value="${Number(p.price||0)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+        </div>
+        <input id="pd${p.id}" value="${escV31(p.description||"")}" placeholder="Descrição" style="width:100%;box-sizing:border-box;margin-top:7px;padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
+         <label><input id="pa${p.id}" type="checkbox" ${p.allows_addons===true?"checked":""}> Tem adicionais</label>
+         <label><input id="pv${p.id}" type="checkbox" ${p.available!==false?"checked":""}> Disponível</label>
+         <label><input id="pe${p.id}" type="checkbox" ${p.active!==false?"checked":""}> Exibir</label>
+         <button class="btn yellow" onclick="salvarProdutoV31(${p.id})">Alterar</button>
+         <button class="btn red" onclick="excluirProdutoV31(${p.id})">Excluir</button>
+        </div>
+      </div>`).join("") : `<div style="padding:14px;color:#888;text-align:center">Nenhum produto cadastrado nesta categoria.</div>`;
+    return `
+      <details class="pasta-categoria-admin-v31" style="border:1px solid #3a3a3a;border-radius:12px;margin:10px 0;background:#111;overflow:hidden">
+        <summary style="cursor:pointer;list-style:none;padding:14px 16px;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#171717">
+          <span>📁 ${escV31(categoria)}${statusCat}</span>
+          <span style="font-size:12px;color:#aaa;font-weight:600">${produtosDaCategoria.length} ${produtosDaCategoria.length===1?"produto":"produtos"} ▸</span>
+        </summary>
+        <div style="padding:8px 12px 12px">${produtosHtml}</div>
+      </details>`;
+  }).join("");
+  $("listaProdutosAdminLoja").innerHTML=htmlPastas || `<div style="padding:18px;color:#888;text-align:center">Nenhuma categoria ou produto cadastrado.</div>`;
 }
 window.salvarCategoriaV31=async id=>{try{await apiAdminV31({action:"save_category",id,name:$("cn"+id).value,rule:$("cr"+id).value});await carregarAdminV31();alert("Categoria alterada.")}catch(e){alert(e.message)}};
 window.excluirCategoriaV31=async id=>{if(!confirm("Excluir esta categoria?"))return;try{await apiAdminV31({action:"delete_category",id});await carregarAdminV31()}catch(e){alert(e.message)}};
+window.salvarAdicionalV31=async id=>{try{await apiAdminV31({action:"save_addon",id,name:$("an"+id).value,price:Number($("ap"+id).value||0)});await carregarAdminV31();alert("Adicional alterado.")}catch(e){alert(e.message)}};
+window.excluirAdicionalV31=async id=>{if(!confirm("Excluir este adicional? Ele deixará de aparecer para novos pedidos."))return;try{await apiAdminV31({action:"delete_addon",id});await carregarAdminV31()}catch(e){alert(e.message)}};
+
 window.salvarProdutoV31=async id=>{try{
  const p=adminProdutosV31.find(x=>Number(x.id)===Number(id));
  await apiAdminV31({action:"save_catalog",products:[{id,category:$("pc"+id).value,name:$("pn"+id).value,description:$("pd"+id).value,price:Number($("pp"+id).value||0),active:$("pe"+id).checked,available:$("pv"+id).checked,allows_addons:$("pa"+id).checked}]});
@@ -439,6 +486,14 @@ if(modalAdminLojaV31) modalAdminLojaV31.addEventListener("click",e=>{
 });
 const criarCategoriaV31=$("criarCategoria");
 if(criarCategoriaV31) criarCategoriaV31.onclick=async()=>{try{await apiAdminV31({action:"create_category",name:$("catNome").value,rule:$("catRegra").value});$("catNome").value="";await carregarAdminV31();alert("Categoria cadastrada.")}catch(e){alert(e.message)}};
+const criarAdicionalV31=$("criarAdicional");
+if(criarAdicionalV31) criarAdicionalV31.onclick=async()=>{try{
+ const nome=$("addonNome").value.trim(); const preco=Number($("addonPreco").value||0);
+ if(!nome)return alert("Informe o nome do adicional.");
+ await apiAdminV31({action:"create_addon",name:nome,price:preco});
+ $("addonNome").value="";$("addonPreco").value="";await carregarAdminV31();alert("Adicional cadastrado.");
+}catch(e){alert(e.message)}};
+
 const criarProdutoV31=$("criarProduto");
 if(criarProdutoV31) criarProdutoV31.onclick=async()=>{try{
  await apiAdminV31({action:"create_product",category:$("prodCategoria").value,name:$("prodNome").value,description:$("prodDescricao").value,price:Number($("prodPreco").value||0),allows_addons:$("prodAdicionais").checked});

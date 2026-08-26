@@ -1,5 +1,5 @@
 import { json } from './_shared.js';
-import { cleanPhone,getCatalog,loadSession,saveSession,markProcessed,catalogForPrompt,summarizeState,applyActions,buildOrder,missingFields,ADDONS,DELIVERY_FEES,sendBiaText } from './_bia.js';
+import { cleanPhone,getCatalog,getAddons,loadSession,saveSession,markProcessed,catalogForPrompt,summarizeState,applyActions,buildOrder,missingFields,DEFAULT_ADDONS,DELIVERY_FEES,sendBiaText } from './_bia.js';
 
 const sendText=sendBiaText;
 function readOutputText(data){
@@ -7,7 +7,7 @@ function readOutputText(data){
   for(const item of data?.output||[]) for(const c of item?.content||[]) if(c?.type==='output_text'&&c?.text) return c.text;
   return '';
 }
-async function askBiaAI(env,{message,state,catalog}){
+async function askBiaAI(env,{message,state,catalog,addons=DEFAULT_ADDONS}){
   if(!env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY não configurada.');
   const schema={type:'object',additionalProperties:false,properties:{
     reply:{type:'string'},ready_to_confirm:{type:'boolean'},confirm_order:{type:'boolean'},
@@ -21,7 +21,7 @@ Sua função é montar pedidos, tirar dúvidas do cardápio e coletar dados. Nun
 Quando o cliente pedir produto, use add_item com o ID exato. Se estiver ambíguo, pergunte. Para alterar/remover, use as ações apropriadas.\n
 Tipos válidos: Entrega, Retirada, Consumir no local. Localidades de entrega: Atafona, São João da Barra, Chapéu do Sol. Taxas: ${JSON.stringify(DELIVERY_FEES)}; Atafona é grátis no Pix/Dinheiro e R$2 no Cartão.\n
 Pagamentos: Pix, Dinheiro, Cartão. Se Dinheiro e cliente mencionar troco, salve set_change_for.\n
-Adicionais permitidos nos produtos que aceitam: ${ADDONS.map(a=>a.nome+' R$'+a.preco).join(', ')}.\n
+Adicionais permitidos nos produtos que aceitam: ${addons.map(a=>a.nome+' R$'+a.preco).join(', ')}.\n
 Nunca confirme que um pedido foi enviado só pela intenção do cliente. Se todos os dados estiverem completos, mostre um resumo e pergunte explicitamente se pode confirmar; marque ready_to_confirm=true. Somente marque confirm_order=true se a mensagem atual do cliente for uma confirmação inequívoca do resumo, como 'sim', 'confirmo', 'pode enviar'.\n
 Se pedirem humano, marque handoff e diga que o atendimento será assumido pela equipe.\n
 O telefone já vem do WhatsApp, não peça telefone. Não solicite e-mail.`;
@@ -57,7 +57,7 @@ async function processIncoming(request,env,msg){
     await sendText(env,waPhone,'Por enquanto eu consigo atender pedidos por texto 😊 Pode me mandar sua mensagem escrita?'); return;
   }
   const message=String(msg.text?.body||'').trim(); if(!message) return;
-  const catalog=await getCatalog(env); let state=await loadSession(env,phone); state.phone=phone;
+  const catalog=await getCatalog(env); const addons=await getAddons(env); let state=await loadSession(env,phone); state.phone=phone;
   if(state.handoff){
     const n=message.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     if(n==='bia' || n.includes('voltar bia') || n.includes('falar com a bia')){
@@ -75,9 +75,9 @@ async function processIncoming(request,env,msg){
   let ai;
   try{ ai=await askBiaAI(env,{message,state,catalog}); }
   catch(e){ console.error('Bia IA:',e); await sendText(env,waPhone,'Tive um probleminha para entender sua mensagem. Pode tentar de novo em uma frase curta?'); return; }
-  state=applyActions(state,ai.actions,catalog); state.phone=phone;
+  state=applyActions(state,ai.actions,catalog,addons); state.phone=phone;
   if(state.handoff){ state.last_reply=ai.reply; await saveSession(env,phone,state); await sendText(env,waPhone,ai.reply||'Vou chamar alguém da equipe para continuar seu atendimento.'); return; }
-  const order=buildOrder(state,catalog); const missing=missingFields(state,order);
+  const order=buildOrder(state,catalog,addons); const missing=missingFields(state,order);
   let reply=String(ai.reply||'');
   if(ai.confirm_order && !missing.length){
     try{

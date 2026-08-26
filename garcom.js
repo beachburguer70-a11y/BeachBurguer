@@ -45,7 +45,7 @@ const PADRAO = {
   ]
 };
 
-const ADICIONAIS = [
+let ADICIONAIS = [
   {nome:"Carne",preco:7},
   {nome:"Frango",preco:5},
   {nome:"Mussarela",preco:3},
@@ -131,6 +131,9 @@ async function entrar(){
 async function carregarDisponibilidade(){
   try{
     const r=await api("GET");
+    if(Array.isArray(r.addons) && r.addons.length){
+      ADICIONAIS=r.addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
+    }
     if(Array.isArray(r.catalog)&&r.catalog.length){
       dados.produtos=r.catalog.map(p=>({
         id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",

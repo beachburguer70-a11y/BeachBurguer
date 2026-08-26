@@ -33,7 +33,7 @@ const PADRAO = {
     {id:27,categoria:"Bebidas",nome:"H2O",descricao:"H2O gelada.",preco:8,ativo:true,disponivel:true}
   ]
 };
-const ADICIONAIS=[
+let ADICIONAIS=[
   {nome:"Carne",preco:7},{nome:"Frango",preco:5},{nome:"Mussarela",preco:3},{nome:"Cheddar",preco:4},
   {nome:"Ovo",preco:2},{nome:"Calabresa",preco:2},{nome:"Bacon",preco:3},{nome:"Picles",preco:2},{nome:"Batata",preco:7}
 ];
@@ -206,6 +206,10 @@ async function carregarCatalogo(){
       headers:{"Cache-Control":"no-cache","Pragma":"no-cache"}
     });
     const r=await resposta.json();
+
+    if(Array.isArray(r.addons) && r.addons.length){
+      ADICIONAIS=r.addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
+    }
 
     if(r.store){
       estadoLojaV16=r.store;

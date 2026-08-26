@@ -1,0 +1,13 @@
+V31.18 - ADICIONAIS ADMINISTRÁVEIS
+
+- Nova seção "Adicionais" no Admin da Loja e App Loja.
+- Permite alterar nome e preço de adicionais existentes.
+- Permite cadastrar novos adicionais.
+- Permite excluir adicionais.
+- Cliente, App Cliente e Garçom passam a carregar os adicionais do Supabase.
+- Bia também usa os adicionais do Supabase quando configurada.
+- Produtos, categorias, Pix, impressão, Modo Chuva e fluxo de pedidos foram preservados.
+
+ANTES DE PUBLICAR:
+Execute uma vez no SQL Editor do Supabase:
+supabase/ATUALIZAR_V31_18_ADICIONAIS_ADMIN.sql

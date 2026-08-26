@@ -1,6 +1,6 @@
 import { supabaseRequest } from './_shared.js';
 
-const ADDONS = [
+const DEFAULT_ADDONS = [
   {nome:'Carne',preco:7},{nome:'Frango',preco:5},{nome:'Mussarela',preco:3},{nome:'Cheddar',preco:4},
   {nome:'Ovo',preco:2},{nome:'Calabresa',preco:2},{nome:'Bacon',preco:3},{nome:'Picles',preco:2},{nome:'Batata',preco:7}
 ];
@@ -33,6 +33,13 @@ export function normalize(v){
 export async function getCatalog(env){
   const rows=await supabaseRequest(env,'products?select=id,category,name,description,price,active,available,sort_order,allows_addons&active=eq.true&order=sort_order.asc,id.asc');
   return (rows||[]).filter(p=>p.available!==false);
+}
+export async function getAddons(env){
+  try{
+    const rows=await supabaseRequest(env,'addons?select=id,name,price,active,sort_order&active=eq.true&order=sort_order.asc,id.asc');
+    if(Array.isArray(rows)&&rows.length) return rows.map(a=>({nome:a.name,preco:Number(a.price||0)}));
+  }catch(e){ console.warn('Adicionais Bia:',e?.message||e); }
+  return DEFAULT_ADDONS;
 }
 export async function getStoreState(env){
   // Reusa o endpoint público de pedidos para manter exatamente a mesma regra de abertura/fechamento.
@@ -75,10 +82,10 @@ export function summarizeState(state, catalog){
   }).join('; ');
   return { ...state, cart_summary:cart };
 }
-function addonByName(name){
-  const n=normalize(name); return ADDONS.find(a=>normalize(a.nome)===n)||null;
+function addonByName(name, addons=DEFAULT_ADDONS){
+  const n=normalize(name); return addons.find(a=>normalize(a.nome)===n)||null;
 }
-export function applyActions(state, actions, catalog){
+export function applyActions(state, actions, catalog, addons=DEFAULT_ADDONS){
   const next=structuredClone(state||freshState());
   const byId=new Map(catalog.map(p=>[String(p.id),p]));
   for(const a of actions||[]){
@@ -106,7 +113,7 @@ export function applyActions(state, actions, catalog){
       if(!p) continue;
       const qty=Math.min(20,Math.max(1,Number(a.quantity||1)|0));
       const canAddons=p.allows_addons!==false && !NO_ADDONS.has(normalize(p.category));
-      const addons=canAddons ? (a.addons||[]).map(addonByName).filter(Boolean).map(x=>x.nome) : [];
+      const addons=canAddons ? (a.addons||[]).map(n=>addonByName(n,addons)).filter(Boolean).map(x=>x.nome) : [];
       next.cart.push({product_id:p.id,product_name:p.name,quantity:qty,addons,observation:String(a.observation||'').trim()});
     }
     if(a.type==='handoff') next.handoff=true;
@@ -114,12 +121,12 @@ export function applyActions(state, actions, catalog){
   }
   return next;
 }
-export function buildOrder(state,catalog){
+export function buildOrder(state,catalog,addons=DEFAULT_ADDONS){
   const byId=new Map(catalog.map(p=>[String(p.id),p]));
   const itens=[];
   for(const c of state.cart||[]){
     const p=byId.get(String(c.product_id)); if(!p) continue;
-    const adicionais=(c.addons||[]).map(addonByName).filter(Boolean);
+    const adicionais=(c.addons||[]).map(n=>addonByName(n,addons)).filter(Boolean);
     const quantity=Math.max(1,Number(c.quantity||1));
     const unit=Number(p.price||0)+adicionais.reduce((s,a)=>s+Number(a.preco||0),0);
     itens.push({id:p.id,nome:p.name,categoria:p.category||'',quantidade:quantity,preco:Number(p.price||0),adicionais,observacao:String(c.observation||''),total:unit*quantity});
@@ -152,4 +159,4 @@ export function missingFields(state,order){
   if(!(order.itens||[]).length) m.push('itens');
   return m;
 }
-export { ADDONS, DELIVERY_FEES };
+export { DEFAULT_ADDONS, DELIVERY_FEES };
