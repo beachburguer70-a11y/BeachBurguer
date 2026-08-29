@@ -40,6 +40,8 @@ export async function ensureOrderFromApprovedPix(env, payment) {
     subtotal:Number(d.subtotal||0),
     entrega:Number(d.entrega||0),
     total:expected,
+    discount_amount:Number(d.discount_amount||0),
+    prize_awarded:d.prize_awarded===true,
     pix_payment_id:paymentId,
     pix_status:'approved',
     origem:String(d.origem||'').toLowerCase()==='bia'?'bia':'cliente'

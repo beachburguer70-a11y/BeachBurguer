@@ -35,7 +35,8 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     .horario-row input[type=time]{padding:9px;border-radius:8px;border:1px solid #444;background:#080808;color:#fff}
     .manual-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.manual-actions .btn{flex:1}
     @media(max-width:650px){.horario-row{grid-template-columns:1fr 80px 1fr 1fr;font-size:13px}}
-  </style>
+  .order.atrasado-v3135{border:3px solid #e53935!important;box-shadow:0 0 0 2px rgba(229,57,53,.25)} .tempo-v3135{margin:8px 0;padding:7px 9px;border-radius:8px;background:#222;font-weight:900} .tempo-v3135.atrasado{background:#7f1d1d;color:#fff}
+</style>
   <link rel="apple-touch-icon" href="/assets/loja-apple-touch-icon.png">
   <meta name="application-name" content="Beach Burguer Loja">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -65,6 +66,11 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
       <button id="horariosBtn" class="btn dark">🕒 Horários</button>
       <button id="chuvaBtn" class="btn dark">🌧️ Chuva: DESATIVADA</button>
       <button id="pixTesteBtn" class="btn dark">💠 Pix: VERIFICAR</button>
+      <button id="tempoEsperaBtn" class="btn dark">⏱️ Tempo de espera</button>
+      <button id="pedidoPremiadoBtn" class="btn dark">🎁 Pedido Premiado</button>
+      <a href="/financeiro" class="btn dark" style="text-decoration:none">📒 Livro Caixa</a>
+      <a href="/custos" class="btn dark" style="text-decoration:none">💰 Custos/Lucro</a>
+      <a href="/cardapio-impressao" class="btn dark" style="text-decoration:none">🖨️ Cardápio</a>
       <button id="fecharLojaBtn" class="btn red">🔴 Fechar loja</button>
       <button id="finalizarExpediente" class="btn finalizar-expediente">🌙 Finalizar expediente</button>
       <button id="somBtn" class="btn dark">🔔 Campainha ativada</button>
@@ -177,6 +183,8 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
  </div>
 </div>
 
+
+<div id="modalGestaoV3135" class="modal-store hidden"><div class="modal-store-box"><button id="fecharGestaoV3135" class="modal-x">×</button><h2>⏱️ Tempo de espera</h2><p class="muted">Aplicado somente sábado e domingo.</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label>Atafona mín.<input id="wAmin" type="number"></label><label>Atafona máx.<input id="wAmax" type="number"></label><label>SJB/Chapéu mín.<input id="wSmin" type="number"></label><label>SJB/Chapéu máx.<input id="wSmax" type="number"></label><label>Retirada/Local mín.<input id="wLmin" type="number"></label><label>Retirada/Local máx.<input id="wLmax" type="number"></label></div><div class="manual-actions"><button id="salvarWaitV3135" class="btn yellow">Salvar manual</button><button id="resetWaitV3135" class="btn dark">🔄 Voltar ao padrão</button></div></div></div>
 <script>
 const TOKEN_KEY="bb_store_token";
 let token=localStorage.getItem(TOKEN_KEY)||"";
@@ -483,8 +491,9 @@ function render(list){
 
   const exibidos=filtroAtual==="todos"?list:list.filter(p=>p.status===filtroAtual);
   $("pedidos").innerHTML=exibidos.length?exibidos.map(p=>`
-  <article class="order ${p.status}">
-    <h2>Pedido #${p.id}</h2>
+  <article class="order ${p.status} ${pedidoAtrasadoV3135(p)?'atrasado-v3135':''}">
+    <h2>Pedido ${String(p.origem||"cliente")==="garcom"?"G":"C"}#${p.display_number||p.id} <small style="font-size:12px;color:#888">(ID ${p.id})</small></h2>
+    ${tempoPedidoV3135(p)}
     <div class="meta">${dataHora(p.created_at)} • ${String(p.status).toUpperCase()}</div>
     <p><strong>${esc(p.cliente)}</strong><br>${esc(formatPhone(p.telefone))}</p>
     ${p.tipo==="Entrega"?`<p>${esc(p.endereco)}<br>${esc(p.bairro)} — ${esc(p.localidade)}<br><small>Ref.: ${esc(p.referencia||"Não informada")}</small></p>`:`<p><strong>${esc(String(p.tipo||"").toUpperCase())}</strong></p>`}
@@ -675,6 +684,18 @@ document.addEventListener("DOMContentLoaded",()=>{
     });
   }
 });
+
+let settingsV3135={prize_enabled:true,wait_atafona_min:25,wait_atafona_max:35,wait_sjb_min:60,wait_sjb_max:90,wait_local_min:25,wait_local_max:30};
+async function apiGestaoV3135(body){const r=await fetch('/api/management',{method:'POST',headers:{'Content-Type':'application/json','X-Store-Token':token},body:JSON.stringify(body)});const d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||'Erro');return d}
+async function carregarGestaoV3135(){try{const d=await apiGestaoV3135({action:'settings'});settingsV3135=d.settings||settingsV3135;['Amin','Amax','Smin','Smax','Lmin','Lmax'].forEach(()=>{});$('wAmin').value=settingsV3135.wait_atafona_min;$('wAmax').value=settingsV3135.wait_atafona_max;$('wSmin').value=settingsV3135.wait_sjb_min;$('wSmax').value=settingsV3135.wait_sjb_max;$('wLmin').value=settingsV3135.wait_local_min;$('wLmax').value=settingsV3135.wait_local_max;$('pedidoPremiadoBtn').textContent=`🎁 Pedido Premiado: ${settingsV3135.prize_enabled?'ATIVADO':'DESATIVADO'}`;$('pedidoPremiadoBtn').className=`btn ${settingsV3135.prize_enabled?'green':'red'}`}catch(e){console.warn(e)}}
+function faixaPedidoV3135(p){const dia=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',weekday:'short'}).format(new Date(p.created_at||Date.now()));if(!['Sat','Sun'].includes(dia))return null;const tipo=String(p.tipo||'').toLowerCase(),loc=String(p.localidade||p.bairro||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();if(tipo.includes('entrega')){if(loc.includes('atafona'))return [settingsV3135.wait_atafona_min,settingsV3135.wait_atafona_max];return [settingsV3135.wait_sjb_min,settingsV3135.wait_sjb_max]}return [settingsV3135.wait_local_min,settingsV3135.wait_local_max]}
+function pedidoAtrasadoV3135(p){const f=faixaPedidoV3135(p);if(!f)return false;const mins=Math.max(0,Math.floor((Date.now()-new Date(p.created_at).getTime())/60000));return mins>f[1]&&!['pronto','entregue'].includes(String(p.status))}
+function tempoPedidoV3135(p){const f=faixaPedidoV3135(p);if(!f)return '';const mins=Math.max(0,Math.floor((Date.now()-new Date(p.created_at).getTime())/60000));const atras=mins>f[1]&&!['pronto','entregue'].includes(String(p.status));return `<div class="tempo-v3135 ${atras?'atrasado':''}">⏱️ ${mins} min • previsão ${f[0]}–${f[1]} min ${atras?'• ⚠️ ATRASADO':''}</div>`}
+$('tempoEsperaBtn').onclick=async()=>{await carregarGestaoV3135();$('modalGestaoV3135').classList.remove('hidden')};$('fecharGestaoV3135').onclick=()=>$('modalGestaoV3135').classList.add('hidden');
+$('salvarWaitV3135').onclick=async()=>{try{await apiGestaoV3135({action:'set_wait',wait_atafona_min:$('wAmin').value,wait_atafona_max:$('wAmax').value,wait_sjb_min:$('wSmin').value,wait_sjb_max:$('wSmax').value,wait_local_min:$('wLmin').value,wait_local_max:$('wLmax').value});await carregarGestaoV3135();render(window._pedidos||[]);alert('Tempos salvos.')}catch(e){alert(e.message)}};
+$('resetWaitV3135').onclick=async()=>{try{await apiGestaoV3135({action:'reset_wait'});await carregarGestaoV3135();render(window._pedidos||[]);alert('Tempos padrão restaurados.')}catch(e){alert(e.message)}};
+$('pedidoPremiadoBtn').onclick=async()=>{try{const novo=!settingsV3135.prize_enabled;if(!confirm(`${novo?'Ativar':'Desativar'} o Pedido Premiado?`))return;await apiGestaoV3135({action:'set_prize',enabled:novo});await carregarGestaoV3135()}catch(e){alert(e.message)}};
+setInterval(()=>{if(window._pedidos)render(window._pedidos)},60000);setTimeout(carregarGestaoV3135,800);
 </script>
 
 </body>

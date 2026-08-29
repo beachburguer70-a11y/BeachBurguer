@@ -1,0 +1,13 @@
+V31.35 - PACOTE DE MELHORIAS
+
+1. Cronômetro de sábado/domingo com padrões: Atafona 25-35, SJB/Chapéu 60-90, retirada/local 25-30. Ajuste manual + Voltar ao padrão. Destaque de atraso.
+2. Livro Caixa/Contas a Pagar/Fechamento financeiro da V31.34 mantidos.
+3. Pedido Premiado ativar/desativar. A cada 20º pedido de cliente: 30% em Pix/Dinheiro; cartão perde o prêmio.
+4. Numeração visual separada Cliente (C#) e Garçom (G#), preservando o ID interno.
+5. Garçom com rascunho offline local para não perder pedido em queda de conexão.
+6. Desconto manual no Garçom.
+7. Painel Custos/Lucro/Margem em /custos.
+8. Cardápio para impressão em /cardapio-impressao.
+9. Controle de estoque NÃO incluído, conforme solicitado.
+
+EXECUTAR SQL_V31_34_FINANCEIRO.sql e depois SQL_V31_35_MELHORIAS_COMPLETAS.sql antes do deploy.

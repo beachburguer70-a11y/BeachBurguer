@@ -639,7 +639,8 @@ function valorItem(i){
   return (Number(i.preco)+(i.adicionais||[]).reduce((s,a)=>s+Number(a.preco||0),0))*Number(i.quantidade||1);
 }
 function subtotalGarcom(){return carrinho.reduce((s,i)=>s+valorItem(i),0)}
-function total(){return subtotalGarcom()+valorEntregaGarcom()}
+function descontoGarcom(){return Math.max(0,numeroMoedaGarcom($("descontoGarcom")?.value))}
+function total(){return Math.max(0,subtotalGarcom()+valorEntregaGarcom()-descontoGarcom())}
 
 function alterarQtd(uid,delta){
   const i=carrinho.find(x=>String(x.uid)===String(uid));
@@ -690,7 +691,7 @@ function novoPedido(){
   pedidoEditando=null;
   carrinho=[];
   $("nomeGarcom").value="";
-  $("observacoesGarcom").value="";
+  $("observacoesGarcom").value=""; if($("descontoGarcom"))$("descontoGarcom").value="0";
   tipoPedido="Consumir no local";
   pagamento="A pagar";
   itemEditandoUid=null;
@@ -788,6 +789,8 @@ async function enviarPedido(){
       subtotal:subtotalGarcom(),
       entrega:valorEntregaGarcom(),
       total:total(),
+      discount_amount:descontoGarcom(),
+      prize_awarded:false,
       origem:"garcom"
     };
 
@@ -1025,3 +1028,11 @@ async function atualizarClientesOnlineGarcomV27(){
   }
 }
 setInterval(()=>{if(token)atualizarClientesOnlineGarcomV27();},3000);
+
+if($("descontoGarcom"))$("descontoGarcom").addEventListener("input",()=>{renderCarrinho();atualizarTrocoCalculadoGarcom()});
+
+// V31.35: rascunho offline do Garçom. Mantém o pedido no aparelho se a conexão cair.
+function salvarRascunhoOfflineGarcom(){try{localStorage.setItem('bb_garcom_draft',JSON.stringify({cliente:$("nomeGarcom")?.value||'',observacoes:$("observacoesGarcom")?.value||'',tipoPedido,pagamento,carrinho,desconto:$("descontoGarcom")?.value||'0',saved_at:Date.now()}))}catch{}}
+window.addEventListener('offline',()=>{salvarRascunhoOfflineGarcom();if($("statusGarcom"))$("statusGarcom").textContent='Sem internet — pedido salvo como rascunho neste aparelho.'});
+window.addEventListener('online',()=>{if($("statusGarcom"))$("statusGarcom").textContent='Internet restabelecida.'});
+setInterval(()=>{if(carrinho?.length)salvarRascunhoOfflineGarcom()},5000);

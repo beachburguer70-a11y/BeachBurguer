@@ -59,6 +59,7 @@ let carrinho=[];
 try{carrinho=JSON.parse(localStorage.getItem("bb_carrinho")||"[]")}catch{}
 let tipoPedido=localStorage.getItem("bb_tipo_pedido")||"Retirada";
 let pagamento="Pix";
+let pedidoPremiadoElegivel=false; let pedidoPremiadoAtivo=false;
 let modoRevisao="normal";
 let pixPaymentId=null;
 let pixPolling=null;
@@ -190,7 +191,9 @@ function taxa(){
 
   return Number(op?.dataset?.taxa||0);
 }
-function total(){return subtotal()+taxa()}
+function descontoPremiado(){return (pedidoPremiadoElegivel && (pagamento==="Pix"||pagamento==="Dinheiro"))?Math.round((subtotal()+taxa())*0.30*100)/100:0}
+function total(){return Math.max(0,Math.round(((subtotal()+taxa())-descontoPremiado())*100)/100)}
+async function verificarPedidoPremiado(){try{const r=await fetch("/api/management",{cache:"no-store"});const d=await r.json();pedidoPremiadoAtivo=d.settings?.prize_enabled===true;pedidoPremiadoElegivel=d.prize_eligible===true;return pedidoPremiadoElegivel}catch{return false}}
 function telefoneFormat(v){
   const n=String(v||"").replace(/\D/g,"").slice(0,11);
   if(n.length<=2)return n;
@@ -491,6 +494,8 @@ function dadosPedido(){
     subtotal:subtotal(),
     entrega:taxa(),
     total:total(),
+    discount_amount:descontoPremiado(),
+    prize_awarded:pedidoPremiadoElegivel && (pagamento==="Pix"||pagamento==="Dinheiro"),
     pix_payment_id:pixPaymentId
   };
 }
@@ -505,7 +510,7 @@ function abrirRevisao(modo){
     <div class="review-box"><strong>Itens</strong>${d.itens.map(i=>`${i.quantidade}x ${i.nome}${i.observacao?` — ${i.observacao}`:""}`).join("<br>")}</div>
     <div class="review-box"><strong>Pagamento</strong>${d.pix_manual?"Pix manual — aguardando comprovante":d.pagamento}${d.troco?`<br>Troco para: ${d.troco}`:""}</div>
     ${d.observacoes?`<div class="review-box"><strong>Observações</strong>${d.observacoes}</div>`:""}
-    <div class="review-box"><strong>Total</strong><span style="font-size:22px">${moeda(d.total)}</span></div>`;
+    <div class="review-box"><strong>Total</strong>${d.discount_amount>0?`<span style="color:#2ecc71;font-weight:900">🎁 PEDIDO PREMIADO — 30% OFF (${moeda(d.discount_amount)})</span>`:""}<span style="font-size:22px">${moeda(d.total)}</span></div>`;
   $("confirmarRevisaoCheckout").textContent=modo==="pix"?"Confirmar e gerar Pix":"Finalizar pedido";
   $("modalRevisaoCheckout").classList.add("ativo");
   $("progRevisao").classList.add("ativo");

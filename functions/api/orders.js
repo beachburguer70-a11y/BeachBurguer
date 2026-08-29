@@ -525,6 +525,8 @@ export async function onRequestPost({ request, env }) {
         subtotal:Number(body.subtotal || 0),
         entrega:Number(body.entrega || 0),
         total:Number(body.total || 0),
+        discount_amount:Number(body.discount_amount || 0),
+        prize_awarded:body.prize_awarded===true,
         pix_payment_id:pixPayment ? String(pixPayment.id) : null,
         pix_status:pixPayment ? String(pixPayment.status) : null,
         origem:isGarcom ? "garcom" : (String(body.origem||"").toLowerCase()==="bia" ? "bia" : "cliente")
@@ -991,6 +993,8 @@ export async function onRequestPost({ request, env }) {
         subtotal:Number(body.subtotal||0),
         entrega:Number(body.entrega||0),
         total:Number(body.total||0),
+        discount_amount:Number(body.discount_amount||0),
+        prize_awarded:false,
         printed:false
       };
       const updated=await supabaseRequest(env,`orders?id=eq.${id}&select=*`,{
