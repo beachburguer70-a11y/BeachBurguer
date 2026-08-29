@@ -1,0 +1,11 @@
+BEACH BURGUER V31.20 — CHAVE PIX MANUAL
+
+Alteração isolada sobre a V31.19.
+- Adicionado campo "Chave Pix para pagamento manual" dentro do painel de Teste Pix da Loja.
+- A chave pode ser salva sem editar código.
+- Quando o Pix automático estiver indisponível e o cliente aceitar Pix manual, a mensagem automática usa a chave salva.
+- Mantido fallback anterior caso a chave ainda não esteja cadastrada.
+- Demais fluxos não foram alterados.
+
+Antes de publicar, execute no Supabase:
+supabase/ATUALIZAR_V31_20_CHAVE_PIX_MANUAL.sql

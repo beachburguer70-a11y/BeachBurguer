@@ -547,8 +547,16 @@ export async function onRequestPost({ request, env }) {
         // Mantém exatamente o template já usado. No fallback de Pix, o segundo
         // parâmetro leva também a chave e o aviso de comprovante, sem alterar
         // o fluxo normal dos demais pedidos.
+        let pixManualKey=String(env.PIX_MANUAL_KEY||"22997849915").trim();
+        if(pixManual){
+          try{
+            const cfgPix=await supabaseRequest(env,"store_state?select=pix_manual_key&id=eq.1&limit=1");
+            const savedKey=String(cfgPix?.[0]?.pix_manual_key||"").trim();
+            if(savedKey)pixManualKey=savedKey;
+          }catch(e){ console.warn("Chave Pix manual:",e?.message||e); }
+        }
         const idMensagem=pixManual
-          ? `${saved?.id||""} | PIX MANUAL | Chave Pix: ${env.PIX_MANUAL_KEY||"22997849915"} | Aguardando comprovante`
+          ? `${saved?.id||""} | PIX MANUAL | Chave Pix: ${pixManualKey} | Aguardando comprovante`
           : saved?.id;
         await sendWhatsAppTemplate(
           env,

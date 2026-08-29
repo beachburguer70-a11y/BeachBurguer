@@ -120,6 +120,14 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
       <button id="desativarPixManual" class="btn red">Desativar Pix</button>
       <button id="reativarPixManual" class="btn green">Reativar Pix</button>
     </div>
+    <div style="margin-top:16px;text-align:left;border-top:1px solid #333;padding-top:14px">
+      <label for="pixManualKey" style="display:block;font-weight:900;margin-bottom:6px">🔑 Chave Pix para pagamento manual</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input id="pixManualKey" type="text" placeholder="CPF, CNPJ, telefone, e-mail ou chave aleatória" style="flex:1;min-width:240px;padding:11px;background:#080808;color:#fff;border:1px solid #444;border-radius:9px">
+        <button id="salvarPixManualKey" class="btn yellow" type="button">Salvar chave</button>
+      </div>
+      <p class="muted" style="margin:7px 0 0">Essa chave será enviada ao cliente somente quando o Pix automático estiver indisponível e o pedido seguir como Pix manual.</p>
+    </div>
     <p id="pixTesteAjuda" class="muted" style="margin-top:14px">Só fica verde quando o Mercado Pago retornar <strong>approved</strong>. Se o teste não aprovar em até 3 minutos, o Pix automático será marcado como indisponível.</p>
   </div>
 </div>
@@ -226,7 +234,7 @@ function mostrarEstadoTestePixV31_19(texto,tipo=""){
 }
 async function abrirTestePixV31_19(){
   $("modalTestePix").classList.remove("hidden");
-  try{const d=await apiTestePixV31_19("state");const st=d.state||{};storeConfig={...(storeConfig||{}),...st};atualizarBotaoPixV31_19();mostrarEstadoTestePixV31_19(st.pix_operational===false?"🔴 Pix automático indisponível":"🟢 Pix automático disponível",st.pix_operational===false?"erro":"ok");}catch(e){mostrarEstadoTestePixV31_19(e.message,"erro");}
+  try{const d=await apiTestePixV31_19("state");const st=d.state||{};storeConfig={...(storeConfig||{}),...st};atualizarBotaoPixV31_19();if($("pixManualKey"))$("pixManualKey").value=st.pix_manual_key||"";mostrarEstadoTestePixV31_19(st.pix_operational===false?"🔴 Pix automático indisponível":"🟢 Pix automático disponível",st.pix_operational===false?"erro":"ok");}catch(e){mostrarEstadoTestePixV31_19(e.message,"erro");}
 }
 async function iniciarTestePixV31_19(){
   try{
@@ -253,6 +261,7 @@ async function definirPixOperacionalV31_19(enabled){
 $("fecharModalTestePix").onclick=()=>{$("modalTestePix").classList.add("hidden");clearInterval(pixTestePollingV31_19);};
 $("iniciarTestePix").onclick=iniciarTestePixV31_19;
 $("copiarTestePix").onclick=async()=>{const t=$("pixTesteCopia").value;try{await navigator.clipboard.writeText(t);alert("Código Pix copiado.");}catch{prompt("Copie o código Pix:",t);}};
+$("salvarPixManualKey").onclick=async()=>{try{const key=$("pixManualKey").value.trim();if(!key)return alert("Informe a chave Pix manual.");const d=await apiTestePixV31_19("set_manual_key",{pix_manual_key:key});$("pixManualKey").value=d.state?.pix_manual_key||key;alert("✅ Chave Pix manual salva.");}catch(e){alert("Não foi possível salvar a chave Pix: "+e.message);}};
 $("desativarPixManual").onclick=()=>definirPixOperacionalV31_19(false);
 $("reativarPixManual").onclick=()=>definirPixOperacionalV31_19(true);
 

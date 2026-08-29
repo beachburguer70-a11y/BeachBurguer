@@ -11,7 +11,7 @@ async function saveState(env, patch){
 }
 
 async function getState(env){
-  const rows=await supabaseRequest(env,"store_state?select=id,pix_operational,pix_test_payment_id,pix_test_status,pix_test_status_detail,pix_test_started_at,pix_last_test_at,pix_last_approved_at&id=eq.1&limit=1");
+  const rows=await supabaseRequest(env,"store_state?select=id,pix_operational,pix_test_payment_id,pix_test_status,pix_test_status_detail,pix_test_started_at,pix_last_test_at,pix_last_approved_at,pix_manual_key&id=eq.1&limit=1");
   return rows?.[0]||{};
 }
 
@@ -30,6 +30,14 @@ export async function onRequestPost({request,env}){
     if(action==="set_operational"){
       const enabled=body.enabled===true;
       await saveState(env,{pix_operational:enabled,pix_test_status:enabled?"manual_enabled":"manual_disabled",pix_test_status_detail:""});
+      return json({ok:true,state:await getState(env)});
+    }
+
+    if(action==="set_manual_key"){
+      const key=String(body.pix_manual_key||"").trim();
+      if(!key)return json({ok:false,error:"Informe a chave Pix manual."},400);
+      if(key.length>180)return json({ok:false,error:"Chave Pix manual muito longa."},400);
+      await saveState(env,{pix_manual_key:key});
       return json({ok:true,state:await getState(env)});
     }
 
@@ -93,7 +101,7 @@ export async function onRequestPost({request,env}){
   }catch(error){
     console.error(error);
     const msg=String(error?.message||"Erro no teste Pix.");
-    if(/column|schema cache|pix_operational|pix_test_/i.test(msg))return json({ok:false,error:"Execute primeiro o SQL ATUALIZAR_V31_19_TESTE_PIX.sql no Supabase."},500);
+    if(/column|schema cache|pix_operational|pix_test_|pix_manual_key/i.test(msg))return json({ok:false,error:"Execute primeiro o SQL ATUALIZAR_V31_19_TESTE_PIX.sql no Supabase."},500);
     return json({ok:false,error:msg},500);
   }
 }
