@@ -67,7 +67,7 @@ export async function onRequestPost({request,env}){
 
     if(action!=="start")return json({ok:false,error:"Ação inválida."},400);
 
-    const amount=Number(env.PIX_TEST_AMOUNT||0.10);
+    const amount=Number(env.PIX_TEST_AMOUNT||15.00);
     if(!Number.isFinite(amount)||amount<=0)return json({ok:false,error:"PIX_TEST_AMOUNT inválido."},500);
     const origin=new URL(request.url).origin;
     const externalReference=`BB-TEST-${Date.now()}-${uuid().slice(0,8)}`;
