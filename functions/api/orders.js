@@ -747,7 +747,7 @@ export async function onRequestPost({ request, env }) {
 
       while(offset<maxRows){
         const path=
-          `orders?select=id,created_at,status,cliente,telefone,tipo,pagamento,subtotal,entrega,total,itens,origem`+
+          `orders?select=id,created_at,status,cliente,telefone,tipo,pagamento,subtotal,entrega,total,itens,origem,observacoes`+
           `&created_at=gte.${encodeURIComponent(from)}`+
           `&created_at=lte.${encodeURIComponent(to)}`+
           `&order=created_at.asc&limit=${pageSize}&offset=${offset}`;
