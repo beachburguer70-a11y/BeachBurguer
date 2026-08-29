@@ -1,0 +1,10 @@
+V31_36 - Fechamento de caixa: baixa do A pagar
+
+- Mantém o campo editável Restante “A pagar”.
+- Remove o campo Observações do fechamento.
+- Adiciona dois campos simultâneos: Dinheiro e Cartão.
+- Ao Salvar fechamento, os valores preenchidos são somados às respectivas formas de pagamento.
+- Cada valor recebido é lançado automaticamente como ENTRADA no Livro Caixa.
+- Dinheiro + Cartão são descontados do Restante “A pagar”.
+- Impede lançar recebimento maior que o valor restante.
+- Não exige novo SQL; usa a estrutura financeira já criada na V31_34/V31_35.
