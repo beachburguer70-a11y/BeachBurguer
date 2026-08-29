@@ -999,6 +999,40 @@ export async function onRequestPost({ request, env }) {
       return json({ok:true,order:Array.isArray(updated)?updated[0]:updated,reprint:true});
     }
 
+    // V31.21: cancelamento manual de pedido pela Loja.
+    // Remove somente o pedido selecionado da tabela orders, equivalente ao
+    // cancelamento manual que antes era feito diretamente no Supabase.
+    if (action === "cancel_order") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+
+      const id = Number(body.id);
+      if (!id) return json({ ok:false, error:"Pedido inválido." }, 400);
+
+      const rows = await supabaseRequest(
+        env,
+        `orders?select=id,cliente,status&id=eq.${id}&limit=1`
+      );
+      const pedido = Array.isArray(rows) ? rows[0] : null;
+      if (!pedido) return json({ ok:false, error:"Pedido não encontrado." }, 404);
+
+      // V31.22: se for o pedido mais recente, o RPC também reposiciona a
+      // sequência do identity para que o próximo pedido reutilize este número.
+      // Para pedidos antigos, apenas remove o pedido e preserva a numeração atual.
+      const result = await supabaseRequest(
+        env,
+        `rpc/cancel_order_and_rewind_if_last`,
+        { method:"POST", body:JSON.stringify({ p_id:id }) }
+      );
+      const info = Array.isArray(result) ? result[0] : result;
+
+      return json({
+        ok:true,
+        cancelled_id:id,
+        number_rewound:Boolean(info?.number_rewound),
+        next_order_id:Number(info?.next_order_id || 0) || null
+      });
+    }
+
     if (action === "update") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
 

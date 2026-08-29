@@ -433,6 +433,7 @@ function render(list){
       <button class="btn dark" onclick="mudarStatus(${p.id},'preparo')">Em preparo</button>
       <button class="btn green" onclick="mudarStatus(${p.id},'pronto')">Pronto</button>
       <button class="btn dark" onclick="mudarStatus(${p.id},'entregue')">Entregue</button>
+      <button class="btn red" onclick="cancelarPedido(${p.id})">Cancelar pedido</button>
     </div>
   </article>`).join(""):'<div class="empty">Nenhum pedido nesta aba.</div>';
 }
@@ -441,6 +442,23 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function formatPhone(v){const n=String(v||"").replace(/\D/g,"");return n.length===11?`(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`:n}
 async function atualizarPedido(id,campos){await api("POST",{action:"update",id,...campos})}
 async function mudarStatus(id,status){await atualizarPedido(id,{status});await carregarPedidos()}
+async function cancelarPedido(id){
+  const pedido=(window._pedidos||[]).find(p=>Number(p.id)===Number(id));
+  const nome=pedido?.cliente?` de ${pedido.cliente}`:"";
+  if(!confirm(`Cancelar o pedido #${id}${nome}?\n\nEle será removido do sistema e não aparecerá mais na Loja nem nos relatórios.`))return;
+  try{
+    const resultado=await api("POST",{action:"cancel_order",id});
+    conhecidos.delete(id);
+    await carregarPedidos();
+    if(resultado?.number_rewound){
+      alert(`Pedido #${id} cancelado.\n\nA numeração voltou: o próximo pedido será #${resultado.next_order_id||id}.`);
+    }else{
+      alert(`Pedido #${id} cancelado.\n\nComo não era o último pedido criado, a numeração foi mantida.`);
+    }
+  }catch(erro){
+    alert("Não foi possível cancelar o pedido.\n\n"+erro.message);
+  }
+}
 async function imprimirPorId(id){
   try{
     await atualizarPedido(id,{printed:false});
