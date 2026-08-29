@@ -1,0 +1,17 @@
+V31_31 - DIAGNÓSTICO PAYER PIX
+
+Alteração controlada somente no fluxo de criação do Pix de pedido normal:
+- payer.email passa a usar o mesmo padrão aleatório do Teste Pix aprovado.
+- payer.first_name passa a ser "Teste Pix".
+
+Mantidos sem alteração:
+- valor do pedido;
+- descrição "Pedido Beach Burguer";
+- external_reference BB-...;
+- notification_url;
+- Access Token;
+- X-Idempotency-Key;
+- order_payload e criação automática do pedido após aprovação;
+- demais formas de pagamento e funções da Loja.
+
+Objetivo: testar se os dados de payer do checkout normal eram a diferença que fazia o Pix ficar em pending_waiting_transfer.

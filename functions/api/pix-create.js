@@ -14,8 +14,10 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json();
     const amount = Number(body.amount);
     const phone = String(body.phone || "").replace(/\D/g, "").slice(0, 11);
-    const email = `cliente${phone ? `+${phone}` : ""}@beachburguer.pages.dev`;
-    const name = String(body.name || "").trim();
+    // V31_31 diagnóstico: usar o mesmo padrão de payer do teste Pix aprovado.
+    // Mantemos descrição, external_reference, valor e payload do pedido normal.
+    const email = `teste.pix.${Date.now()}@beachburguer.pages.dev`;
+    const name = "Teste Pix";
     const orderPayload = body.order && typeof body.order === "object" ? body.order : null;
 
     if (!Number.isFinite(amount) || amount <= 0) {
