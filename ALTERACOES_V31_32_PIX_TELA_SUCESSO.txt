@@ -1,0 +1,7 @@
+V31.32 — Confirmação visual do Pix
+
+- Quando o Mercado Pago aprovar o Pix, o checkout aguarda o servidor devolver o número do pedido.
+- Assim que order_id estiver disponível, fecha a etapa do QR Code e mostra a tela de sucesso com “Pedido #N realizado com sucesso”.
+- Remove o POST duplicado de /api/orders após aprovação do Pix, pois pix-status/webhook já reconciliam e criam o pedido pago.
+- Mantida integralmente a correção V31.31 do payer do Pix.
+- Atualizado cache-bust do checkout.js para V31.32.

@@ -571,11 +571,29 @@ async function verificarPix(){
     const r=await fetch(`/api/pix-status?payment_id=${encodeURIComponent(pixPaymentId)}`,{cache:"no-store"});
     const data=await r.json();
     if(data.ok && (data.approved===true||data.status==="approved")){
-      clearInterval(pixPolling);
-      $("pixStatusCheckout").textContent="✅ Pagamento confirmado! Enviando pedido automaticamente...";
+      // O próprio /api/pix-status cria/reconcilia o pedido pago no servidor.
+      // Só sai do QR Code quando o servidor devolver o número do pedido.
+      // Isso evita criar um segundo pedido pelo POST /api/orders.
       $("pixStatusCheckout").classList.add("ok");
-      pagamento="Pix";
-      await enviarPedido();
+      if(data.order_id){
+        clearInterval(pixPolling);
+        pixPolling=null;
+        if(pixFalhaTimer){clearTimeout(pixFalhaTimer);pixFalhaTimer=null;}
+        const d=dadosPedido();
+        pagamento="Pix";
+        salvarClienteCheckoutV16();
+        try{ await vincularPushAoTelefone(d.telefone); }catch(e){ console.warn("Push não vinculado:",e); }
+        localStorage.removeItem("bb_carrinho");
+        carrinho=[];
+        $("pixStatusCheckout").textContent="✅ Pagamento confirmado! Pedido realizado.";
+        $("textoSucesso").textContent=`Pedido #${data.order_id} realizado com sucesso.`;
+        pixPaymentId="";
+        mostrarEtapa("etapaSucesso");
+      }else{
+        $("pixStatusCheckout").textContent="✅ Pagamento confirmado! Finalizando seu pedido...";
+        // Mantém o polling: na próxima consulta o servidor devolve o pedido
+        // criado pelo webhook/reconciliação, com o respectivo número.
+      }
     }
   }catch{}
 }
