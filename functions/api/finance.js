@@ -31,25 +31,22 @@ export async function onRequestPost({request,env}){
       return json({ok:true,sales,closing:closings?.[0]||null,ledger:ledger||[],accounts:accounts||[]});
     }
     if(action==='save_closing'){
-      const date=String(b.date||'').slice(0,10); if(!date)return json({ok:false,error:'Data inválida.'},400);
-      const sales=await salesSummary(env,date);
-      const pendingBefore=money(b.pending_unclassified);
-      const receivedCash=money(b.received_cash), receivedCard=money(b.received_card);
-      if(receivedCash<0||receivedCard<0)return json({ok:false,error:'Os valores recebidos não podem ser negativos.'},400);
-      const receivedTotal=money(receivedCash+receivedCard);
-      if(receivedTotal>pendingBefore)return json({ok:false,error:'Dinheiro + Cartão não podem ser maiores que o restante A pagar.'},400);
-      const priorRows=await supabaseRequest(env,`cash_closings?select=*&closing_date=eq.${date}&limit=1`);
-      const prior=priorRows?.[0]||null;
-      const priorExtraCash=prior?Math.max(0,money(Number(prior.cash_total||0)-Number(sales.totals.Dinheiro||0))):0;
-      const priorExtraCard=prior?Math.max(0,money(Number(prior.card_total||0)-Number(sales.totals['Cartão']||0))):0;
-      const pendingAfter=money(pendingBefore-receivedTotal);
-      const row={closing_date:date,cash_total:money(sales.totals.Dinheiro+priorExtraCash+receivedCash),card_total:money(sales.totals['Cartão']+priorExtraCard+receivedCard),pix_total:sales.totals.Pix,pending_unclassified:pendingAfter,notes:'',updated_at:new Date().toISOString()};
+      const date=String(b.date||'').slice(0,10); const sales=await salesSummary(env,date);
+      const apagarCash=money(b.apagar_cash), apagarCard=money(b.apagar_card), cardFee=money(b.card_fee), pixFee=money(b.pix_fee);
+      const row={closing_date:date,cash_total:sales.totals.Dinheiro,card_total:sales.totals['Cartão'],pix_total:sales.totals.Pix,pending_unclassified:0,notes:'',apagar_cash:apagarCash,apagar_card:apagarCard,card_fee:cardFee,pix_fee:pixFee,updated_at:new Date().toISOString()};
       const saved=await supabaseRequest(env,'cash_closings?on_conflict=closing_date',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify(row)});
-      const entries=[];
-      if(receivedCash>0)entries.push({entry_date:date,type:'entrada',description:'Recebimento de A pagar — Dinheiro',amount:receivedCash,source:'fechamento_a_pagar'});
-      if(receivedCard>0)entries.push({entry_date:date,type:'entrada',description:'Recebimento de A pagar — Cartão',amount:receivedCard,source:'fechamento_a_pagar'});
-      if(entries.length)await supabaseRequest(env,'cash_ledger',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(entries)});
-      return json({ok:true,closing:saved?.[0]||row,received_total:receivedTotal,pending_after:pendingAfter});
+      async function syncReceipt(source,description,amount){
+        const prior=await supabaseRequest(env,`cash_ledger?select=id,amount&entry_date=eq.${date}&source=eq.${source}&limit=1`);
+        if(prior?.[0]){
+          if(amount>0) await supabaseRequest(env,`cash_ledger?id=eq.${prior[0].id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({amount,description})});
+          else await supabaseRequest(env,`cash_ledger?id=eq.${prior[0].id}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+        }else if(amount>0){
+          await supabaseRequest(env,'cash_ledger',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({entry_date:date,type:'entrada',description,amount,source})});
+        }
+      }
+      await syncReceipt('a_pagar_dinheiro','Recebimento de A pagar — Dinheiro',apagarCash);
+      await syncReceipt('a_pagar_cartao','Recebimento de A pagar — Cartão',apagarCard);
+      return json({ok:true,closing:saved?.[0]||row});
     }
     if(action==='add_ledger'){
       const amount=money(b.amount); if(amount<=0)return json({ok:false,error:'Informe um valor válido.'},400);

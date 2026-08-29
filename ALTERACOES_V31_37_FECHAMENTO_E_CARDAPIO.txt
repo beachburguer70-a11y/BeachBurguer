@@ -1,0 +1,8 @@
+V31.37
+- Fechamento: removido Restante A pagar e Observações.
+- Recebimento de A pagar: campos Dinheiro e Cartão, lançados como entrada no Livro Caixa.
+- Taxas de Cartão e Pix em reais, com cálculo bruto/líquido.
+- Cardápio para impressão redesenhado no padrão preto/amarelo.
+- Artesanais em página própria; demais categorias em páginas separadas.
+- Cardápio editável: nome, descrição/ingredientes e preço; salva no catálogo do sistema.
+- Mantidas as demais funções da V31.35.
