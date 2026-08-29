@@ -1,0 +1,9 @@
+V31_28 — CAMPAINHA DA LOJA COM A MESMA REGRA DO GARÇOM
+
+- A campainha da página Loja agora usa monitor independente de novos pedidos, igual ao Garçom.
+- Verificação a cada 3 segundos.
+- Na primeira leitura, pedidos existentes são apenas registrados e não tocam.
+- Depois disso, qualquer pedido novo com status "novo" toca a campainha quando a página está visível e a campainha está ativada.
+- Corrigido também o caminho do arquivo de áudio dentro do PWA da Loja (/loja-app/).
+- Nenhuma alteração em pedidos, pagamentos, Pix, impressão, status, Garçom ou Notificador WhatsApp.
+- Não requer SQL.

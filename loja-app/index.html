@@ -162,6 +162,9 @@ let primeiraCarga=true;
 let somAtivo=true;
 let intervalo=null;
 let filtroAtual="novo";
+let pedidosConhecidosCampainhaLoja=new Set();
+let primeiraMonitoracaoCampainhaLoja=true;
+let monitorCampainhaLoja=null;
 
 
 const $=id=>document.getElementById(id);
@@ -297,6 +300,7 @@ async function entrar(){
     await carregarConfigLoja();
     await atualizarClientesOnlineLojaV27();
     intervalo=setInterval(carregarPedidos,3000);
+    iniciarMonitorCampainhaLoja();
     setInterval(carregarConfigLoja,30000);
   }catch(e){alert("Senha incorreta ou conexão indisponível.");}
 }
@@ -314,21 +318,50 @@ async function carregarPedidos(){
   const data=await api("POST",{action:"list_orders"});
   render(data.orders);
 
-  const novos=data.orders.filter(p=>p.status==="novo"&&!conhecidos.has(p.id));
-  if(!primeiraCarga&&novos.length){
-    if(somAtivo&&document.visibilityState==="visible")tocarSom();
-
-  }
   data.orders.forEach(p=>conhecidos.add(p.id));
   primeiraCarga=false;
 }
 
 function tocarSom(){
+  if(document.visibilityState!=="visible")return;
   try{
-    const audio=new Audio("assets/campainha-pedido.mp3?v=817");
+    const caminhoSom=location.pathname.includes("/loja-app/")?"../assets/campainha-pedido.mp3?v=850":"assets/campainha-pedido.mp3?v=850";
+    const audio=new Audio(caminhoSom);
     audio.volume=1;
-    audio.play().catch(err=>console.warn("Campainha bloqueada:",err));
-  }catch(e){console.warn("Erro na campainha:",e);}
+    audio.play().catch(err=>console.warn("Campainha da loja bloqueada:",err));
+  }catch(e){console.warn("Erro na campainha da loja:",e);}
+}
+
+async function monitorarNovosPedidosLoja(){
+  if(!token)return;
+  try{
+    const data=await api("POST",{action:"list_orders",limit:100});
+    const lista=data.orders||[];
+
+    if(primeiraMonitoracaoCampainhaLoja){
+      lista.forEach(p=>pedidosConhecidosCampainhaLoja.add(Number(p.id)));
+      primeiraMonitoracaoCampainhaLoja=false;
+      return;
+    }
+
+    const novos=lista
+      .filter(p=>p.status==="novo"&&!pedidosConhecidosCampainhaLoja.has(Number(p.id)))
+      .sort((a,b)=>Number(a.id)-Number(b.id));
+
+    lista.forEach(p=>pedidosConhecidosCampainhaLoja.add(Number(p.id)));
+
+    if(novos.length&&somAtivo&&document.visibilityState==="visible")tocarSom();
+  }catch(e){
+    console.warn("Monitor de pedidos da loja:",e.message);
+  }
+}
+
+function iniciarMonitorCampainhaLoja(){
+  if(monitorCampainhaLoja)clearInterval(monitorCampainhaLoja);
+  primeiraMonitoracaoCampainhaLoja=true;
+  pedidosConhecidosCampainhaLoja.clear();
+  monitorarNovosPedidosLoja();
+  monitorCampainhaLoja=setInterval(monitorarNovosPedidosLoja,3000);
 }
 
 function render(list){
