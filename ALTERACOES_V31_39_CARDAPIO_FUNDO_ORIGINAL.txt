@@ -1,0 +1,7 @@
+V31_39 - Cardápio com fundo do modelo original
+- Corrigida a página /cardapio-impressao (não é uma imagem separada).
+- Usa um asset de fundo baseado diretamente no cardápio original enviado pelo usuário.
+- Mantém tarja, textura, pinceladas amarelas/laranja, rodapé e tomate/folhas do modelo.
+- Itens continuam em HTML e editáveis: nome, descrição/ingredientes e preço.
+- Artesanais em uma página própria; demais categorias em páginas separadas com o mesmo fundo.
+- Nenhum SQL necessário.
