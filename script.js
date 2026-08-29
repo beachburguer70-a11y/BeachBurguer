@@ -883,7 +883,7 @@ async function enviarPedidoAoServidor(){
   const pedido={
     action:"create",cliente:$("nome").value.trim(),telefone:$("telefone").value.trim(),
     endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),referencia:$("referencia").value.trim(),
-    localidade:local,tipo:$("tipoPedido").value,pagamento:pixManualFallback?"Dinheiro":pagamento,pix_manual:pixManualFallback,
+    localidade:local,tipo:$("tipoPedido").value,pagamento:pixManualFallback?"Pix Manual":pagamento,pix_manual:pixManualFallback,
     troco:(pagamento==="Dinheiro"&&!pixManualFallback)?$("troco").value.trim():"",observacoes:$("observacoes").value.trim(),
     itens:carrinho.map(i=>({id:i.id,nome:i.nome,categoria:i.categoria || (dados.produtos.find(p=>Number(p.id)===Number(i.id) || p.nome===i.nome)?.categoria || ""),quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:valorItem(i)})),
     subtotal:sub,entrega:taxa,total:sub+taxa,pix_payment_id:pagamento==="Pix"?pixPaymentId:null
@@ -1193,10 +1193,10 @@ $("pagamentos").onclick=async e=>{
   if(b.dataset.forma==="Pix"){
     try{await carregarDisponibilidade();}catch{}
     if(estadoLojaCliente?.pix_operational===false){
-      const ok=confirm("PIX AUTOMÁTICO TEMPORARIAMENTE INDISPONÍVEL.\n\nSeu pedido será finalizado como DINHEIRO e a chave Pix será enviada no WhatsApp para pagamento manual.\n\nApós pagar, envie o comprovante pelo WhatsApp.\n\nToque em OK para continuar.");
+      const ok=confirm("PIX AUTOMÁTICO TEMPORARIAMENTE INDISPONÍVEL.\n\nSeu pedido será finalizado como PIX MANUAL e a chave Pix será enviada no WhatsApp para pagamento manual.\n\nApós pagar, envie o comprovante pelo WhatsApp.\n\nToque em OK para continuar.");
       if(!ok)return;
       pixManualFallback=true;
-      pagamento="Dinheiro";
+      pagamento="Pix Manual";
       document.querySelectorAll(".pagamento").forEach(x=>x.classList.remove("ativo"));
       b.classList.add("ativo");
       $("pixBox").classList.remove("ativo");

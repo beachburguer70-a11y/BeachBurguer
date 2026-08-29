@@ -484,9 +484,9 @@ export async function onRequestPost({ request, env }) {
         if(storePix.pix_operational!==false){
           return json({ok:false,error:"O Pix automático está disponível. Atualize a página e selecione Pix normalmente."},409);
         }
-        // O fallback solicitado entra tecnicamente como Dinheiro, mas fica identificado
-        // nas observações para a Loja saber que é Pix manual aguardando comprovante.
-        body.pagamento="Dinheiro";
+        // Pix manual é uma forma própria de pagamento. Não reutiliza "Dinheiro",
+        // evitando conflito com troco, relatórios e mensagens do WhatsApp.
+        body.pagamento="Pix Manual";
         body.troco="";
       }
 

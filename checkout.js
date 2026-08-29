@@ -475,7 +475,7 @@ function dadosPedido(){
     referencia:tipoPedido==="Entrega"?$("referenciaCheckout").value.trim():"",
     localidade:tipoPedido==="Entrega"?$("bairroCheckout").value:tipoPedido,
     tipo:tipoPedido,
-    pagamento:pixManualFallback?"Dinheiro":pagamento,
+    pagamento:pixManualFallback?"Pix Manual":pagamento,
     pix_manual:pixManualFallback,
     troco:(pagamento==="Dinheiro"&&!pixManualFallback) ? (()=> {
       const pago=parseDinheiroV10($("trocoCheckout").value);
@@ -648,10 +648,10 @@ async function selecionarPagamentoCheckoutV31_19(b){
   if(b.dataset.pagamento==="Pix"){
     await carregarEstadoLojaCheckoutV16();
     if(estadoLojaCheckoutV16?.pix_operational===false){
-      const ok=confirm("PIX AUTOMÁTICO TEMPORARIAMENTE INDISPONÍVEL.\n\nSeu pedido será finalizado como DINHEIRO e a chave Pix será enviada no WhatsApp para pagamento manual.\n\nApós pagar, envie o comprovante pelo WhatsApp.\n\nToque em OK para continuar.");
+      const ok=confirm("PIX AUTOMÁTICO TEMPORARIAMENTE INDISPONÍVEL.\n\nSeu pedido será finalizado como PIX MANUAL e a chave Pix será enviada no WhatsApp para pagamento manual.\n\nApós pagar, envie o comprovante pelo WhatsApp.\n\nToque em OK para continuar.");
       if(!ok)return;
       pixManualFallback=true;
-      pagamento="Dinheiro";
+      pagamento="Pix Manual";
       document.querySelectorAll(".payment-option").forEach(x=>x.classList.remove("ativo"));
       b.classList.add("ativo");
       if($("trocoWrap"))$("trocoWrap").classList.add("hidden");
