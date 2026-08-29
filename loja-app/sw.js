@@ -1,10 +1,38 @@
-const CACHE="beach-burguer-loja-app-v31-15-chuva";
-const STATIC=["/loja-app/","/loja-app/garcom.html","/loja-app/relatorios.html","/assets/logo.png","/assets/loja-pwa-192.png"];
-self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)).catch(()=>{}));self.skipWaiting();});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("beach-burguer-loja-app-")&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
-self.addEventListener("fetch",e=>{
- const req=e.request,url=new URL(req.url);
- if(url.origin!==location.origin||url.pathname.startsWith("/api/"))return;
- if(req.mode==="navigate"){e.respondWith(fetch(req).catch(()=>caches.match(req).then(r=>r||caches.match("/loja-app/"))));return;}
- e.respondWith(caches.match(req).then(c=>c||fetch(req)));
+const CACHE="beach-burguer-loja-app-v31-33-sync";
+const STATIC=["/assets/logo.png","/assets/loja-pwa-192.png","/assets/loja-pwa-512.png","/assets/loja-pwa-maskable-512.png","/loja-app/manifest.json"];
+
+self.addEventListener("install",event=>{
+  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(STATIC)).catch(()=>{}));
+});
+
+self.addEventListener("activate",event=>{
+  event.waitUntil(
+    caches.keys()
+      .then(keys=>Promise.all(keys.filter(k=>k.startsWith("beach-burguer-loja-app-")&&k!==CACHE).map(k=>caches.delete(k))))
+      .then(()=>self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch",event=>{
+  const req=event.request;
+  if(req.method!=="GET") return;
+  const url=new URL(req.url);
+  if(url.origin!==location.origin) return;
+
+  // APIs are always live and never cached.
+  if(url.pathname.startsWith("/api/")){
+    event.respondWith(fetch(req));
+    return;
+  }
+
+  // Pages/code are network-first, so the installed app receives each new deploy immediately.
+  const live = req.mode==="navigate" || url.pathname.endsWith(".html") || url.pathname.endsWith(".js") || url.pathname.endsWith(".css");
+  if(live){
+    event.respondWith(fetch(req,{cache:"no-store"}).catch(()=>caches.match(req).then(r=>r||caches.match("/loja-app/"))));
+    return;
+  }
+
+  // Images/manifest can use cache, with network fallback.
+  event.respondWith(caches.match(req).then(cached=>cached||fetch(req)));
 });

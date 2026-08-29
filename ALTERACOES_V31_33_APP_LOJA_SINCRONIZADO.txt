@@ -1,0 +1,8 @@
+V31.33 - APP LOJA SINCRONIZADO COM O SITE
+
+- loja-app/index.html atualizado com a mesma tela e funções da loja.html atual.
+- Inclui o botão/estado do Pix e correções atuais da Loja.
+- Service Worker do App Loja atualizado para rede-primeiro em HTML/JS/CSS.
+- API nunca é armazenada em cache.
+- Cache antigo do App Loja é removido na ativação da nova versão.
+- Mantidas as rotas internas do App Loja para Garçom e Relatórios.
