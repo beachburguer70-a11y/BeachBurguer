@@ -1,0 +1,7 @@
+V31_40 — Cardápio artesanal
+- Fundo do cardápio substituído pelo arquivo de fundo limpo fornecido pelo usuário.
+- Fundo aplicado sem textos dos produtos, preservando logo, textura e rodapé.
+- Nome/descrição/preço continuam editáveis em HTML por cima do fundo.
+- Área do texto reduzida para reservar espaço exclusivo ao preço.
+- Preço reposicionado na lateral para não ficar por cima da descrição, inclusive em telas menores.
+- Sem alterações no Pix, pedidos, Garçom, Loja ou WhatsApp.
