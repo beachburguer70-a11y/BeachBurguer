@@ -1,0 +1,15 @@
+BEACH BURGUER — V31.19 TESTE PIX
+
+ALTERAÇÃO ISOLADA SOBRE A V31.18:
+- Botão “Pix” na Loja mostra DISPONÍVEL/INDISPONÍVEL.
+- Teste completo gera cobrança de R$ 0,10 e exige pagamento real.
+- Só considera normal quando Mercado Pago retorna approved.
+- Se rejeitar/cancelar/estornar ou ficar sem aprovação por 3 minutos, desativa o Pix automático.
+- Testes usam referência BB-TEST e nunca viram pedido.
+- Quando Pix automático está indisponível, cliente recebe aviso e, ao OK, o pedido finaliza tecnicamente em Dinheiro.
+- Loja identifica o pedido como “PIX MANUAL — AGUARDANDO COMPROVANTE”.
+- Confirmação WhatsApp usa o template já existente e inclui, no segundo parâmetro, a chave Pix e “Aguardando comprovante”.
+- Botões manuais para Desativar/Reativar Pix incluídos na Loja.
+
+IMPORTANTE: executar supabase/ATUALIZAR_V31_19_TESTE_PIX.sql antes de usar o teste.
+Nenhuma regra de produtos, adicionais, chuva, horários, impressão ou pedidos normais foi alterada.

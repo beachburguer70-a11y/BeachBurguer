@@ -76,7 +76,8 @@ let pixPollingStartedAt=0;
 let pixFinalizacaoAutomaticaIniciada=false;
 let adminToken="";
 
-let estadoLojaCliente={open:true,pickup_only:false,rain_mode:false,mode:"open"};
+let estadoLojaCliente={open:true,pickup_only:false,rain_mode:false,pix_operational:true,mode:"open"};
+let pixManualFallback=false;
 const $=id=>document.getElementById(id);
 const moeda=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
@@ -842,7 +843,7 @@ function validar(){
   if(!estadoLojaCliente.open){alert("A loja está fechada no momento.");return false}
   if(estadoLojaCliente.pickup_only&&$("tipoPedido").value!=="Retirada"){alert("Neste momento estamos aceitando somente retirada no local.");return false}
   if(!validarLancheObrigatorio())return false;
-  if(pagamento==="Pix"&&!pixConfirmado){alert("O Pix ainda não foi confirmado pelo Mercado Pago.");return false}
+  if(pagamento==="Pix"&&!pixManualFallback&&!pixConfirmado){alert("O Pix ainda não foi confirmado pelo Mercado Pago.");return false}
   if(!carrinho.length){alert("Adicione pelo menos um produto.");return false}
   if(!$("nome").value.trim()){alert("Preencha seu nome.");return false}
   if(!telefoneValido($("telefone").value)){alert("Informe um telefone com DDD. Exemplo: (22) 99784-9915.");$("telefone").focus();return false}
@@ -856,8 +857,8 @@ async function enviarPedidoAoServidor(){
   const pedido={
     action:"create",cliente:$("nome").value.trim(),telefone:$("telefone").value.trim(),
     endereco:$("endereco").value.trim(),bairro:$("bairro").value.trim(),referencia:$("referencia").value.trim(),
-    localidade:local,tipo:$("tipoPedido").value,pagamento,
-    troco:pagamento==="Dinheiro"?$("troco").value.trim():"",observacoes:$("observacoes").value.trim(),
+    localidade:local,tipo:$("tipoPedido").value,pagamento:pixManualFallback?"Dinheiro":pagamento,pix_manual:pixManualFallback,
+    troco:(pagamento==="Dinheiro"&&!pixManualFallback)?$("troco").value.trim():"",observacoes:$("observacoes").value.trim(),
     itens:carrinho.map(i=>({id:i.id,nome:i.nome,categoria:i.categoria || (dados.produtos.find(p=>Number(p.id)===Number(i.id) || p.nome===i.nome)?.categoria || ""),quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:valorItem(i)})),
     subtotal:sub,entrega:taxa,total:sub+taxa,pix_payment_id:pagamento==="Pix"?pixPaymentId:null
   };
@@ -1161,8 +1162,23 @@ $("telefone").addEventListener("change",async e=>{
 $("fecharProduto").onclick=()=>$("modalProduto").classList.remove("ativo");
 $("confirmarProduto").onclick=adicionarProduto;
 $("modalProduto").onclick=e=>{if(e.target===$("modalProduto"))$("modalProduto").classList.remove("ativo")};
-$("pagamentos").onclick=e=>{
+$("pagamentos").onclick=async e=>{
   const b=e.target.closest(".pagamento");if(!b)return;
+  if(b.dataset.forma==="Pix"){
+    try{await carregarDisponibilidade();}catch{}
+    if(estadoLojaCliente?.pix_operational===false){
+      const ok=confirm("PIX AUTOMÁTICO TEMPORARIAMENTE INDISPONÍVEL.\n\nSeu pedido será finalizado como DINHEIRO e a chave Pix será enviada no WhatsApp para pagamento manual.\n\nApós pagar, envie o comprovante pelo WhatsApp.\n\nToque em OK para continuar.");
+      if(!ok)return;
+      pixManualFallback=true;
+      pagamento="Dinheiro";
+      document.querySelectorAll(".pagamento").forEach(x=>x.classList.remove("ativo"));
+      b.classList.add("ativo");
+      $("pixBox").classList.remove("ativo");
+      $("campoTroco").style.display="none";
+      resetarConfirmacaoPix();renderCarrinho();return;
+    }
+  }
+  pixManualFallback=false;
   document.querySelectorAll(".pagamento").forEach(x=>x.classList.remove("ativo"));
   b.classList.add("ativo");pagamento=b.dataset.forma;
   $("pixBox").classList.toggle("ativo",pagamento==="Pix");

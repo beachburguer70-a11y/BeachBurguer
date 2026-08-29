@@ -215,13 +215,24 @@ function calcularStatusLoja(state){
   return {mode:"closed",open:false,pickup_only:false,now:agora,hours,next_open,today:cfg,manual_date:state?.manual_date||null};
 }
 async function obterEstadoLoja(env){
+  let row={};
   try{
-    const rows=await supabaseRequest(env,"store_state?select=id,shift_started_at,opening_hours,manual_mode,manual_date,rain_mode,updated_at&id=eq.1&limit=1");
-    const row=rows?.[0]||{};
-    return {...row,rain_mode:row?.rain_mode===true,...calcularStatusLoja(row)};
+    const rows=await supabaseRequest(env,"store_state?select=id,shift_started_at,opening_hours,manual_mode,manual_date,rain_mode,pix_operational,pix_test_payment_id,pix_test_status,pix_test_status_detail,pix_test_started_at,pix_last_test_at,pix_last_approved_at,updated_at&id=eq.1&limit=1");
+    row=rows?.[0]||{};
   }catch{
-    return {rain_mode:false,...calcularStatusLoja({})};
+    // Compatibilidade antes de executar o SQL da V31.19.
+    try{
+      const rows=await supabaseRequest(env,"store_state?select=id,shift_started_at,opening_hours,manual_mode,manual_date,rain_mode,updated_at&id=eq.1&limit=1");
+      row=rows?.[0]||{};
+    }catch{}
   }
+  return {
+    ...row,
+    rain_mode:row?.rain_mode===true,
+    pix_operational:row?.pix_operational!==false,
+    pix_test_status:String(row?.pix_test_status||"not_tested"),
+    ...calcularStatusLoja(row)
+  };
 }
 
 async function obterInicioExpediente(env){
@@ -467,6 +478,18 @@ export async function onRequestPost({ request, env }) {
         }, 400);
       }
 
+      const pixManual = body.pix_manual === true;
+      if(pixManual){
+        const storePix=await obterEstadoLoja(env);
+        if(storePix.pix_operational!==false){
+          return json({ok:false,error:"O Pix automático está disponível. Atualize a página e selecione Pix normalmente."},409);
+        }
+        // O fallback solicitado entra tecnicamente como Dinheiro, mas fica identificado
+        // nas observações para a Loja saber que é Pix manual aguardando comprovante.
+        body.pagamento="Dinheiro";
+        body.troco="";
+      }
+
       let pixPayment = null;
       if (String(body.pagamento) === "Pix") {
         const verified = await verifyApprovedPix(env, body.pix_payment_id, body.total);
@@ -495,7 +518,9 @@ export async function onRequestPost({ request, env }) {
         tipo:String(body.tipo),
         pagamento:String(body.pagamento),
         troco:String(body.troco || "").trim(),
-        observacoes:String(body.observacoes || "").trim(),
+        observacoes:(pixManual
+          ? `[PIX MANUAL — AGUARDANDO COMPROVANTE]${String(body.observacoes||"").trim()?" "+String(body.observacoes).trim():""}`
+          : String(body.observacoes || "").trim()),
         itens:body.itens,
         subtotal:Number(body.subtotal || 0),
         entrega:Number(body.entrega || 0),
@@ -519,12 +544,18 @@ export async function onRequestPost({ request, env }) {
       // Pedido do cliente: tenta enviar confirmação automática pelo WhatsApp.
       // A falha do WhatsApp nunca impede o pedido de ser criado.
       if (!isGarcom && !isBia && telefone) {
+        // Mantém exatamente o template já usado. No fallback de Pix, o segundo
+        // parâmetro leva também a chave e o aviso de comprovante, sem alterar
+        // o fluxo normal dos demais pedidos.
+        const idMensagem=pixManual
+          ? `${saved?.id||""} | PIX MANUAL | Chave Pix: ${env.PIX_MANUAL_KEY||"22997849915"} | Aguardando comprovante`
+          : saved?.id;
         await sendWhatsAppTemplate(
           env,
           telefone,
           env.WHATSAPP_TEMPLATE_PEDIDO_ACEITO || "bb_pedido_aceito",
           order.cliente,
-          saved?.id
+          idMensagem
         );
       }
 

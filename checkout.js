@@ -64,7 +64,8 @@ let pixPaymentId=null;
 let pixPolling=null;
 let enviando=false;
 
-let estadoLojaCheckoutV16={open:true,pickup_only:false,rain_mode:false,mode:"open"};
+let estadoLojaCheckoutV16={open:true,pickup_only:false,rain_mode:false,pix_operational:true,mode:"open"};
+let pixManualFallback=false;
 
 
 
@@ -472,8 +473,9 @@ function dadosPedido(){
     referencia:tipoPedido==="Entrega"?$("referenciaCheckout").value.trim():"",
     localidade:tipoPedido==="Entrega"?$("bairroCheckout").value:tipoPedido,
     tipo:tipoPedido,
-    pagamento,
-    troco:pagamento==="Dinheiro" ? (()=> {
+    pagamento:pixManualFallback?"Dinheiro":pagamento,
+    pix_manual:pixManualFallback,
+    troco:(pagamento==="Dinheiro"&&!pixManualFallback) ? (()=> {
       const pago=parseDinheiroV10($("trocoCheckout").value);
       const t=Math.max(0,pago-total());
       return pago ? `Paga com ${moeda(pago)} | Troco ${moeda(t)}` : "";
@@ -499,7 +501,7 @@ function abrirRevisao(modo){
     <div class="review-box"><strong>Cliente</strong>${d.cliente}<br>${d.telefone}</div>
     ${d.tipo==="Entrega"?`<div class="review-box"><strong>Entrega</strong>${d.endereco}<br>${d.bairro}${d.referencia?`<br>Ref.: ${d.referencia}`:""}</div>`:""}
     <div class="review-box"><strong>Itens</strong>${d.itens.map(i=>`${i.quantidade}x ${i.nome}${i.observacao?` — ${i.observacao}`:""}`).join("<br>")}</div>
-    <div class="review-box"><strong>Pagamento</strong>${d.pagamento}${d.troco?`<br>Troco para: ${d.troco}`:""}</div>
+    <div class="review-box"><strong>Pagamento</strong>${d.pix_manual?"Pix manual — aguardando comprovante":d.pagamento}${d.troco?`<br>Troco para: ${d.troco}`:""}</div>
     ${d.observacoes?`<div class="review-box"><strong>Observações</strong>${d.observacoes}</div>`:""}
     <div class="review-box"><strong>Total</strong><span style="font-size:22px">${moeda(d.total)}</span></div>`;
   $("confirmarRevisaoCheckout").textContent=modo==="pix"?"Confirmar e gerar Pix":"Finalizar pedido";
@@ -614,19 +616,44 @@ $("avancarPagamento").onclick=async()=>{
   atualizarTudo();
 };
 $("voltarDados").onclick=()=>mostrarEtapa("etapaDados");
-document.querySelectorAll(".payment-option").forEach(b=>b.onclick=()=>{
+async function selecionarPagamentoCheckoutV31_19(b){
+  if(b.dataset.pagamento==="Pix"){
+    await carregarEstadoLojaCheckoutV16();
+    if(estadoLojaCheckoutV16?.pix_operational===false){
+      const ok=confirm("PIX AUTOMÁTICO TEMPORARIAMENTE INDISPONÍVEL.\n\nSeu pedido será finalizado como DINHEIRO e a chave Pix será enviada no WhatsApp para pagamento manual.\n\nApós pagar, envie o comprovante pelo WhatsApp.\n\nToque em OK para continuar.");
+      if(!ok)return;
+      pixManualFallback=true;
+      pagamento="Dinheiro";
+      document.querySelectorAll(".payment-option").forEach(x=>x.classList.remove("ativo"));
+      b.classList.add("ativo");
+      if($("trocoWrap"))$("trocoWrap").classList.add("hidden");
+      if($("acaoPagamento"))$("acaoPagamento").textContent="Fazer pedido";
+      atualizarTudo();
+      return;
+    }
+  }
+  pixManualFallback=false;
   document.querySelectorAll(".payment-option").forEach(x=>x.classList.remove("ativo"));
   b.classList.add("ativo");
   pagamento=b.dataset.pagamento;
   atualizarTudo();
+  if(deveAvisarTaxaCartaoAtafona())abrirAvisoTaxaCartaoAtafona();
+}
 
-  if(deveAvisarTaxaCartaoAtafona()){
-    abrirAvisoTaxaCartaoAtafona();
-  }
+document.querySelectorAll(".payment-option").forEach(b=>b.onclick=async()=>{
+  await selecionarPagamentoCheckoutV31_19(b);
 });
 $("acaoPagamento").onclick=async()=>{
   if(!(await validarEstadoLojaAntesDeProsseguirV20()))return;
-  abrirRevisao(pagamento==="Pix"?"pix":"normal");
+  if(pagamento==="Pix"&&!pixManualFallback){
+    await carregarEstadoLojaCheckoutV16();
+    if(estadoLojaCheckoutV16?.pix_operational===false){
+      const pixBtn=document.querySelector('.payment-option[data-pagamento="Pix"]');
+      if(pixBtn)await selecionarPagamentoCheckoutV31_19(pixBtn);
+      if(!pixManualFallback)return;
+    }
+  }
+  abrirRevisao((pagamento==="Pix"&&!pixManualFallback)?"pix":"normal");
 };
 $("fecharRevisaoCheckout").onclick=$("voltarRevisaoCheckout").onclick=()=>{
   $("modalRevisaoCheckout").classList.remove("ativo");$("progRevisao").classList.remove("ativo");

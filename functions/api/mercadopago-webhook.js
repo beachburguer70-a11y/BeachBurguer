@@ -83,7 +83,17 @@ async function handle({ request, env }) {
       }
     );
 
-    if(payment.status === "approved") {
+    const externalReference=String(payment.external_reference||"");
+    const isPixTest=externalReference.startsWith("BB-TEST-");
+    if(isPixTest){
+      const status=String(payment.status||"");
+      const detail=String(payment.status_detail||"");
+      const terminalProblem=["rejected","cancelled","refunded","charged_back"].includes(status);
+      const patch={id:1,pix_test_payment_id:String(payment.id),pix_test_status:status,pix_test_status_detail:detail,pix_last_test_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+      if(status==="approved"){patch.pix_operational=true;patch.pix_last_approved_at=new Date().toISOString();}
+      else if(terminalProblem){patch.pix_operational=false;}
+      try{await supabaseRequest(env,"store_state?on_conflict=id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(patch)});}catch(e){console.warn("Webhook teste Pix:",e?.message||e);}
+    } else if(payment.status === "approved") {
       try {
         const result=await ensureOrderFromApprovedPix(env,payment);
         if(result?.created && String(result?.order?.origem||'')==='bia' && result?.order?.telefone){
