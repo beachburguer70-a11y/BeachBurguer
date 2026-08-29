@@ -1,0 +1,1 @@
+V31_41 - CORREÇÃO CARDÁPIO: preço recebeu coluna própria e não sobrepõe mais descrição.
