@@ -1,0 +1,10 @@
+V31_38 - Cardápio artesanal ajustado ao modelo visual fornecido pelo usuário.
+- formato vertical A4
+- tarja amarela inclinada
+- logo superior direita
+- duas colunas com ordem original dos 10 artesanais
+- nomes amarelos, descrições brancas e preços inclinados
+- rodapé vermelho/amarelo, Instagram, WhatsApp e aviso de fritas
+- edição de nome, descrição e preço preservada
+- demais categorias permanecem em páginas separadas com a mesma identidade visual
+Sem alteração de SQL, Pix, pedidos, Garçom ou notificador.
