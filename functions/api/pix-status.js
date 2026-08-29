@@ -45,6 +45,18 @@ export async function onRequestGet({ request, env }) {
     const externalReference=String(payment.external_reference||"");
     const isPixTest=externalReference.startsWith("BB-TEST-");
 
+    // V31.23: o cliente informa explicitamente que já efetuou o Pix.
+    // Se, após a janela de confirmação do navegador, o Mercado Pago ainda
+    // responder pending_waiting_transfer, bloqueia somente o Pix automático.
+    const confirmAttempt=new URL(request.url).searchParams.get("confirm_attempt")==="1";
+    let pixAutoDisabled=false;
+    if(!isPixTest && confirmAttempt && String(payment.status||"")==="pending" && String(payment.status_detail||"")==="pending_waiting_transfer"){
+      try{
+        await supabaseRequest(env,"store_state?on_conflict=id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:1,pix_operational:false,pix_test_status:"real_payment_not_confirmed",pix_test_status_detail:`Pagamento real ${String(payment.id)} informado como pago, mas não confirmado pelo Mercado Pago.`,pix_last_test_at:new Date().toISOString(),updated_at:new Date().toISOString()})});
+        pixAutoDisabled=true;
+      }catch(e){ console.warn("Falha ao bloquear Pix automático:",e?.message||e); }
+    }
+
     if(isPixTest){
       const status=String(payment.status||"");
       const detail=String(payment.status_detail||"");
@@ -58,7 +70,6 @@ export async function onRequestGet({ request, env }) {
         updated_at:new Date().toISOString()
       };
       if(status==="approved"){
-        patch.pix_operational=true;
         patch.pix_last_approved_at=new Date().toISOString();
       }else if(terminalProblem){
         patch.pix_operational=false;
@@ -83,7 +94,8 @@ export async function onRequestGet({ request, env }) {
       amount:Number(payment.transaction_amount || 0),
       external_reference:String(payment.external_reference || ""),
       order_id:orderResult?.order?.id || null,
-      order_created:Boolean(orderResult?.order)
+      order_created:Boolean(orderResult?.order),
+      pix_auto_disabled:pixAutoDisabled
     });
   } catch (error) {
     console.error(error);

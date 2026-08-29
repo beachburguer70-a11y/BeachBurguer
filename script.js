@@ -78,6 +78,8 @@ let adminToken="";
 
 let estadoLojaCliente={open:true,pickup_only:false,rain_mode:false,pix_operational:true,mode:"open"};
 let pixManualFallback=false;
+let pixPagamentoInformadoV31_23=false;
+let pixFalhaTimerV31_23=null;
 const $=id=>document.getElementById(id);
 const moeda=v=>Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
 
@@ -708,6 +710,9 @@ async function gerarPixAutomatico(){
     if(!resposta.ok||!dadosPix.ok)throw new Error(dadosPix.error||"Não foi possível gerar o Pix.");
 
     pixPaymentId=String(dadosPix.payment_id);
+    pixPagamentoInformadoV31_23=false;
+    if(pixFalhaTimerV31_23){clearTimeout(pixFalhaTimerV31_23);pixFalhaTimerV31_23=null;}
+    const btnJaPaguei=$("pixJaPaguei");if(btnJaPaguei){btnJaPaguei.disabled=false;btnJaPaguei.textContent="Já paguei o Pix";}
     pixCopiaColaAtual=dadosPix.qr_code;
     pixValorGerado=totalPedido;
     pixPollingStartedAt=Date.now();
@@ -737,6 +742,27 @@ async function gerarPixAutomatico(){
     btn.textContent=original;
   }
 }
+
+async function confirmarTentativaPixV31_23(){
+  if(!pixPaymentId||pixPagamentoInformadoV31_23)return;
+  pixPagamentoInformadoV31_23=true;
+  const btn=$("pixJaPaguei");if(btn){btn.disabled=true;btn.textContent="Pagamento informado ✓";}
+  $("statusPix").textContent="Pagamento informado. Aguardando confirmação do Mercado Pago...";
+  pixFalhaTimerV31_23=setTimeout(async()=>{
+    if(!pixPaymentId||pixConfirmado)return;
+    try{
+      const resposta=await fetch(`/api/pix-status?payment_id=${encodeURIComponent(pixPaymentId)}&confirm_attempt=1`,{cache:"no-store"});
+      const r=await resposta.json();
+      if(r.ok&&r.status==="approved")return;
+      if(r.ok&&r.pix_auto_disabled===true){
+        pararPollingPix();
+        $("statusPix").textContent="⚠️ Pix não confirmado. Pix automático temporariamente indisponível.";
+        alert("⚠️ O Mercado Pago não confirmou este Pix. O Pix automático foi desativado para os próximos pedidos. Se o valor for estornado, use a chave Pix manual enviada pelo WhatsApp.");
+      }
+    }catch{}
+  },60000);
+}
+const pixJaPagueiV31_23=$("pixJaPaguei");if(pixJaPagueiV31_23)pixJaPagueiV31_23.onclick=confirmarTentativaPixV31_23;
 
 function iniciarPollingPix(){
   pararPollingPix();

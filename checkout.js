@@ -66,6 +66,8 @@ let enviando=false;
 
 let estadoLojaCheckoutV16={open:true,pickup_only:false,rain_mode:false,pix_operational:true,mode:"open"};
 let pixManualFallback=false;
+let pixPagamentoInformado=false;
+let pixFalhaTimer=null;
 
 
 
@@ -541,6 +543,9 @@ async function gerarPix(){
   const data=await r.json();
   if(!r.ok||!data.ok){alert(data.error||"Erro ao gerar Pix.");mostrarEtapa("etapaPagamento");return}
   pixPaymentId=String(data.payment_id||data.id);
+  pixPagamentoInformado=false;
+  if(pixFalhaTimer){clearTimeout(pixFalhaTimer);pixFalhaTimer=null;}
+  const btnJaPaguei=$("pixJaPagueiCheckout");if(btnJaPaguei){btnJaPaguei.disabled=false;btnJaPaguei.textContent="Já paguei o Pix";}
   $("pixCopiaCheckout").textContent=data.qr_code||"";
   const qrImg=$("pixQrImagem");
   if(qrImg){
@@ -574,6 +579,29 @@ async function verificarPix(){
     }
   }catch{}
 }
+
+
+async function confirmarTentativaPixV31_23(){
+  if(!pixPaymentId||pixPagamentoInformado)return;
+  pixPagamentoInformado=true;
+  $("pixStatusCheckout").textContent="Pagamento informado. Aguardando confirmação do Mercado Pago...";
+  const btn=$("pixJaPagueiCheckout"); if(btn){btn.disabled=true;btn.textContent="Pagamento informado ✓";}
+  pixFalhaTimer=setTimeout(async()=>{
+    if(!pixPaymentId)return;
+    try{
+      const r=await fetch(`/api/pix-status?payment_id=${encodeURIComponent(pixPaymentId)}&confirm_attempt=1`,{cache:"no-store"});
+      const data=await r.json();
+      if(data.ok&&(data.approved===true||data.status==="approved"))return;
+      if(data.ok&&data.pix_auto_disabled===true){
+        clearInterval(pixPolling);
+        $("pixStatusCheckout").textContent="⚠️ Pix não confirmado. O Pix automático foi temporariamente desativado.";
+        alert("⚠️ O Mercado Pago não confirmou este Pix. O Pix automático foi desativado para os próximos pedidos. Se o valor for estornado, use a chave Pix manual enviada pelo WhatsApp.");
+      }
+    }catch{}
+  },60000);
+}
+const pixJaPagueiCheckout=$("pixJaPagueiCheckout");
+if(pixJaPagueiCheckout)pixJaPagueiCheckout.onclick=confirmarTentativaPixV31_23;
 
 // restore customer data from local cache if present
 try{

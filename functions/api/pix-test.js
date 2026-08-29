@@ -57,7 +57,6 @@ export async function onRequestPost({request,env}){
       const terminalProblem=["rejected","cancelled","refunded","charged_back"].includes(status);
       const patch={pix_test_payment_id:String(payment.id),pix_test_status:timeoutProblem?"failed_timeout":status,pix_test_status_detail:timeoutProblem?`${detail||"pending"} | sem aprovação após 3 minutos`:detail,pix_last_test_at:new Date().toISOString()};
       if(status==="approved"){
-        patch.pix_operational=true;
         patch.pix_last_approved_at=new Date().toISOString();
       }else if(terminalProblem||timeoutProblem){
         patch.pix_operational=false;
