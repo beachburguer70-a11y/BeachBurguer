@@ -1,0 +1,1 @@
+V31_42 - Corrige o layout real do cardápio: volta à base V31_40, reserva 25% de cada item exclusivamente ao preço, reduz levemente tipografia e aumenta a margem inferior para impedir sobreposição da descrição/preço e invasão do rodapé. Sem SQL e sem alterações em pedidos, Pix, Garçom, Loja ou WhatsApp.
