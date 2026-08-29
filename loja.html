@@ -355,7 +355,7 @@ async function finalizarExpediente(){
 $("finalizarExpediente").onclick=finalizarExpediente;
 $("sair").onclick=()=>{localStorage.removeItem(TOKEN_KEY);location.reload()};
 $("atualizar").onclick=carregarPedidos;
-$("somBtn").onclick=()=>{somAtivo=!somAtivo;$("somBtn").textContent=somAtivo?"🔔 Campainha ativada":"🔕 Campainha desativada"};
+$("somBtn").onclick=()=>{somAtivo=!somAtivo;$("somBtn").textContent=somAtivo?"🔔 Campainha ativada":"🔕 Campainha desativada";if(somAtivo){desbloquearSomLoja();setTimeout(tocarSom,80);}};
 document.querySelectorAll(".filtro-status").forEach(btn=>btn.addEventListener("click",()=>{
   filtroAtual=btn.dataset.status;
   document.querySelectorAll(".filtro-status").forEach(b=>b.classList.toggle("ativo",b===btn));
@@ -396,15 +396,51 @@ async function carregarPedidos(){
   primeiraCarga=false;
 }
 
+let audioCampainhaLoja=null;
+let somLojaDesbloqueado=false;
+
+function obterAudioCampainhaLoja(){
+  if(!audioCampainhaLoja){
+    audioCampainhaLoja=new Audio("/assets/campainha-pedido.mp3?v=851");
+    audioCampainhaLoja.preload="auto";
+    audioCampainhaLoja.volume=1;
+  }
+  return audioCampainhaLoja;
+}
+
+function desbloquearSomLoja(){
+  if(somLojaDesbloqueado)return;
+  try{
+    const audio=obterAudioCampainhaLoja();
+    const volumeAnterior=audio.volume;
+    audio.volume=0.01;
+    const tentativa=audio.play();
+    if(tentativa&&typeof tentativa.then==="function"){
+      tentativa.then(()=>{
+        audio.pause();
+        audio.currentTime=0;
+        audio.volume=volumeAnterior;
+        somLojaDesbloqueado=true;
+      }).catch(()=>{ audio.volume=volumeAnterior; });
+    }
+  }catch(e){console.warn("Não foi possível preparar a campainha da loja:",e);}
+}
+
 function tocarSom(){
   if(document.visibilityState!=="visible")return;
   try{
-    const caminhoSom=location.pathname.includes("/loja-app/")?"../assets/campainha-pedido.mp3?v=850":"assets/campainha-pedido.mp3?v=850";
-    const audio=new Audio(caminhoSom);
+    const audio=obterAudioCampainhaLoja();
+    audio.pause();
+    audio.currentTime=0;
     audio.volume=1;
-    audio.play().catch(err=>console.warn("Campainha da loja bloqueada:",err));
+    audio.play().then(()=>{somLojaDesbloqueado=true;}).catch(err=>console.warn("Campainha da loja bloqueada:",err));
   }catch(e){console.warn("Erro na campainha da loja:",e);}
 }
+
+// Libera o áudio no primeiro toque/clique/tecla do operador. Isso evita o bloqueio
+// de autoplay do navegador antes de chegar o primeiro pedido.
+document.addEventListener("pointerdown",desbloquearSomLoja,{once:true,capture:true});
+document.addEventListener("keydown",desbloquearSomLoja,{once:true,capture:true});
 
 async function monitorarNovosPedidosLoja(){
   if(!token)return;

@@ -1,0 +1,8 @@
+V31_29 — CAMPAINHA DA LOJA / DESBLOQUEIO DE ÁUDIO
+
+- Mantida a mesma detecção de novo pedido usada no Garçom.
+- Corrigido o áudio da Loja para usar caminho absoluto /assets/campainha-pedido.mp3.
+- A Loja agora pré-carrega e libera a campainha no primeiro clique/toque/tecla do operador, evitando bloqueio de autoplay do navegador.
+- O botão Campainha, ao ser reativado, toca um teste imediato.
+- Nenhuma alteração em Pix, pedidos, impressão, WhatsApp ou Garçom.
+- Sem SQL.
