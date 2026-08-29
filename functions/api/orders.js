@@ -217,7 +217,7 @@ function calcularStatusLoja(state){
 async function obterEstadoLoja(env){
   let row={};
   try{
-    const rows=await supabaseRequest(env,"store_state?select=id,shift_started_at,opening_hours,manual_mode,manual_date,rain_mode,pix_operational,pix_test_payment_id,pix_test_status,pix_test_status_detail,pix_test_started_at,pix_last_test_at,pix_last_approved_at,updated_at&id=eq.1&limit=1");
+    const rows=await supabaseRequest(env,"store_state?select=id,shift_started_at,opening_hours,manual_mode,manual_date,rain_mode,pix_operational,pix_test_payment_id,pix_test_status,pix_test_status_detail,pix_test_started_at,pix_last_test_at,pix_last_approved_at,pix_manual_key,updated_at&id=eq.1&limit=1");
     row=rows?.[0]||{};
   }catch{
     // Compatibilidade antes de executar o SQL da V31.19.
