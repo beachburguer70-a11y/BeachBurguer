@@ -1,0 +1,6 @@
+V31_49 - Garçom modal
+
+- Ao entrar no cardápio do Garçom, o campo de pesquisa recebe foco automaticamente.
+- Após adicionar ou alterar um item e voltar ao carrinho/cardápio, o foco retorna automaticamente para a pesquisa.
+- Permite continuar digitando o próximo item sem clicar novamente na barra.
+- Página Cliente não alterada.

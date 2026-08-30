@@ -138,6 +138,9 @@
     byId('gmBody').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{categoria=b.dataset.cat;renderMenu()});
     bindProductButtons(); bindCartButtons();
     byId('gmPaymentBtn').onclick=()=>{if(!carrinho.length)return;etapa='pagamento';render()};
+    // Mantém o fluxo rápido do garçom: ao abrir/voltar ao cardápio,
+    // a pesquisa já fica pronta para digitação sem precisar clicar nela.
+    setTimeout(()=>{const input=byId('gmSearch');if(input){input.focus();input.setSelectionRange(input.value.length,input.value.length);}},0);
   }
   function searchMatches(){
     const q=pesquisa.trim().toLowerCase();
