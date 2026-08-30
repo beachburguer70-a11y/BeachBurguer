@@ -7,7 +7,7 @@
 
   let catalog=[], categories=[], addons=[];
   let tipo='', pagamento='', categoria='', pesquisa='', carrinho=[], etapa='tipo';
-  let editingUid=null, productModalId=null, sending=false, countdownTimer=null;
+  let editingUid=null, productModalId=null, sending=false, countdownTimer=null, searchIndex=0;
 
   function inject(){
     if(byId('gmOverlay'))return;
@@ -118,7 +118,7 @@
       <div class="gm-menu-layout">
         <section class="gm-menu-panel">
           <div class="gm-navrow"><button id="gmBackType" class="gm-secondary">← Voltar</button><div class="gm-choice">${esc(tipo)}</div></div>
-          <input id="gmSearch" class="gm-search" type="search" placeholder="🔎 Pesquisar no cardápio..." value="${esc(pesquisa)}">
+          <div class="gm-search-wrap"><input id="gmSearch" class="gm-search" type="search" placeholder="🔎 Pesquisar no cardápio..." value="${esc(pesquisa)}" autocomplete="off"><div id="gmSearchResults" class="gm-search-results gm-hidden"></div></div>
           <div class="gm-tabs">${categories.map(c=>`<button data-cat="${esc(c)}" class="${c===categoria?'active':''}">${esc(c)}</button>`).join('')}</div>
           <div id="gmProducts" class="gm-products">${products.length?products.map(p=>`
             <article class="gm-product ${p.disponivel?'':'soldout'}">
@@ -134,10 +134,38 @@
         </aside>
       </div>`;
     byId('gmBackType').onclick=()=>{etapa='tipo';render()};
-    byId('gmSearch').oninput=e=>{pesquisa=e.target.value;renderProductsOnly()};
+    bindSearch();
     byId('gmBody').querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{categoria=b.dataset.cat;renderMenu()});
     bindProductButtons(); bindCartButtons();
     byId('gmPaymentBtn').onclick=()=>{if(!carrinho.length)return;etapa='pagamento';render()};
+  }
+  function searchMatches(){
+    const q=pesquisa.trim().toLowerCase();
+    if(!q)return [];
+    return catalog.filter(p=>`${p.nome} ${p.descricao} ${p.categoria}`.toLowerCase().includes(q)).slice(0,12);
+  }
+  function renderSearchResults(){
+    const box=byId('gmSearchResults'); if(!box)return;
+    const list=searchMatches();
+    if(!pesquisa.trim()){box.innerHTML='';box.classList.add('gm-hidden');return;}
+    if(searchIndex>=list.length)searchIndex=0;
+    if(!list.length){box.innerHTML='<div class="gm-search-empty">Nenhum item encontrado.</div>';box.classList.remove('gm-hidden');return;}
+    box.innerHTML=list.map((p,idx)=>`<button type="button" class="gm-search-result ${idx===searchIndex?'active':''}" data-search-product="${p.id}" ${p.disponivel?'':'disabled'}><span><strong>${esc(p.nome)}</strong><small>${esc(p.categoria)}${p.disponivel?'':' • ESGOTADO'}</small></span><b>${money(p.preco)}</b></button>`).join('');
+    box.classList.remove('gm-hidden');
+    box.querySelectorAll('[data-search-product]').forEach(b=>b.onclick=()=>{if(b.disabled)return;abrirProduto(Number(b.dataset.searchProduct))});
+    box.querySelector('.gm-search-result.active')?.scrollIntoView({block:'nearest'});
+  }
+  function bindSearch(){
+    const input=byId('gmSearch'); if(!input)return;
+    input.oninput=e=>{pesquisa=e.target.value||'';searchIndex=0;renderSearchResults()};
+    input.onfocus=renderSearchResults;
+    input.onkeydown=e=>{
+      const list=searchMatches();
+      if(e.key==='ArrowDown'&&list.length){e.preventDefault();searchIndex=(searchIndex+1)%list.length;let n=0;while(list[searchIndex]?.disponivel===false&&n<list.length){searchIndex=(searchIndex+1)%list.length;n++}renderSearchResults()}
+      else if(e.key==='ArrowUp'&&list.length){e.preventDefault();searchIndex=(searchIndex-1+list.length)%list.length;let n=0;while(list[searchIndex]?.disponivel===false&&n<list.length){searchIndex=(searchIndex-1+list.length)%list.length;n++}renderSearchResults()}
+      else if(e.key==='Enter'&&list.length&&pesquisa.trim()){e.preventDefault();const p=list[searchIndex]||list.find(x=>x.disponivel!==false);if(p&&p.disponivel!==false)abrirProduto(Number(p.id))}
+      else if(e.key==='Escape'){e.preventDefault();pesquisa='';input.value='';searchIndex=0;renderSearchResults()}
+    };
   }
   function renderProductsOnly(){
     const box=byId('gmProducts'); if(!box)return; const products=filteredProducts();
@@ -156,6 +184,9 @@
 
   function abrirProduto(id){
     const p=catalog.find(x=>x.id===id); if(!p||!p.disponivel)return;
+    pesquisa=''; searchIndex=0;
+    if(byId('gmSearch'))byId('gmSearch').value='';
+    if(byId('gmSearchResults')){byId('gmSearchResults').innerHTML='';byId('gmSearchResults').classList.add('gm-hidden')}
     productModalId=id; editingUid=null;
     preencherProduto(p,null);
   }
@@ -206,7 +237,7 @@
         <section class="gm-review-form">
           <label>Cliente<input id="gmClient" placeholder="Digite o nome do cliente"></label>
           ${delivery?'<label>Endereço <small>(opcional)</small><input id="gmAddress" placeholder="Digite o endereço"></label>':''}
-          <label>Observações<textarea id="gmNotes" placeholder="Alguma observação sobre o pedido?"></textarea></label>
+          <label>Observações gerais<textarea id="gmNotes" placeholder="Ex.: mesa 4, sem talher, separar bebidas..."></textarea></label>
           ${delivery&&pagamento==='Dinheiro'?'<label>Troco para quanto? <small>(opcional)</small><input id="gmChange" inputmode="decimal" placeholder="Ex.: 50,00"></label>':''}
           <div class="gm-money-grid"><label>Entrega R$<input id="gmDelivery" inputmode="decimal" value="0,00"></label><label>Desconto R$<input id="gmDiscount" inputmode="decimal" value="0,00"></label></div>
           <div class="gm-final-total"><span>Total final</span><strong id="gmFinalTotal">${money(cartSubtotal())}</strong></div>

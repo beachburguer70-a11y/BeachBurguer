@@ -1,0 +1,10 @@
+V31_47 - Ajustes do Garçom em modal
+
+1. Pesquisa voltou ao comportamento do Garçom antigo:
+   - resultados aparecem conforme digita;
+   - setas para navegar;
+   - Enter abre/confirma o item selecionado;
+   - pesquisa considera todo o cardápio.
+2. Modal de produto/adicionais agora possui rolagem própria até o último adicional e botão de adicionar.
+3. Observações gerais na revisão voltou ao padrão do Garçom antigo, inclusive texto de exemplo.
+4. Nenhuma alteração na página Cliente.
