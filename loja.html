@@ -43,6 +43,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Beach Burguer Loja">
   <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="/loja-garcom-modal.css?v=31_46">
 </head>
 <body>
 <div id="login" class="login">
@@ -59,7 +60,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
   <div class="container top">
     <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small><br><strong id="clientesOnlineLoja" style="color:#8ee59a">🟢 Clientes online: 0</strong></div></div>
     <div class="controls">
-      <a href="/garcom" class="btn yellow" style="text-decoration:none">👨‍🍳 Garçom</a>
+      <button type="button" class="btn yellow" data-open-garcom-modal>👨‍🍳 Garçom</button>
       <button id="abrirInstalacaoLojaApp" class="btn dark" type="button">📱 Instalar App Loja</button>
       <button id="adminLojaBtn" class="btn dark">⚙️ Admin</button>
       <a href="/relatorios" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
@@ -698,5 +699,6 @@ $('pedidoPremiadoBtn').onclick=async()=>{try{const novo=!settingsV3135.prize_ena
 setInterval(()=>{if(window._pedidos)render(window._pedidos)},60000);setTimeout(carregarGestaoV3135,800);
 </script>
 
+<script src="/loja-garcom-modal.js?v=31_46"></script>
 </body>
 </html>

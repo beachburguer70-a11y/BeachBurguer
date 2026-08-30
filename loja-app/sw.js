@@ -1,5 +1,5 @@
-const CACHE="beach-burguer-loja-app-v31-35-suite";
-const STATIC=["/garcom.html","/garcom.js","/assets/logo.png","/assets/loja-pwa-192.png","/assets/loja-pwa-512.png","/assets/loja-pwa-maskable-512.png","/loja-app/manifest.json"];
+const CACHE="beach-burguer-loja-app-v31-46-garcom-modal";
+const STATIC=["/garcom.html","/garcom.js","/assets/logo.png","/assets/loja-pwa-192.png","/assets/loja-pwa-512.png","/assets/loja-pwa-maskable-512.png","/loja-app/manifest.json","/loja-garcom-modal.js","/loja-garcom-modal.css"];
 
 self.addEventListener("install",event=>{
   self.skipWaiting();

@@ -1,0 +1,19 @@
+V31_46 - Remodelagem do Garçom dentro da Loja
+
+- Botão Garçom não sai mais da página Loja.
+- Fluxo em caixas flutuantes com Loja ao fundo.
+- Tipo do pedido: Consumir no local, Para viagem ou Entrega.
+- Cardápio com pesquisa, categorias, produtos e carrinho aberto ao lado.
+- Carrinho permite Alterar e Excluir.
+- Pagamento:
+  * Local/Para viagem: A pagar ou Pago.
+  * Entrega: Dinheiro, Cartão ou Pago.
+- Revisão com Cliente, Observações, Entrega R$ e Desconto R$.
+- Endereço aparece somente em Entrega e é opcional no Garçom.
+- Troco opcional aparece para Entrega + Dinheiro.
+- Clique fora das caixas não fecha nem perde o pedido.
+- Cancelar com itens pede confirmação.
+- Após finalizar: mostra Pedido G# + contagem de 5 segundos; fecha o fluxo e retorna à Loja.
+- Página Cliente não foi alterada.
+- Garçom antigo (/garcom) foi preservado como contingência.
+- Loja App recebeu o mesmo fluxo e cache foi atualizado.
