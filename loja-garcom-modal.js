@@ -205,6 +205,15 @@
     byId('gmProductOverlay').classList.remove('gm-hidden');
   }
   function fecharProduto(){byId('gmProductOverlay').classList.add('gm-hidden');editingUid=null;productModalId=null}
+  function produtoAberto(){const o=byId('gmProductOverlay');return !!o&&!o.classList.contains('gm-hidden')}
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Enter'||!produtoAberto())return;
+    // Shift+Enter continua disponível para quebrar linha na observação.
+    if(e.shiftKey&&e.target?.tagName==='TEXTAREA')return;
+    e.preventDefault();
+    e.stopPropagation();
+    salvarProduto();
+  },true);
   function salvarProduto(){
     const p=catalog.find(x=>x.id===productModalId);if(!p)return;
     const qtd=Math.max(1,Math.floor(Number(byId('gmProductQty').value)||1));

@@ -1,0 +1,5 @@
+V31_48 - Garçom Modal
+- Na janela de produto/adicionais, a tecla Enter confirma e adiciona o item ao carrinho.
+- Ao editar um item, Enter salva a alteração.
+- Shift+Enter permanece disponível para quebra de linha no campo de observação.
+- Nenhuma alteração na página Cliente.
