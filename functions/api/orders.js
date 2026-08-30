@@ -977,13 +977,14 @@ export async function onRequestPost({ request, env }) {
       if(!String(body.cliente||"").trim()) return json({ok:false,error:"Informe o nome do cliente."},400);
       if(!Array.isArray(body.itens)||!body.itens.length) return json({ok:false,error:"O pedido precisa ter pelo menos um item."},400);
 
-      const rows=await supabaseRequest(env,`orders?select=id,origem&id=eq.${id}&limit=1`);
+      const rows=await supabaseRequest(env,`orders?select=id,origem,printed&id=eq.${id}&limit=1`);
       const atual=Array.isArray(rows)?rows[0]:null;
       if(!atual) return json({ok:false,error:"Pedido não encontrado."},404);
       if(String(atual.origem||"")!=="garcom") return json({ok:false,error:"Somente pedidos do garçom podem ser editados nesta tela."},400);
 
       const alterado={
         cliente:String(body.cliente).trim(),
+        endereco:String(body.endereco||"").trim(),
         localidade:String(body.tipo||"Consumir no local"),
         tipo:String(body.tipo||"Consumir no local"),
         pagamento:String(body.pagamento||"A pagar"),
@@ -994,8 +995,7 @@ export async function onRequestPost({ request, env }) {
         entrega:Number(body.entrega||0),
         total:Number(body.total||0),
         discount_amount:Number(body.discount_amount||0),
-        prize_awarded:false,
-        printed:false
+        prize_awarded:false
       };
       const updated=await supabaseRequest(env,`orders?id=eq.${id}&select=*`,{
         method:"PATCH",headers:{Prefer:"return=representation"},body:JSON.stringify(alterado)

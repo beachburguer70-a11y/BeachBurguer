@@ -1,0 +1,13 @@
+V31_50 — AJUSTES DO GARÇOM / LOJA
+
+1. Revisão: Entrega e Desconto começam vazios; "0,00" aparece somente como placeholder sombreado.
+2. Campainha: detecção de novo pedido usa ID + data de criação, permitindo tocar novamente mesmo quando um ID é reutilizado após cancelamento.
+3. Novo pedido: aviso visual na Loja em todo novo pedido; se o navegador já tiver permissão, também tenta notificação do sistema.
+4. Botão "Editar pedido" ao lado de Garçom.
+5. Editor mostra somente pedidos do Garçom do expediente atual e reabre o mesmo fluxo com carrinho/dados preenchidos.
+6. A edição mantém o mesmo ID e G#. Depois de salvar, pergunta se deseja reimprimir. Se Não, não envia nova impressão; se Sim, reabre a fila de impressão.
+7. Item esgotado: selo/botão "Esgotado" corrigido para permanecer dentro do card.
+8. Logo do App Loja: caminhos alterados para /assets/logo.png para evitar imagem quebrada no PWA.
+9. Página Cliente não foi alterada.
+
+Não requer SQL novo.

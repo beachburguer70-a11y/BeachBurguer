@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080808">
 <title>Beach Burguer — Tela de Pedidos</title>
-<link rel="icon" href="assets/logo.png">
+<link rel="icon" href="/assets/logo.png">
 <style>
 :root{--y:#ffb700;--bg:#080808;--p:#151515;--b:#303030;--t:#eee;--g:#25d366;--r:#ff5b5b}
 *{box-sizing:border-box}body{margin:0;font-family:Arial;background:var(--bg);color:var(--t)}
@@ -43,12 +43,12 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Beach Burguer Loja">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="/loja-garcom-modal.css?v=31_49">
+  <link rel="stylesheet" href="/loja-garcom-modal.css?v=31_50">
 </head>
 <body>
 <div id="login" class="login">
   <div class="loginbox">
-    <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>TELA DE PEDIDOS</small></div></div>
+    <div class="brand"><img src="/assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>TELA DE PEDIDOS</small></div></div>
     <h2>Entrar</h2>
     <input id="senha" type="password" placeholder="Senha da loja">
     <button id="entrar" class="btn yellow" style="width:100%">ABRIR PEDIDOS</button>
@@ -58,9 +58,10 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 <div id="app" class="hidden">
 <header>
   <div class="container top">
-    <div class="brand"><img src="assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small><br><strong id="clientesOnlineLoja" style="color:#8ee59a">🟢 Clientes online: 0</strong></div></div>
+    <div class="brand"><img src="/assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small><br><strong id="clientesOnlineLoja" style="color:#8ee59a">🟢 Clientes online: 0</strong></div></div>
     <div class="controls">
       <button type="button" class="btn yellow" data-open-garcom-modal>👨‍🍳 Garçom</button>
+      <button type="button" class="btn dark" data-edit-garcom-order>✏️ Editar pedido</button>
       <button id="abrirInstalacaoLojaApp" class="btn dark" type="button">📱 Instalar App Loja</button>
       <button id="adminLojaBtn" class="btn dark">⚙️ Admin</button>
       <a href="/relatorios" class="btn dark" style="text-decoration:none">📊 Relatórios</a>
@@ -436,14 +437,41 @@ function desbloquearSomLoja(){
 }
 
 function tocarSom(){
-  if(document.visibilityState!=="visible")return;
   try{
     const audio=obterAudioCampainhaLoja();
     audio.pause();
     audio.currentTime=0;
     audio.volume=1;
-    audio.play().then(()=>{somLojaDesbloqueado=true;}).catch(err=>console.warn("Campainha da loja bloqueada:",err));
+    const tocar=()=>audio.play().then(()=>{somLojaDesbloqueado=true;}).catch(err=>console.warn("Campainha da loja bloqueada:",err));
+    if(audio.readyState>=2)tocar();else{audio.load();audio.addEventListener("canplaythrough",tocar,{once:true});}
   }catch(e){console.warn("Erro na campainha da loja:",e);}
+}
+
+function chavePedidoCampainhaLoja(p){
+  return `${Number(p?.id||0)}|${String(p?.created_at||"")}`;
+}
+
+function mostrarNotificacaoNovoPedidoLoja(p){
+  try{
+    let area=document.getElementById("notificacoesNovosPedidosLoja");
+    if(!area){
+      area=document.createElement("div");
+      area.id="notificacoesNovosPedidosLoja";
+      area.style.cssText="position:fixed;right:18px;top:18px;z-index:200000;display:grid;gap:10px;width:min(390px,calc(100vw - 36px));pointer-events:none";
+      document.body.appendChild(area);
+    }
+    const origem=String(p?.origem||"cliente")==="garcom"?"G":"C";
+    const numero=p?.display_number||p?.id||"";
+    const aviso=document.createElement("div");
+    aviso.style.cssText="background:#ffb700;color:#111;border:2px solid #ffd45c;border-radius:14px;padding:15px 17px;box-shadow:0 18px 45px rgba(0,0,0,.55);font-weight:900;font-size:17px;pointer-events:auto";
+    aviso.innerHTML=`🍔 NOVO PEDIDO <strong>${origem}#${numero}</strong><br><span style="font-size:14px;font-weight:700">${esc(p?.cliente||"")} • ${esc(p?.tipo||"")}</span>`;
+    aviso.onclick=()=>aviso.remove();
+    area.appendChild(aviso);
+    setTimeout(()=>aviso.remove(),8000);
+    if("Notification" in window && Notification.permission==="granted"){
+      try{new Notification(`Beach Burguer — Novo pedido ${origem}#${numero}`,{body:`${p?.cliente||"Cliente"} • ${p?.tipo||""}`,icon:"/assets/logo.png",tag:`bb-order-${chavePedidoCampainhaLoja(p)}`});}catch{}
+    }
+  }catch(e){console.warn("Notificação visual do novo pedido:",e);}
 }
 
 // Libera o áudio no primeiro toque/clique/tecla do operador. Isso evita o bloqueio
@@ -458,18 +486,23 @@ async function monitorarNovosPedidosLoja(){
     const lista=data.orders||[];
 
     if(primeiraMonitoracaoCampainhaLoja){
-      lista.forEach(p=>pedidosConhecidosCampainhaLoja.add(Number(p.id)));
+      lista.forEach(p=>pedidosConhecidosCampainhaLoja.add(chavePedidoCampainhaLoja(p)));
       primeiraMonitoracaoCampainhaLoja=false;
       return;
     }
 
     const novos=lista
-      .filter(p=>p.status==="novo"&&!pedidosConhecidosCampainhaLoja.has(Number(p.id)))
+      .filter(p=>p.status==="novo"&&!pedidosConhecidosCampainhaLoja.has(chavePedidoCampainhaLoja(p)))
       .sort((a,b)=>Number(a.id)-Number(b.id));
 
-    lista.forEach(p=>pedidosConhecidosCampainhaLoja.add(Number(p.id)));
+    lista.forEach(p=>pedidosConhecidosCampainhaLoja.add(chavePedidoCampainhaLoja(p)));
 
-    if(novos.length&&somAtivo&&document.visibilityState==="visible")tocarSom();
+    if(novos.length){
+      novos.forEach((pedido,idx)=>setTimeout(()=>{
+        mostrarNotificacaoNovoPedidoLoja(pedido);
+        if(somAtivo)tocarSom();
+      },idx*1200));
+    }
   }catch(e){
     console.warn("Monitor de pedidos da loja:",e.message);
   }
@@ -699,6 +732,6 @@ $('pedidoPremiadoBtn').onclick=async()=>{try{const novo=!settingsV3135.prize_ena
 setInterval(()=>{if(window._pedidos)render(window._pedidos)},60000);setTimeout(carregarGestaoV3135,800);
 </script>
 
-<script src="/loja-garcom-modal.js?v=31_49"></script>
+<script src="/loja-garcom-modal.js?v=31_50"></script>
 </body>
 </html>

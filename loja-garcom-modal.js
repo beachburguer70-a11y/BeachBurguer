@@ -8,6 +8,7 @@
   let catalog=[], categories=[], addons=[];
   let tipo='', pagamento='', categoria='', pesquisa='', carrinho=[], etapa='tipo';
   let editingUid=null, productModalId=null, sending=false, countdownTimer=null, searchIndex=0;
+  let editOrderId=null, editOrderDisplay=null, reviewDraft={cliente:'',endereco:'',observacoes:'',troco:'',entrega:'',desconto:''};
 
   function inject(){
     if(byId('gmOverlay'))return;
@@ -33,12 +34,20 @@
             <button id="gmProductConfirm" type="button" class="gm-primary">Adicionar ao pedido</button>
           </div>
         </div>
+      </div>
+      <div id="gmEditOverlay" class="gm-overlay gm-hidden" aria-hidden="true">
+        <div class="gm-edit-box" role="dialog" aria-modal="true" aria-label="Editar pedido do garçom">
+          <div class="gm-head"><div><strong>✏️ Editar pedido</strong><small>Pedidos do Garçom</small></div><button type="button" id="gmEditX" class="gm-x">×</button></div>
+          <div id="gmEditList" class="gm-edit-list"></div>
+        </div>
       </div>`;
     document.body.appendChild(wrap);
     byId('gmOverlay').addEventListener('click',e=>{ if(e.target===byId('gmOverlay')) e.stopPropagation(); });
     byId('gmProductOverlay').addEventListener('click',e=>{ if(e.target===byId('gmProductOverlay')) e.stopPropagation(); });
+    byId('gmEditOverlay').addEventListener('click',e=>{ if(e.target===byId('gmEditOverlay')) e.stopPropagation(); });
     byId('gmCancelarTopo').onclick=cancelarFluxo;
     byId('gmProductX').onclick=fecharProduto;
+    byId('gmEditX').onclick=()=>byId('gmEditOverlay').classList.add('gm-hidden');
     byId('gmProductConfirm').onclick=salvarProduto;
   }
 
@@ -56,7 +65,7 @@
 
   async function abrir(){
     inject();
-    tipo=''; pagamento=''; categoria=''; pesquisa=''; carrinho=[]; etapa='tipo'; editingUid=null; productModalId=null;
+    tipo=''; pagamento=''; categoria=''; pesquisa=''; carrinho=[]; etapa='tipo'; editingUid=null; productModalId=null; editOrderId=null; editOrderDisplay=null; reviewDraft={cliente:'',endereco:'',observacoes:'',troco:'',entrega:'',desconto:''};
     byId('gmCancelarTopo').style.display='';
     const o=byId('gmOverlay'); o.classList.remove('gm-hidden'); o.setAttribute('aria-hidden','false'); document.body.classList.add('gm-lock');
     byId('gmBody').innerHTML='<div class="gm-loading">Carregando cardápio...</div>';
@@ -73,7 +82,7 @@
     byId('gmProductOverlay')?.classList.add('gm-hidden');
     byId('gmOverlay')?.classList.add('gm-hidden');
     document.body.classList.remove('gm-lock');
-    tipo='';pagamento='';carrinho=[];etapa='tipo';editingUid=null;productModalId=null;
+    tipo='';pagamento='';carrinho=[];etapa='tipo';editingUid=null;productModalId=null;editOrderId=null;editOrderDisplay=null;reviewDraft={cliente:'',endereco:'',observacoes:'',troco:'',entrega:'',desconto:''};
   }
 
   function setTitle(t){byId('gmEtapaTitulo').textContent=t?` • ${t}`:''}
@@ -123,7 +132,7 @@
           <div id="gmProducts" class="gm-products">${products.length?products.map(p=>`
             <article class="gm-product ${p.disponivel?'':'soldout'}">
               <div><strong>${esc(p.nome)}</strong><small>${esc(p.descricao)}</small><b>${money(p.preco)}</b></div>
-              <button ${p.disponivel?'':'disabled'} data-product="${p.id}">${p.disponivel?'+':'Esgotado'}</button>
+              <button class="${p.disponivel?'':'gm-soldout-btn'}" ${p.disponivel?'':'disabled'} data-product="${p.id}">${p.disponivel?'+':'Esgotado'}</button>
             </article>`).join(''):'<p class="gm-muted">Nenhum produto encontrado.</p>'}</div>
         </section>
         <aside class="gm-cart-panel">
@@ -172,7 +181,7 @@
   }
   function renderProductsOnly(){
     const box=byId('gmProducts'); if(!box)return; const products=filteredProducts();
-    box.innerHTML=products.length?products.map(p=>`<article class="gm-product ${p.disponivel?'':'soldout'}"><div><strong>${esc(p.nome)}</strong><small>${esc(p.descricao)}</small><b>${money(p.preco)}</b></div><button ${p.disponivel?'':'disabled'} data-product="${p.id}">${p.disponivel?'+':'Esgotado'}</button></article>`).join(''):'<p class="gm-muted">Nenhum produto encontrado.</p>';
+    box.innerHTML=products.length?products.map(p=>`<article class="gm-product ${p.disponivel?'':'soldout'}"><div><strong>${esc(p.nome)}</strong><small>${esc(p.descricao)}</small><b>${money(p.preco)}</b></div><button class="${p.disponivel?'':'gm-soldout-btn'}" ${p.disponivel?'':'disabled'} data-product="${p.id}">${p.disponivel?'+':'Esgotado'}</button></article>`).join(''):'<p class="gm-muted">Nenhum produto encontrado.</p>';
     bindProductButtons();
   }
   function bindProductButtons(){byId('gmProducts')?.querySelectorAll('[data-product]').forEach(b=>b.onclick=()=>abrirProduto(Number(b.dataset.product)))}
@@ -235,6 +244,19 @@
     byId('gmBody').querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>{pagamento=b.dataset.pay;etapa='revisao';render()});
   }
 
+  function moneyInputValue(v){const n=Number(v||0);return n>0?n.toFixed(2).replace('.',','):''}
+  function captureReviewDraft(){
+    if(byId('gmClient'))reviewDraft.cliente=byId('gmClient').value;
+    if(byId('gmAddress'))reviewDraft.endereco=byId('gmAddress').value;
+    if(byId('gmNotes'))reviewDraft.observacoes=byId('gmNotes').value;
+    if(byId('gmChange'))reviewDraft.troco=byId('gmChange').value;
+    if(byId('gmDelivery'))reviewDraft.entrega=byId('gmDelivery').value;
+    if(byId('gmDiscount'))reviewDraft.desconto=byId('gmDiscount').value;
+  }
+  function bindReviewDraft(){
+    ['gmClient','gmAddress','gmNotes','gmChange','gmDelivery','gmDiscount'].forEach(id=>{const el=byId(id);if(!el)return;el.addEventListener('input',()=>{captureReviewDraft();if(id==='gmDelivery'||id==='gmDiscount')updateReviewTotal()})});
+  }
+
   function renderRevisao(){
     setTitle('Revisão do pedido');
     const delivery=tipo==='Entrega';
@@ -247,30 +269,45 @@
           <div class="gm-review-totals"><div><span>Subtotal</span><strong>${money(cartSubtotal())}</strong></div><div><span>Pagamento</span><strong>${esc(pagamento)}</strong></div><div><span>Total</span><strong id="gmReviewTotal">${money(cartSubtotal())}</strong></div></div>
         </section>
         <section class="gm-review-form">
-          <label>Cliente<input id="gmClient" placeholder="Digite o nome do cliente"></label>
-          ${delivery?'<label>Endereço <small>(opcional)</small><input id="gmAddress" placeholder="Digite o endereço"></label>':''}
-          <label>Observações gerais<textarea id="gmNotes" placeholder="Ex.: mesa 4, sem talher, separar bebidas..."></textarea></label>
-          ${delivery&&pagamento==='Dinheiro'?'<label>Troco para quanto? <small>(opcional)</small><input id="gmChange" inputmode="decimal" placeholder="Ex.: 50,00"></label>':''}
-          <div class="gm-money-grid"><label>Entrega R$<input id="gmDelivery" inputmode="decimal" value="0,00"></label><label>Desconto R$<input id="gmDiscount" inputmode="decimal" value="0,00"></label></div>
+          <label>Cliente<input id="gmClient" placeholder="Digite o nome do cliente" value="${esc(reviewDraft.cliente)}"></label>
+          ${delivery?`<label>Endereço <small>(opcional)</small><input id="gmAddress" placeholder="Digite o endereço" value="${esc(reviewDraft.endereco)}"></label>`:''}
+          <label>Observações gerais<textarea id="gmNotes" placeholder="Ex.: mesa 4, sem talher, separar bebidas...">${esc(reviewDraft.observacoes)}</textarea></label>
+          ${delivery&&pagamento==='Dinheiro'?`<label>Troco para quanto? <small>(opcional)</small><input id="gmChange" inputmode="decimal" placeholder="Ex.: 50,00" value="${esc(reviewDraft.troco)}"></label>`:''}
+          <div class="gm-money-grid"><label>Entrega R$<input id="gmDelivery" inputmode="decimal" placeholder="0,00" value="${esc(reviewDraft.entrega)}"></label><label>Desconto R$<input id="gmDiscount" inputmode="decimal" placeholder="0,00" value="${esc(reviewDraft.desconto)}"></label></div>
           <div class="gm-final-total"><span>Total final</span><strong id="gmFinalTotal">${money(cartSubtotal())}</strong></div>
-          <button id="gmFinish" class="gm-primary gm-big">✅ Finalizar pedido</button>
+          <button id="gmFinish" class="gm-primary gm-big">${editOrderId?'💾 Salvar alterações':'✅ Finalizar pedido'}</button>
         </section>
       </div>`;
-    byId('gmBackPay').onclick=()=>{etapa='pagamento';render()};
-    ['gmDelivery','gmDiscount'].forEach(id=>byId(id).oninput=updateReviewTotal);
+    byId('gmBackPay').onclick=()=>{captureReviewDraft();etapa='pagamento';render()};
+    bindReviewDraft();
+    updateReviewTotal();
     byId('gmFinish').onclick=enviar;
   }
   function currentTotal(){return Math.max(0,cartSubtotal()+entrega()-desconto())}
   function updateReviewTotal(){const t=money(currentTotal());if(byId('gmReviewTotal'))byId('gmReviewTotal').textContent=t;if(byId('gmFinalTotal'))byId('gmFinalTotal').textContent=t}
 
   async function enviar(){
-    if(sending)return; sending=true; const btn=byId('gmFinish');btn.disabled=true;btn.textContent='Enviando...';
+    if(sending)return; sending=true; const btn=byId('gmFinish');btn.disabled=true;btn.textContent=editOrderId?'Salvando...':'Enviando...';
     try{
-      const body={action:'create',cliente:byId('gmClient').value.trim(),telefone:'',endereco:tipo==='Entrega'?(byId('gmAddress')?.value.trim()||''):'',bairro:'',referencia:'',localidade:tipo,tipo,pagamento,troco:(tipo==='Entrega'&&pagamento==='Dinheiro')?(byId('gmChange')?.value.trim()||''):'',observacoes:byId('gmNotes').value.trim(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,categoria:i.categoria,quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:itemTotal(i)})),subtotal:cartSubtotal(),entrega:entrega(),total:currentTotal(),discount_amount:desconto(),prize_awarded:false,origem:'garcom'};
-      const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Não foi possível finalizar o pedido.');
-      window.__gmLastOrder=d.order||{};etapa='sucesso';render();
+      captureReviewDraft();
+      const body={action:editOrderId?'edit_waiter_order':'create',id:editOrderId||undefined,cliente:reviewDraft.cliente.trim(),telefone:'',endereco:tipo==='Entrega'?reviewDraft.endereco.trim():'',bairro:'',referencia:'',localidade:tipo,tipo,pagamento,troco:(tipo==='Entrega'&&pagamento==='Dinheiro')?reviewDraft.troco.trim():'',observacoes:reviewDraft.observacoes.trim(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,categoria:i.categoria,quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:itemTotal(i)})),subtotal:cartSubtotal(),entrega:entrega(),total:currentTotal(),discount_amount:desconto(),prize_awarded:false,origem:'garcom'};
+      const headers={'Content-Type':'application/json'};if(editOrderId)headers['X-Store-Token']=storeToken();
+      const r=await fetch('/api/orders',{method:'POST',headers,body:JSON.stringify(body)});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Não foi possível salvar o pedido.');
+      window.__gmLastOrder=d.order||{};
+      if(editOrderId){
+        const numero=d.order?.display_number||editOrderDisplay||d.order?.id||editOrderId;
+        const reimprimir=confirm(`Pedido G#${numero} atualizado com sucesso.\n\nDeseja reimprimir o pedido?`);
+        if(reimprimir){
+          const rr=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json','X-Store-Token':storeToken()},body:JSON.stringify({action:'update',id:editOrderId,printed:false})});
+          const rd=await rr.json();if(!rr.ok||!rd.ok)alert('Pedido salvo, mas não foi possível enviar para reimpressão.');
+        }
+        fecharTudo();
+        if(typeof window.carregarPedidos==='function')window.carregarPedidos().catch(()=>{});
+        return;
+      }
+      etapa='sucesso';render();
       if(typeof window.carregarPedidos==='function')window.carregarPedidos().catch(()=>{});
-    }catch(e){alert(e.message);btn.disabled=false;btn.textContent='✅ Finalizar pedido'}finally{sending=false}
+    }catch(e){alert(e.message);btn.disabled=false;btn.textContent=editOrderId?'💾 Salvar alterações':'✅ Finalizar pedido'}finally{sending=false}
   }
 
   function renderSucesso(){
@@ -281,9 +318,36 @@
     let n=5;clearInterval(countdownTimer);countdownTimer=setInterval(()=>{n--;if(byId('gmCount'))byId('gmCount').textContent=String(Math.max(0,n));if(n<=0){clearInterval(countdownTimer);byId('gmCancelarTopo').style.display='';fecharTudo();if(typeof window.carregarPedidos==='function')window.carregarPedidos().catch(()=>{})}},1000);
   }
 
+  async function abrirEditorPedidos(){
+    inject();
+    const overlay=byId('gmEditOverlay');const list=byId('gmEditList');
+    overlay.classList.remove('gm-hidden');list.innerHTML='<div class="gm-loading">Carregando pedidos do Garçom...</div>';
+    try{
+      const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json','X-Store-Token':storeToken()},body:JSON.stringify({action:'list_orders',limit:300}),cache:'no-store'});
+      const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Não foi possível carregar os pedidos.');
+      const orders=(d.orders||[]).filter(o=>String(o.origem||'')==='garcom');
+      if(!orders.length){list.innerHTML='<div class="gm-edit-empty">Nenhum pedido do Garçom neste expediente.</div>';return;}
+      list.innerHTML=orders.map(o=>`<button type="button" class="gm-edit-order" data-edit-order="${Number(o.id)}"><span><strong>G#${esc(o.display_number||o.id)}</strong><small>${esc(o.cliente||'Sem nome')} • ${esc(o.tipo||'')} • ${esc(String(o.status||'').toUpperCase())}</small></span><b>${money(o.total)}</b></button>`).join('');
+      list.querySelectorAll('[data-edit-order]').forEach(b=>b.onclick=()=>{const o=orders.find(x=>Number(x.id)===Number(b.dataset.editOrder));if(o)carregarPedidoParaEdicao(o)});
+    }catch(e){list.innerHTML=`<div class="gm-error">${esc(e.message)}</div>`}
+  }
+
+  async function carregarPedidoParaEdicao(o){
+    byId('gmEditOverlay').classList.add('gm-hidden');
+    if(!catalog.length)await apiCatalog();
+    editOrderId=Number(o.id);editOrderDisplay=o.display_number||o.id;
+    tipo=String(o.tipo||o.localidade||'Consumir no local');pagamento=String(o.pagamento||'A pagar');pesquisa='';etapa='menu';
+    carrinho=(Array.isArray(o.itens)?o.itens:[]).map((i,n)=>({uid:`edit-${n}-${Date.now()}`,id:Number(i.id||0),nome:i.nome||'',categoria:i.categoria||'',preco:Number(i.preco||0),quantidade:Number(i.quantidade||1),adicionais:Array.isArray(i.adicionais)?i.adicionais:[],observacao:i.observacao||''}));
+    reviewDraft={cliente:String(o.cliente||''),endereco:String(o.endereco||''),observacoes:String(o.observacoes||''),troco:String(o.troco||''),entrega:moneyInputValue(o.entrega),desconto:moneyInputValue(o.discount_amount)};
+    const main=byId('gmOverlay');main.classList.remove('gm-hidden');main.setAttribute('aria-hidden','false');document.body.classList.add('gm-lock');
+    render();
+  }
+
+  window.abrirEditorPedidosGarcom=abrirEditorPedidos;
   window.abrirGarcomModal=abrir;
   document.addEventListener('DOMContentLoaded',()=>{
     inject();
     document.querySelectorAll('[data-open-garcom-modal]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();abrir()}));
+    document.querySelectorAll('[data-edit-garcom-order]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();abrirEditorPedidos()}));
   });
 })();
