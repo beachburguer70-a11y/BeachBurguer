@@ -34,3 +34,9 @@ body.gm-lock{overflow:hidden}.gm-hidden{display:none!important}.gm-overlay{posit
   .gm-product{grid-template-columns:minmax(0,1fr) auto;width:100%;max-width:100%}
   .gm-product button{flex:0 0 auto}
 }
+
+
+/* V31_52 - categorias 3 em cima e 3 embaixo, PC e celular */
+.gm-tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;overflow:visible!important;width:100%!important;padding-bottom:0!important}
+.gm-tabs button{width:100%!important;min-width:0!important;white-space:normal!important;text-align:center;display:flex;align-items:center;justify-content:center;min-height:44px}
+@media(max-width:850px){.gm-tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;overflow:visible!important}.gm-tabs button{padding:9px 5px!important;font-size:13px;line-height:1.15;min-height:48px}}

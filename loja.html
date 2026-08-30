@@ -36,6 +36,9 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     .manual-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.manual-actions .btn{flex:1}
     @media(max-width:650px){.horario-row{grid-template-columns:1fr 80px 1fr 1fr;font-size:13px}}
   .order.atrasado-v3135{border:3px solid #e53935!important;box-shadow:0 0 0 2px rgba(229,57,53,.25)} .tempo-v3135{margin:8px 0;padding:7px 9px;border-radius:8px;background:#222;font-weight:900} .tempo-v3135.atrasado{background:#7f1d1d;color:#fff}
+
+/* V31_52 - menu recolhível da Loja */
+#lojaHeader{position:sticky}.menu-collapse-btn{position:absolute;right:8px;bottom:-17px;z-index:30;width:38px;height:34px;border:1px solid #444;border-radius:0 0 10px 10px;background:#171717;color:#ffb700;font-size:18px;font-weight:900;cursor:pointer}.menu-compacto{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 42px 4px 0}.menu-compacto .badge{padding:8px 12px}.clientes-compacto{color:#8ee59a;margin-left:auto;white-space:nowrap}.menu-recolhido header{padding:7px 0}.menu-recolhido #statusbarPrincipal{display:none}.menu-recolhido #menuCompletoLoja{display:none}.menu-recolhido .menu-collapse-btn{bottom:-17px}.menu-recolhido main{padding-top:16px}@media(max-width:680px){.menu-compacto{padding-right:36px;gap:6px}.menu-compacto .badge{padding:7px 9px;font-size:13px}.clientes-compacto{width:100%;margin-left:0;font-size:14px}.menu-collapse-btn{right:4px}}
 </style>
   <link rel="apple-touch-icon" href="/assets/loja-apple-touch-icon.png">
   <meta name="application-name" content="Beach Burguer Loja">
@@ -43,7 +46,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Beach Burguer Loja">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="/loja-garcom-modal.css?v=31_51">
+  <link rel="stylesheet" href="/loja-garcom-modal.css?v=31_52">
 </head>
 <body>
 <div id="login" class="login">
@@ -56,8 +59,9 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 </div>
 
 <div id="app" class="hidden">
-<header>
-  <div class="container top">
+<header id="lojaHeader">
+  <button id="toggleMenuLoja" class="menu-collapse-btn" type="button" aria-expanded="true" title="Esconder menu">▲</button>
+  <div class="container top" id="menuCompletoLoja">
     <div class="brand"><img src="/assets/logo.png"><div>BEACH <span>BURGUER</span><br><small>Pedidos da loja</small><br><strong id="clientesOnlineLoja" style="color:#8ee59a">🟢 Clientes online: 0</strong></div></div>
     <div class="controls">
       <button type="button" class="btn yellow" data-open-garcom-modal>👨‍🍳 Garçom</button>
@@ -81,9 +85,17 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
       <button id="sair" class="btn red">Sair</button>
     </div>
   </div>
+  <div id="menuCompactoLoja" class="container menu-compacto hidden">
+    <button class="badge filtro-status ativo" data-status="novo">Novos: <strong data-compact-count="novo">0</strong></button>
+    <button class="badge filtro-status" data-status="preparo">Em preparo: <strong data-compact-count="preparo">0</strong></button>
+    <button class="badge filtro-status" data-status="pronto">Prontos: <strong data-compact-count="pronto">0</strong></button>
+    <button class="badge filtro-status" data-status="entregue">Entregues: <strong data-compact-count="entregue">0</strong></button>
+    <button class="badge filtro-status" data-status="todos">Todos</button>
+    <strong id="clientesOnlineLojaCompacto" class="clientes-compacto">🟢 Clientes online: 0</strong>
+  </div>
 </header>
 <main class="container">
-  <div class="statusbar">
+  <div class="statusbar" id="statusbarPrincipal">
     <button class="badge filtro-status ativo" data-status="novo">Novos: <strong id="qNovo">0</strong></button>
     <button class="badge filtro-status" data-status="preparo">Em preparo: <strong id="qPreparo">0</strong></button>
     <button class="badge filtro-status" data-status="pronto">Prontos: <strong id="qPronto">0</strong></button>
@@ -732,6 +744,34 @@ $('pedidoPremiadoBtn').onclick=async()=>{try{const novo=!settingsV3135.prize_ena
 setInterval(()=>{if(window._pedidos)render(window._pedidos)},60000);setTimeout(carregarGestaoV3135,800);
 </script>
 
-<script src="/loja-garcom-modal.js?v=31_51"></script>
+
+<script>
+(function(){
+  const btn=document.getElementById('toggleMenuLoja');
+  const full=document.getElementById('menuCompletoLoja');
+  const compact=document.getElementById('menuCompactoLoja');
+  const mainBar=document.getElementById('statusbarPrincipal');
+  function syncCompact(){
+    const map={novo:'qNovo',preparo:'qPreparo',pronto:'qPronto',entregue:'qEntregue'};
+    Object.entries(map).forEach(([k,id])=>{const a=document.getElementById(id),b=compact&&compact.querySelector('[data-compact-count="'+k+'"]');if(a&&b)b.textContent=a.textContent;});
+    const a=document.getElementById('clientesOnlineLoja'),b=document.getElementById('clientesOnlineLojaCompacto');if(a&&b)b.textContent=a.textContent;
+  }
+  function setCollapsed(on){
+    document.body.classList.toggle('menu-recolhido',on);
+    if(full)full.classList.toggle('hidden',on);
+    if(compact)compact.classList.toggle('hidden',!on);
+    if(mainBar)mainBar.classList.toggle('hidden',on);
+    if(btn){btn.textContent=on?'▼':'▲';btn.title=on?'Mostrar menu':'Esconder menu';btn.setAttribute('aria-expanded',String(!on));}
+    if(on)syncCompact();
+    try{localStorage.setItem('bb_menu_loja_recolhido',on?'1':'0')}catch(e){}
+  }
+  if(btn){btn.addEventListener('click',()=>setCollapsed(!document.body.classList.contains('menu-recolhido')));}
+  document.addEventListener('click',e=>{const f=e.target.closest('.filtro-status');if(!f)return;setTimeout(()=>{document.querySelectorAll('.filtro-status').forEach(x=>x.classList.remove('ativo'));document.querySelectorAll('.filtro-status[data-status="'+f.dataset.status+'"]').forEach(x=>x.classList.add('ativo'));},0)});
+  setInterval(()=>{if(document.body.classList.contains('menu-recolhido'))syncCompact()},1000);
+  let saved=false;try{saved=localStorage.getItem('bb_menu_loja_recolhido')==='1'}catch(e){}
+  setCollapsed(saved);syncCompact();
+})();
+</script>
+<script src="/loja-garcom-modal.js?v=31_52"></script>
 </body>
 </html>
