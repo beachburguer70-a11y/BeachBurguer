@@ -1,0 +1,8 @@
+V31_58 - Ajuste visual do adicional obrigatório no Cliente
+
+- A bolinha de seleção agora aparece ANTES do nome da opção.
+- Opções obrigatórias alinhadas em linha reta: seleção | nome | preço.
+- Corrigido input radio que herdava largura de 100%.
+- Ajuste aplicado ao cardápio do Cliente e ao PWA Cliente.
+- Cache do PWA Cliente atualizado.
+- Nenhum SQL novo.
