@@ -108,6 +108,13 @@ export async function onRequestPost({request,env}){
       const saved=await supabaseRequest(env,`cash_ledger?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({type,description,amount})});
       return json({ok:true,entry:saved?.[0]||null});
     }
+    if(action==='delete_ledger'){
+      const id=Number(b.id); if(!id)return json({ok:false,error:'Lançamento inválido.'},400);
+      const rows=await supabaseRequest(env,`cash_ledger?select=id,description,source&id=eq.${id}&limit=1`);
+      if(!rows?.[0])return json({ok:false,error:'Lançamento não encontrado.'},404);
+      await supabaseRequest(env,`cash_ledger?id=eq.${id}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});
+      return json({ok:true,deleted_id:id});
+    }
     if(action==='create_account'){
       const desc=String(b.description||'').trim(); const base=money(b.amount_due); if(!desc||base<=0)return json({ok:false,error:'Descrição e valor são obrigatórios.'},400);
       let carry=0;
