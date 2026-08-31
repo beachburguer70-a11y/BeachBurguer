@@ -650,17 +650,19 @@ async function carregarAdminV31(){
       <button class="btn red" onclick="excluirCategoriaV31(${c.id})">Excluir</button>
     </div>`).join("");
   $("listaAdicionaisAdmin").innerHTML=adminAdicionaisV31.length?adminAdicionaisV31.map(a=>`
-    <div style="display:grid;grid-template-columns:minmax(160px,1fr) 150px auto auto;gap:7px;margin:7px 0;align-items:center">
+    <div style="display:grid;grid-template-columns:minmax(160px,1fr) 150px auto auto auto;gap:7px;margin:7px 0;align-items:center">
       <input id="an${a.id}" value="${escV31(a.name)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
       <input id="ap${a.id}" type="number" step=".01" min="0" value="${Number(a.price||0)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+      <label style="display:flex;align-items:center;gap:6px;white-space:nowrap"><input id="ai${a.id}" type="checkbox" ${a.active===false?"checked":""}> Indisponível</label>
       <button class="btn yellow" onclick="salvarAdicionalV31(${a.id})">Alterar</button>
       <button class="btn red" onclick="excluirAdicionalV31(${a.id})">Excluir</button>
     </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum adicional cadastrado. Execute o SQL da V31.18 se esta for a primeira publicação.</div>`;
 
   $("listaReqAdicionaisAdmin").innerHTML=adminReqAdicionaisV31.length?adminReqAdicionaisV31.map(a=>`
-    <div style="display:grid;grid-template-columns:minmax(160px,1fr) 150px auto auto;gap:7px;margin:7px 0;align-items:center">
+    <div style="display:grid;grid-template-columns:minmax(160px,1fr) 150px auto auto auto;gap:7px;margin:7px 0;align-items:center">
       <input id="ran${a.id}" value="${escV31(a.name)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
       <input id="rap${a.id}" type="number" step=".01" min="0" value="${Number(a.price||0)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+      <label style="display:flex;align-items:center;gap:6px;white-space:nowrap"><input id="rai${a.id}" type="checkbox" ${a.active===false?"checked":""}> Indisponível</label>
       <button class="btn yellow" onclick="salvarReqAdicionalV31(${a.id})">Alterar</button>
       <button class="btn red" onclick="excluirReqAdicionalV31(${a.id})">Excluir</button>
     </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum adicional obrigatório cadastrado.</div>`;
@@ -710,7 +712,7 @@ async function carregarAdminV31(){
 }
 window.salvarCategoriaV31=async id=>{try{await apiAdminV31({action:"save_category",id,name:$("cn"+id).value,rule:$("cr"+id).value});await carregarAdminV31();alert("Categoria alterada.")}catch(e){alert(e.message)}};
 window.excluirCategoriaV31=async id=>{if(!confirm("Excluir esta categoria?"))return;try{await apiAdminV31({action:"delete_category",id});await carregarAdminV31()}catch(e){alert(e.message)}};
-window.salvarAdicionalV31=async id=>{try{await apiAdminV31({action:"save_addon",id,name:$("an"+id).value,price:Number($("ap"+id).value||0)});await carregarAdminV31();alert("Adicional alterado.")}catch(e){alert(e.message)}};
+window.salvarAdicionalV31=async id=>{try{await apiAdminV31({action:"save_addon",id,name:$("an"+id).value,price:Number($("ap"+id).value||0),active:!$("ai"+id).checked});await carregarAdminV31();alert("Adicional alterado.")}catch(e){alert(e.message)}};
 window.excluirAdicionalV31=async id=>{if(!confirm("Excluir este adicional? Ele deixará de aparecer para novos pedidos."))return;try{await apiAdminV31({action:"delete_addon",id});await carregarAdminV31()}catch(e){alert(e.message)}};
 
 window.salvarProdutoV31=async id=>{try{
@@ -739,7 +741,7 @@ if(criarAdicionalV31) criarAdicionalV31.onclick=async()=>{try{
 }catch(e){alert(e.message)}};
 
 
-window.salvarReqAdicionalV31=async id=>{try{await apiAdminV31({action:"save_required_addon",id,name:$("ran"+id).value,price:Number($("rap"+id).value||0),active:true});await carregarAdminV31()}catch(e){alert(e.message)}};
+window.salvarReqAdicionalV31=async id=>{try{await apiAdminV31({action:"save_required_addon",id,name:$("ran"+id).value,price:Number($("rap"+id).value||0),active:!$("rai"+id).checked});await carregarAdminV31()}catch(e){alert(e.message)}};
 window.excluirReqAdicionalV31=async id=>{if(!confirm("Excluir este adicional obrigatório?"))return;try{await apiAdminV31({action:"delete_required_addon",id});await carregarAdminV31()}catch(e){alert(e.message)}};
 const criarReqAdicionalV31=$("criarReqAdicional");
 if(criarReqAdicionalV31) criarReqAdicionalV31.onclick=async()=>{try{const nome=$("reqAddonNome").value.trim();const preco=Number($("reqAddonPreco").value||0);if(!nome)return alert("Informe o nome do adicional obrigatório.");await apiAdminV31({action:"create_required_addon",name:nome,price:preco});$("reqAddonNome").value="";$("reqAddonPreco").value="";await carregarAdminV31();alert("Adicional obrigatório cadastrado.")}catch(e){alert(e.message)}};

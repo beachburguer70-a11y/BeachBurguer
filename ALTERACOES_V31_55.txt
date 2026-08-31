@@ -1,0 +1,7 @@
+V31_55 - Disponibilidade de adicionais
+
+- Admin: adicionais comuns agora possuem a opção "Indisponível".
+- Admin: adicionais obrigatórios também possuem a opção "Indisponível".
+- Ao marcar Indisponível e salvar, o adicional deixa de ser oferecido para novos pedidos no Cliente e no Garçom.
+- Ao desmarcar e salvar, volta a aparecer normalmente.
+- Adicionais existentes são preservados; nenhum SQL novo é necessário.
