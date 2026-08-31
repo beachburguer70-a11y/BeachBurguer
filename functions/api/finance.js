@@ -100,6 +100,14 @@ export async function onRequestPost({request,env}){
       const saved=await supabaseRequest(env,'cash_ledger',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(row)});
       return json({ok:true,entry:saved?.[0]});
     }
+    if(action==='edit_ledger'){
+      const id=Number(b.id), amount=money(b.amount), type=String(b.type)==='entrada'?'entrada':'saida', description=String(b.description||'').trim();
+      if(!id||amount<=0||!description)return json({ok:false,error:'Preencha descrição, tipo e valor.'},400);
+      const rows=await supabaseRequest(env,`cash_ledger?select=id&id=eq.${id}&limit=1`);
+      if(!rows?.[0])return json({ok:false,error:'Lançamento não encontrado.'},404);
+      const saved=await supabaseRequest(env,`cash_ledger?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({type,description,amount})});
+      return json({ok:true,entry:saved?.[0]||null});
+    }
     if(action==='create_account'){
       const desc=String(b.description||'').trim(); const base=money(b.amount_due); if(!desc||base<=0)return json({ok:false,error:'Descrição e valor são obrigatórios.'},400);
       let carry=0;

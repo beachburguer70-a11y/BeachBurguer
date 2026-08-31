@@ -1,0 +1,9 @@
+V31.59 — Editar lançamentos do Livro Caixa
+
+- Adiciona botão “✏️ Editar” em cada lançamento do Livro Caixa.
+- Ao editar, os dados voltam para os campos Descrição / Tipo / Valor.
+- O botão Lançar muda para “Salvar alteração”.
+- Há botão “Cancelar edição”.
+- A alteração atualiza o mesmo lançamento, sem duplicar.
+- O Resumo mensal passa a refletir automaticamente o valor editado.
+- Não exige SQL novo.
