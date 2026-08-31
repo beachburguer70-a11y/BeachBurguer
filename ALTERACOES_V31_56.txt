@@ -1,0 +1,8 @@
+V31.56 — Cliente App + adicional obrigatório
+
+- Corrigido o App Cliente instalado, que ainda carregava uma cópia antiga da página inicial.
+- cliente-app/index.html sincronizado com a página Cliente atual.
+- Adicionais obrigatórios agora aparecem também no App Cliente, igual ao navegador e ao Garçom.
+- Mantida a validação: produto marcado como adicional obrigatório não entra no carrinho sem uma escolha.
+- Service Worker do App Cliente atualizado para não prender HTML/JS/CSS antigos em cache.
+- Nenhuma alteração de banco de dados nesta versão.

@@ -10,7 +10,7 @@
   <link rel="icon" href="assets/logo.png">
   <link rel="stylesheet" href="style.css?v=850">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script defer src="script.js?v=31_26_pix_manual"></script>
+  <script defer src="script.js?v=31_56_cliente_app_addon_obrigatorio"></script>
 
 <style id="checkout-mobile-fix-v815">
 .dados-cabecalho{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
@@ -29,16 +29,16 @@
 .status-loja-cliente.retirada{background:#b36b00}
   </style>
 
+  <link rel="manifest" href="/cliente-app/manifest.json">
+  <meta name="application-name" content="Beach Burguer">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Beach Burguer">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <meta name="application-name" content="Beach Burguer">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Beach Burguer">
   <meta name="mobile-web-app-capable" content="yes">
-  <link rel="manifest" href="/cliente-app/manifest.json">
-  <meta name="application-name" content="Beach Burguer">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Beach Burguer">
 </head>
 <body class="dev-fluxo-v4">
 <header id="homeTopoV6" class="topo home-only-v6">
@@ -195,6 +195,7 @@
               <div id="qrcodeDinamico" class="qrcode-dinamico"></div>
               <div id="pixCopiaCola" class="pix-chave pix-copia-cola"></div>
               <button id="copiarPix" class="btn btn-amarelo">Copiar código Pix</button>
+              <button id="pixJaPaguei" class="btn btn-amarelo">Já paguei o Pix</button>
               <p id="statusPix" class="status-pix aguardando">Aguardando pagamento...</p>
               <p id="pixTempo" class="pix-tempo"></p>
             </div>
@@ -489,6 +490,6 @@
   </div>
 </div>
 <script src="redesign-dev.js?v=17"></script>
-    <script defer src="/cliente-app/install.js?v=31_9"></script>
+    <script defer src="/cliente-app/install.js?v=31_56"></script>
 </body>
 </html>
