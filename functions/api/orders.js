@@ -399,16 +399,22 @@ export async function onRequestGet({ request, env }) {
     }
     // Público: catálogo completo para cliente e garçom.
     try {
-      const catalog = await supabaseRequest(
+      // V31.61: as leituras públicas são independentes. Fazemos em paralelo
+      // para o cardápio do cliente abrir mais rápido sem remover nenhuma validação.
+      const catalogPromise=supabaseRequest(
         env,
         "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon&order=sort_order.asc,id.asc"
       );
-      const store=await obterEstadoLoja(env);
-      const categories=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&active=eq.true&order=sort_order.asc,id.asc");
-      let addons=[];
-      try{ addons=await supabaseRequest(env,"addons?select=id,name,price,active,sort_order&active=eq.true&order=sort_order.asc,id.asc"); }catch(e){ console.warn("Adicionais ainda não migrados:",e?.message||e); }
-      let requiredAddons=[];
-      try{ requiredAddons=await supabaseRequest(env,"required_addons?select=id,name,price,active,sort_order&active=eq.true&order=sort_order.asc,id.asc"); }catch(e){ console.warn("Adicionais obrigatorios ainda não migrados:",e?.message||e); }
+      const storePromise=obterEstadoLoja(env);
+      const categoriesPromise=supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&active=eq.true&order=sort_order.asc,id.asc");
+      const addonsPromise=supabaseRequest(env,"addons?select=id,name,price,active,sort_order&active=eq.true&order=sort_order.asc,id.asc")
+        .catch(e=>{ console.warn("Adicionais ainda não migrados:",e?.message||e); return []; });
+      const requiredAddonsPromise=supabaseRequest(env,"required_addons?select=id,name,price,active,sort_order&active=eq.true&order=sort_order.asc,id.asc")
+        .catch(e=>{ console.warn("Adicionais obrigatorios ainda não migrados:",e?.message||e); return []; });
+
+      const [catalog,store,categories,addons,requiredAddons]=await Promise.all([
+        catalogPromise,storePromise,categoriesPromise,addonsPromise,requiredAddonsPromise
+      ]);
       return json({ ok:true, catalog:catalog || [], categories:categories||[], addons:addons||[], required_addons:requiredAddons||[], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})), store });
     } catch {
       // Compatibilidade caso a migração V8.24 ainda não tenha sido executada.

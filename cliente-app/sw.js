@@ -1,4 +1,4 @@
-const CACHE="beach-burguer-cliente-app-v31-58-addon-obrigatorio-alinhado";
+const CACHE="beach-burguer-cliente-app-v31-61-rapido";
 const STATIC=[
   "/cliente-app/",
   "/cliente-app/cardapio.html",
@@ -27,27 +27,45 @@ self.addEventListener("activate",e=>{
   );
 });
 
+function atualizarEmSegundoPlano(req){
+  return fetch(req).then(resp=>{
+    if(resp&&resp.ok){
+      const clone=resp.clone();
+      caches.open(CACHE).then(c=>c.put(req,clone)).catch(()=>{});
+    }
+    return resp;
+  }).catch(()=>null);
+}
+
 self.addEventListener("fetch",e=>{
   const req=e.request;
   const url=new URL(req.url);
+
+  // Dados do pedido/loja nunca usam cache: continuam sempre atuais.
   if(url.origin!==location.origin || url.pathname.startsWith("/api/")) return;
 
-  const mutable = req.mode==="navigate" || /\.(?:html|js|css)$/.test(url.pathname) || url.pathname==="/cliente-app/";
-  if(mutable){
-    e.respondWith(
-      fetch(req,{cache:"no-store"}).then(resp=>{
-        if(resp&&resp.ok){
-          const clone=resp.clone();
-          caches.open(CACHE).then(c=>c.put(req,clone)).catch(()=>{});
-        }
-        return resp;
-      }).catch(()=>caches.match(req).then(r=>r||caches.match("/cliente-app/")))
-    );
-    return;
-  }
+  // V31.61: app shell e arquivos estáticos respondem do cache imediatamente
+  // e são atualizados em segundo plano. Isso recupera a abertura rápida do app
+  // sem voltar a aumentar as chamadas de API.
+  if(req.method==="GET"){
+    e.respondWith((async()=>{
+      const cached=await caches.match(req,{ignoreSearch:false});
+      if(cached){
+        e.waitUntil(atualizarEmSegundoPlano(req));
+        return cached;
+      }
 
-  e.respondWith(caches.match(req).then(cached=>cached||fetch(req).then(resp=>{
-    if(resp&&resp.ok){const clone=resp.clone();caches.open(CACHE).then(c=>c.put(req,clone)).catch(()=>{});}
-    return resp;
-  })));
+      if(req.mode==="navigate"){
+        const shell=await caches.match(url.pathname==="/cliente-app/cardapio.html"?"/cliente-app/cardapio.html":"/cliente-app/");
+        if(shell){
+          e.waitUntil(atualizarEmSegundoPlano(req));
+          return shell;
+        }
+      }
+
+      const net=await atualizarEmSegundoPlano(req);
+      if(net)return net;
+      return caches.match("/cliente-app/");
+    })());
+  }
 });

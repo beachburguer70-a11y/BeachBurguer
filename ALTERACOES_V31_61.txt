@@ -1,0 +1,9 @@
+BEACH BURGUER — V31.61 — CLIENTE RÁPIDO
+
+- Corrigida lentidão percebida na página/app Cliente.
+- Mantida a otimização da Loja (pedidos 3s, clientes online 30s, configuração 60s).
+- Pix e envio de pedidos não foram alterados.
+- O Service Worker do App Cliente voltou a responder arquivos estáticos imediatamente pelo cache, atualizando-os em segundo plano.
+- As consultas independentes do catálogo público (produtos, estado da loja, categorias, adicionais e adicionais obrigatórios) agora são executadas em paralelo no backend, reduzindo o tempo de abertura do cardápio.
+- Adicionais obrigatórios e todas as funções da V31.60 foram preservados.
+- Não requer SQL.
