@@ -106,7 +106,7 @@ export async function onRequestPost({request,env}){
       const prior=await supabaseRequest(env,`accounts_payable?select=id,remaining,status&description=eq.${encodeURIComponent(desc)}&status=in.(pendente,parcial,vencida)&order=created_at.desc&limit=1`);
       if(prior?.[0])carry=money(prior[0].remaining);
       const total=money(base+carry);
-      const row={description:desc,due_date:String(b.due_date||'').slice(0,10)||null,base_amount:base,carried_amount:carry,amount_due:total,amount_paid:0,remaining:total,status:'pendente',updated_at:new Date().toISOString()};
+      const row={description:desc,due_date:null,base_amount:base,carried_amount:carry,amount_due:total,amount_paid:0,remaining:total,status:'pendente',updated_at:new Date().toISOString()};
       const saved=await supabaseRequest(env,'accounts_payable',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(row)});
       return json({ok:true,account:saved?.[0],carried:carry});
     }

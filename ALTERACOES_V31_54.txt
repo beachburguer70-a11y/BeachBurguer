@@ -1,0 +1,8 @@
+Beach Burguer V31.54
+- Cadastro separado de Adicionais obrigatorios no Admin.
+- Adicionais comuns permanecem independentes.
+- Produto pode marcar Tem adicionais e/ou Adicional obrigatorio separadamente.
+- Cliente e Garcom exigem uma escolha da lista obrigatoria quando o produto estiver marcado.
+- Preco do obrigatorio pode ser R$ 0,00 ou maior.
+- Contas a Pagar sem campo Vencimento.
+- Mantidas as funcoes e otimizacoes da V31.53.

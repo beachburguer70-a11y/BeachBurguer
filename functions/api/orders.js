@@ -407,7 +407,9 @@ export async function onRequestGet({ request, env }) {
       const categories=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&active=eq.true&order=sort_order.asc,id.asc");
       let addons=[];
       try{ addons=await supabaseRequest(env,"addons?select=id,name,price,active,sort_order&active=eq.true&order=sort_order.asc,id.asc"); }catch(e){ console.warn("Adicionais ainda não migrados:",e?.message||e); }
-      return json({ ok:true, catalog:catalog || [], categories:categories||[], addons:addons||[], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})), store });
+      let requiredAddons=[];
+      try{ requiredAddons=await supabaseRequest(env,"required_addons?select=id,name,price,active,sort_order&active=eq.true&order=sort_order.asc,id.asc"); }catch(e){ console.warn("Adicionais obrigatorios ainda não migrados:",e?.message||e); }
+      return json({ ok:true, catalog:catalog || [], categories:categories||[], addons:addons||[], required_addons:requiredAddons||[], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})), store });
     } catch {
       // Compatibilidade caso a migração V8.24 ainda não tenha sido executada.
       const products = await supabaseRequest(
@@ -778,7 +780,9 @@ export async function onRequestPost({ request, env }) {
       const categories=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&order=sort_order.asc,id.asc");
       let addons=[];
       try{ addons=await supabaseRequest(env,"addons?select=id,name,price,active,sort_order&order=sort_order.asc,id.asc"); }catch(e){ console.warn("Adicionais ainda não migrados:",e?.message||e); }
-      return json({ ok:true, catalog:catalog || [], categories:categories||[], addons:addons||[], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})) });
+      let requiredAddons=[];
+      try{ requiredAddons=await supabaseRequest(env,"required_addons?select=id,name,price,active,sort_order&order=sort_order.asc,id.asc"); }catch(e){ console.warn("Adicionais obrigatorios ainda não migrados:",e?.message||e); }
+      return json({ ok:true, catalog:catalog || [], categories:categories||[], addons:addons||[], required_addons:requiredAddons||[], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})) });
     }
 
     if (action === "create_addon") {
@@ -805,6 +809,28 @@ export async function onRequestPost({ request, env }) {
       if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
       const id=Number(body.id); if(!id)return json({ok:false,error:"Adicional inválido."},400);
       await supabaseRequest(env,`addons?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});
+      return json({ok:true});
+    }
+
+    if (action === "create_required_addon") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const name=String(body.name||"").trim(); const price=Number(body.price||0);
+      if(!name||!Number.isFinite(price)||price<0)return json({ok:false,error:"Informe nome e preço válido."},400);
+      const mx=await supabaseRequest(env,"required_addons?select=sort_order&order=sort_order.desc&limit=1");
+      const rows=await supabaseRequest(env,"required_addons?select=id,name,price,active,sort_order",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify({name,price,active:true,sort_order:Number(mx?.[0]?.sort_order||0)+1,updated_at:new Date().toISOString()})});
+      return json({ok:true,required_addon:Array.isArray(rows)?rows[0]:rows});
+    }
+    if (action === "save_required_addon") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const id=Number(body.id),name=String(body.name||"").trim(),price=Number(body.price||0);
+      if(!id||!name||!Number.isFinite(price)||price<0)return json({ok:false,error:"Dados inválidos."},400);
+      await supabaseRequest(env,`required_addons?id=eq.${id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({name,price,active:body.active!==false,updated_at:new Date().toISOString()})});
+      return json({ok:true});
+    }
+    if (action === "delete_required_addon") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const id=Number(body.id); if(!id)return json({ok:false,error:"Adicional obrigatório inválido."},400);
+      await supabaseRequest(env,`required_addons?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});
       return json({ok:true});
     }
 

@@ -46,6 +46,8 @@ const PADRAO = {
   ]
 };
 
+let ADICIONAIS_OBRIGATORIOS=[];
+
 let ADICIONAIS=[
   {nome:"Carne",preco:7},
   {nome:"Frango",preco:5},
@@ -202,8 +204,11 @@ async function carregarDisponibilidade(){
 
     const resultado=await apiPedidos("GET",null,"");
 
-    if(Array.isArray(resultado.addons) && resultado.addons.length){
+    if(Array.isArray(resultado.addons)){
       ADICIONAIS=resultado.addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
+    }
+    if(Array.isArray(resultado.required_addons)){
+      ADICIONAIS_OBRIGATORIOS=resultado.required_addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
     }
 
     // Se por compatibilidade a resposta normal também trouxer categorias,
@@ -452,15 +457,16 @@ function abrirProduto(id){
   if($("confirmarProduto"))$("confirmarProduto").textContent="Adicionar ao pedido";
 
   const aceitaAdicionais=produtoSelecionado.permiteAdicionais===true;
-  const adicionalObrigatorio=aceitaAdicionais && produtoSelecionado.adicionalObrigatorio===true;
+  const adicionalObrigatorio=produtoSelecionado.adicionalObrigatorio===true;
   $("tituloAdicionais").hidden=!aceitaAdicionais;
-  if(aceitaAdicionais) $("tituloAdicionais").textContent=adicionalObrigatorio?"Escolha obrigatória":"Adicionais";
+  $("tituloAdicionais").textContent="Adicionais";
   $("listaAdicionais").hidden=!aceitaAdicionais;
   $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>`
-    <div class="adicional">
-      <label><input type="checkbox" class="checkAdicional" data-i="${i}"> ${a.nome}</label>
-      <strong>+ ${moeda(a.preco)}</strong>
-    </div>`).join(""):"";
+    <div class="adicional"><label><input type="checkbox" class="checkAdicional" data-i="${i}"> ${a.nome}</label><strong>+ ${moeda(a.preco)}</strong></div>`).join(""):"";
+  $("tituloAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
+  $("listaAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
+  $("listaAdicionaisObrigatorios").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>`
+    <div class="adicional"><label><input type="radio" name="adicionalObrigatorio" class="checkAdicionalObrigatorio" data-i="${i}"> ${a.nome}</label><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></div>`).join(""):"";
 
   $("modalProduto").classList.add("ativo");
 }
@@ -516,10 +522,10 @@ function perguntarQuantidadeComAdicional(qtd){
 async function adicionarProduto(){
   const qtd=Math.max(1,Math.floor(Number($("produtoQtd").value)||1));
   const adicionais=[...document.querySelectorAll(".checkAdicional:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
-  if(produtoSelecionado?.adicionalObrigatorio===true && produtoSelecionado?.permiteAdicionais===true && adicionais.length===0){
-    alert("Escolha pelo menos um adicional obrigatório antes de adicionar este item ao pedido.");
-    return;
-  }
+  const obrigatorioEl=document.querySelector(".checkAdicionalObrigatorio:checked");
+  const obrigatorio=obrigatorioEl?ADICIONAIS_OBRIGATORIOS[Number(obrigatorioEl.dataset.i)]:null;
+  if(produtoSelecionado?.adicionalObrigatorio===true && !obrigatorio){alert("Escolha uma opção obrigatória antes de adicionar este item ao pedido.");return;}
+  if(obrigatorio) adicionais.push(obrigatorio);
   const base={
     id:produtoSelecionado.id,
     nome:produtoSelecionado.nome,
@@ -574,16 +580,19 @@ function editarItemCliente(uid){
   $("produtoObs").value=item.observacao||"";
 
   const aceitaAdicionais=produtoSelecionado.permiteAdicionais===true;
-  const adicionalObrigatorio=aceitaAdicionais && produtoSelecionado.adicionalObrigatorio===true;
+  const adicionalObrigatorio=produtoSelecionado.adicionalObrigatorio===true;
   $("tituloAdicionais").hidden=!aceitaAdicionais;
-  if(aceitaAdicionais) $("tituloAdicionais").textContent=adicionalObrigatorio?"Escolha obrigatória":"Adicionais";
+  $("tituloAdicionais").textContent="Adicionais";
   $("listaAdicionais").hidden=!aceitaAdicionais;
   $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>{
     const marcado=(item.adicionais||[]).some(x=>x.nome===a.nome);
-    return `<div class="adicional">
-      <label><input type="checkbox" class="checkAdicional" data-i="${i}" ${marcado?"checked":""}> ${a.nome}</label>
-      <strong>+ ${moeda(a.preco)}</strong>
-    </div>`;
+    return `<div class="adicional"><label><input type="checkbox" class="checkAdicional" data-i="${i}" ${marcado?"checked":""}> ${a.nome}</label><strong>+ ${moeda(a.preco)}</strong></div>`;
+  }).join(""):"";
+  $("tituloAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
+  $("listaAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
+  $("listaAdicionaisObrigatorios").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>{
+    const marcado=(item.adicionais||[]).some(x=>x.nome===a.nome);
+    return `<div class="adicional"><label><input type="radio" name="adicionalObrigatorio" class="checkAdicionalObrigatorio" data-i="${i}" ${marcado?"checked":""}> ${a.nome}</label><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></div>`;
   }).join(""):"";
 
   if($("confirmarProduto"))$("confirmarProduto").textContent="Salvar alteração";
