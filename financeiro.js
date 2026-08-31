@@ -15,3 +15,41 @@ window.pagar=async id=>{const el=$('pay'+id);try{await api({action:'pay_account'
 function renderLivro(list){$('livro').innerHTML=(list||[]).map(x=>`<div><span>${esc(x.description)}<br><small class="muted">${esc(x.source||'')}</small></span><strong class="${x.type}">${x.type==='saida'?'-':'+'} ${moeda(x.amount)}</strong></div>`).join('')||'<p class="muted">Sem lançamentos nesta data.</p>'}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 if(token)entrar();
+// V31.53 — Resumo mensal do Livro Caixa
+const mesAtual=()=>hoje().slice(0,7);
+if($('mesResumo'))$('mesResumo').value=mesAtual();
+function alternarFinanceiroV3153(modo){
+  const mensal=modo==='mensal';
+  $('painelDiario')?.classList.toggle('hidden',mensal);
+  $('painelMensal')?.classList.toggle('hidden',!mensal);
+  $('verDiario')?.classList.toggle('ativo',!mensal);
+  $('verMensal')?.classList.toggle('ativo',mensal);
+  $('verDiario')?.classList.toggle('yellow',!mensal);
+  $('verDiario')?.classList.toggle('dark',mensal);
+  $('verMensal')?.classList.toggle('yellow',mensal);
+  $('verMensal')?.classList.toggle('dark',!mensal);
+  if(mensal)carregarResumoMensalV3153();
+}
+$('verDiario')?.addEventListener('click',()=>alternarFinanceiroV3153('diario'));
+$('verMensal')?.addEventListener('click',()=>alternarFinanceiroV3153('mensal'));
+$('atualizarResumo')?.addEventListener('click',carregarResumoMensalV3153);
+$('mesResumo')?.addEventListener('change',carregarResumoMensalV3153);
+function nomeDiaV3153(date){
+  const [y,m,d]=String(date).split('-').map(Number);
+  const dt=new Date(y,m-1,d,12,0,0);
+  const dia=new Intl.DateTimeFormat('pt-BR',{weekday:'long'}).format(dt);
+  const dm=new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'short'}).format(dt).replace('.','');
+  return `${dm} — ${dia.charAt(0).toUpperCase()+dia.slice(1)}`;
+}
+async function carregarResumoMensalV3153(){
+  if(!$('mesResumo')||!token)return;
+  try{
+    const d=await api({action:'monthly_summary',month:$('mesResumo').value});
+    $('receitasMes').textContent=moeda(d.receitas);
+    $('despesasMes').textContent=moeda(d.despesas);
+    $('saldoAnteriorMes').textContent=moeda(d.saldo_anterior);
+    $('saldoAtualMes').textContent=moeda(d.saldo_atual);
+    const days=[...(d.days||[])].sort((a,b)=>b.date.localeCompare(a.date));
+    $('diasResumo').innerHTML=days.length?days.map(day=>`<section class="day-group"><div class="day-title"><strong>${esc(nomeDiaV3153(day.date))}</strong><span class="day-values">Receitas: <b class="entrada">${moeda(day.receitas)}</b> &nbsp; Despesas: <b class="saida">${moeda(day.despesas)}</b></span></div>${(day.entries||[]).map(x=>`<div class="day-entry"><span>${esc(x.description)}${x.source?`<small>${esc(x.source)}</small>`:''}</span><strong class="${x.type}">${x.type==='saida'?'-':'+'} ${moeda(x.amount)}</strong></div>`).join('')}</section>`).join(''):'<p class="muted">Nenhum lançamento neste mês.</p>';
+  }catch(e){alert(e.message)}
+}

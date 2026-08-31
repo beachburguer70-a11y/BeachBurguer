@@ -401,7 +401,7 @@ export async function onRequestGet({ request, env }) {
     try {
       const catalog = await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons&order=sort_order.asc,id.asc"
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon&order=sort_order.asc,id.asc"
       );
       const store=await obterEstadoLoja(env);
       const categories=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&active=eq.true&order=sort_order.asc,id.asc");
@@ -773,7 +773,7 @@ export async function onRequestPost({ request, env }) {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
       const catalog = await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons&order=sort_order.asc,id.asc"
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon&order=sort_order.asc,id.asc"
       );
       const categories=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&order=sort_order.asc,id.asc");
       let addons=[];
@@ -815,13 +815,14 @@ export async function onRequestPost({ request, env }) {
       const description=String(body.description||"").trim();
       const price=Number(body.price||0);
       const allowsAddons=body.allows_addons===true;
+      const requiredAddon=body.required_addon===true;
       if(!category||!name||price<0) return json({ok:false,error:"Preencha categoria, nome e preço."},400);
 
       const maxRows=await supabaseRequest(env,"products?select=sort_order&order=sort_order.desc&limit=1");
       const sortOrder=Number(maxRows?.[0]?.sort_order||0)+1;
       const inserted=await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons",
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon",
         {
           method:"POST",
           headers:{Prefer:"return=representation"},
@@ -834,6 +835,7 @@ export async function onRequestPost({ request, env }) {
             available:true,
             sort_order:sortOrder,
             allows_addons:allowsAddons,
+            required_addon:requiredAddon,
             updated_at:new Date().toISOString()
           })
         }
@@ -875,6 +877,7 @@ export async function onRequestPost({ request, env }) {
             active:p.active!==false,
             available:p.available!==false,
             allows_addons:p.allows_addons===true,
+            required_addon:p.required_addon===true,
             updated_at:new Date().toISOString()
           })
         });

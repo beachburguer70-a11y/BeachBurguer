@@ -2,6 +2,20 @@ import { json, authorized, supabaseRequest } from './_shared.js';
 
 const money=v=>Math.round((Number(v)||0)*100)/100;
 const dayBounds=date=>({from:`${date}T00:00:00-03:00`,to:`${date}T23:59:59.999-03:00`});
+function monthBounds(month){
+  const m=String(month||'').match(/^(\d{4})-(\d{2})$/);
+  if(!m)return null;
+  const y=Number(m[1]), mo=Number(m[2]);
+  if(mo<1||mo>12)return null;
+  const start=`${m[1]}-${m[2]}-01`;
+  const ny=mo===12?y+1:y, nm=mo===12?1:mo+1;
+  const next=`${String(ny).padStart(4,'0')}-${String(nm).padStart(2,'0')}-01`;
+  return {start,next};
+}
+const closingGross=c=>money(Number(c.cash_total||0)+Number(c.card_total||0)+Number(c.pix_total||0)+Number(c.apagar_cash||0)+Number(c.apagar_card||0));
+const closingFees=c=>money(Number(c.card_fee||0)+Number(c.pix_fee||0));
+const isClosingReceipt=l=>['a_pagar_dinheiro','a_pagar_cartao'].includes(String(l?.source||''));
+
 
 async function salesSummary(env,date){
   const {from,to}=dayBounds(date);
@@ -29,6 +43,38 @@ export async function onRequestPost({request,env}){
       const ledger=await supabaseRequest(env,`cash_ledger?select=*&entry_date=eq.${date}&order=created_at.desc`);
       const accounts=await supabaseRequest(env,'accounts_payable?select=*&order=due_date.asc,created_at.asc');
       return json({ok:true,sales,closing:closings?.[0]||null,ledger:ledger||[],accounts:accounts||[]});
+    }
+    if(action==='monthly_summary'){
+      const bounds=monthBounds(b.month); if(!bounds)return json({ok:false,error:'Mês inválido.'},400);
+      const [closingsAll,ledgerAll]=await Promise.all([
+        supabaseRequest(env,`cash_closings?select=closing_date,cash_total,card_total,pix_total,apagar_cash,apagar_card,card_fee,pix_fee&closing_date=lt.${bounds.next}&order=closing_date.asc&limit=10000`),
+        supabaseRequest(env,`cash_ledger?select=id,entry_date,type,description,amount,source,created_at&entry_date=lt.${bounds.next}&order=entry_date.asc,created_at.asc&limit=10000`)
+      ]);
+      const priorClosings=(closingsAll||[]).filter(c=>String(c.closing_date)<bounds.start);
+      const monthClosings=(closingsAll||[]).filter(c=>String(c.closing_date)>=bounds.start);
+      const priorLedger=(ledgerAll||[]).filter(l=>String(l.entry_date)<bounds.start && !isClosingReceipt(l));
+      const monthLedger=(ledgerAll||[]).filter(l=>String(l.entry_date)>=bounds.start && !isClosingReceipt(l));
+      let saldoAnterior=0;
+      priorClosings.forEach(c=>{saldoAnterior+=closingGross(c)-closingFees(c)});
+      priorLedger.forEach(l=>{saldoAnterior+=(String(l.type)==='entrada'?1:-1)*Number(l.amount||0)});
+      saldoAnterior=money(saldoAnterior);
+      const dias={};
+      const dia=d=>dias[d]||(dias[d]={date:d,receitas:0,despesas:0,entries:[]});
+      monthClosings.forEach(c=>{
+        const d=dia(String(c.closing_date)); const venda=closingGross(c), taxas=closingFees(c);
+        if(venda>0){d.receitas=money(d.receitas+venda);d.entries.push({type:'entrada',description:'Venda',amount:venda,source:'fechamento'});}
+        if(taxas>0){d.despesas=money(d.despesas+taxas);d.entries.push({type:'saida',description:'Taxas do fechamento',amount:taxas,source:'taxas'});}
+      });
+      monthLedger.forEach(l=>{
+        const d=dia(String(l.entry_date)); const amount=money(l.amount); const type=String(l.type)==='entrada'?'entrada':'saida';
+        if(type==='entrada')d.receitas=money(d.receitas+amount); else d.despesas=money(d.despesas+amount);
+        d.entries.push({type,description:l.description||'Lançamento',amount,source:l.source||''});
+      });
+      const days=Object.values(dias).sort((a,b)=>a.date.localeCompare(b.date));
+      const receitas=money(days.reduce((s,d)=>s+d.receitas,0));
+      const despesas=money(days.reduce((s,d)=>s+d.despesas,0));
+      const saldoAtual=money(saldoAnterior+receitas-despesas);
+      return json({ok:true,month:b.month,receitas,despesas,saldo_anterior:saldoAnterior,saldo_atual:saldoAtual,days});
     }
     if(action==='save_closing'){
       const date=String(b.date||'').slice(0,10); const sales=await salesSummary(env,date);

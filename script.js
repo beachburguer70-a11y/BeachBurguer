@@ -262,7 +262,8 @@ async function carregarDisponibilidade(){
         preco:Number(p.price||0),
         ativo:p.active!==false,
         disponivel:p.available!==false,
-        permiteAdicionais:p.allows_addons===true
+        permiteAdicionais:p.allows_addons===true,
+        adicionalObrigatorio:p.required_addon===true
       }));
     }else if(Array.isArray(resultado.products)){
       resultado.products.forEach(status=>{
@@ -451,7 +452,9 @@ function abrirProduto(id){
   if($("confirmarProduto"))$("confirmarProduto").textContent="Adicionar ao pedido";
 
   const aceitaAdicionais=produtoSelecionado.permiteAdicionais===true;
+  const adicionalObrigatorio=aceitaAdicionais && produtoSelecionado.adicionalObrigatorio===true;
   $("tituloAdicionais").hidden=!aceitaAdicionais;
+  if(aceitaAdicionais) $("tituloAdicionais").textContent=adicionalObrigatorio?"Escolha obrigatória":"Adicionais";
   $("listaAdicionais").hidden=!aceitaAdicionais;
   $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>`
     <div class="adicional">
@@ -513,6 +516,10 @@ function perguntarQuantidadeComAdicional(qtd){
 async function adicionarProduto(){
   const qtd=Math.max(1,Math.floor(Number($("produtoQtd").value)||1));
   const adicionais=[...document.querySelectorAll(".checkAdicional:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
+  if(produtoSelecionado?.adicionalObrigatorio===true && produtoSelecionado?.permiteAdicionais===true && adicionais.length===0){
+    alert("Escolha pelo menos um adicional obrigatório antes de adicionar este item ao pedido.");
+    return;
+  }
   const base={
     id:produtoSelecionado.id,
     nome:produtoSelecionado.nome,
@@ -522,7 +529,7 @@ async function adicionarProduto(){
   };
 
   let comAdicional=qtd;
-  if(qtd>1&&adicionais.length){
+  if(qtd>1&&adicionais.length&&produtoSelecionado?.adicionalObrigatorio!==true){
     const aplicarTodas=await perguntarAdicionaisTodas(qtd);
     if(!aplicarTodas){
       const resposta=await perguntarQuantidadeComAdicional(qtd);
@@ -567,7 +574,9 @@ function editarItemCliente(uid){
   $("produtoObs").value=item.observacao||"";
 
   const aceitaAdicionais=produtoSelecionado.permiteAdicionais===true;
+  const adicionalObrigatorio=aceitaAdicionais && produtoSelecionado.adicionalObrigatorio===true;
   $("tituloAdicionais").hidden=!aceitaAdicionais;
+  if(aceitaAdicionais) $("tituloAdicionais").textContent=adicionalObrigatorio?"Escolha obrigatória":"Adicionais";
   $("listaAdicionais").hidden=!aceitaAdicionais;
   $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>{
     const marcado=(item.adicionais||[]).some(x=>x.nome===a.nome);

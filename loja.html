@@ -189,7 +189,10 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     <input id="prodPreco" type="number" step=".01" min="0" placeholder="Preço" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
     <input id="prodDescricao" placeholder="Descrição / ingredientes" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
    </div>
-   <label style="display:block;margin:10px 0"><input id="prodAdicionais" type="checkbox"> Este produto tem adicionais</label>
+   <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0">
+    <label><input id="prodAdicionais" type="checkbox"> Tem adicionais</label>
+    <label><input id="prodAdicionalObrigatorio" type="checkbox"> Adicional obrigatório</label>
+   </div>
    <button id="criarProduto" class="btn green">Cadastrar produto</button>
    <h3 style="margin-top:22px">Produtos cadastrados</h3>
    <div id="listaProdutosAdminLoja"></div>
@@ -210,6 +213,8 @@ let filtroAtual="novo";
 let pedidosConhecidosCampainhaLoja=new Set();
 let primeiraMonitoracaoCampainhaLoja=true;
 let monitorCampainhaLoja=null;
+let intervaloConfigLoja=null;
+let intervaloClientesOnline=null;
 
 
 const $=id=>document.getElementById(id);
@@ -396,8 +401,10 @@ async function entrar(){
     await carregarConfigLoja();
     await atualizarClientesOnlineLojaV27();
     intervalo=setInterval(carregarPedidos,3000);
-    iniciarMonitorCampainhaLoja();
-    setInterval(carregarConfigLoja,30000);
+    if(intervaloConfigLoja)clearInterval(intervaloConfigLoja);
+    if(intervaloClientesOnline)clearInterval(intervaloClientesOnline);
+    intervaloConfigLoja=setInterval(()=>{if(!document.hidden)carregarConfigLoja();},60000);
+    intervaloClientesOnline=setInterval(()=>{if(!document.hidden)atualizarClientesOnlineLojaV27();},30000);
   }catch(e){alert("Senha incorreta ou conexão indisponível.");}
 }
 
@@ -412,9 +419,11 @@ async function api(method,body){
 
 async function carregarPedidos(){
   const data=await api("POST",{action:"list_orders"});
-  render(data.orders);
+  const lista=data.orders||[];
+  processarCampainhaDaLista(lista);
+  render(lista);
 
-  data.orders.forEach(p=>conhecidos.add(p.id));
+  lista.forEach(p=>conhecidos.add(p.id));
   primeiraCarga=false;
 }
 
@@ -491,41 +500,29 @@ function mostrarNotificacaoNovoPedidoLoja(p){
 document.addEventListener("pointerdown",desbloquearSomLoja,{once:true,capture:true});
 document.addEventListener("keydown",desbloquearSomLoja,{once:true,capture:true});
 
-async function monitorarNovosPedidosLoja(){
-  if(!token)return;
+function processarCampainhaDaLista(lista){
   try{
-    const data=await api("POST",{action:"list_orders",limit:100});
-    const lista=data.orders||[];
-
     if(primeiraMonitoracaoCampainhaLoja){
-      lista.forEach(p=>pedidosConhecidosCampainhaLoja.add(chavePedidoCampainhaLoja(p)));
+      (lista||[]).forEach(p=>pedidosConhecidosCampainhaLoja.add(chavePedidoCampainhaLoja(p)));
       primeiraMonitoracaoCampainhaLoja=false;
       return;
     }
-
-    const novos=lista
+    const novos=(lista||[])
       .filter(p=>p.status==="novo"&&!pedidosConhecidosCampainhaLoja.has(chavePedidoCampainhaLoja(p)))
       .sort((a,b)=>Number(a.id)-Number(b.id));
-
-    lista.forEach(p=>pedidosConhecidosCampainhaLoja.add(chavePedidoCampainhaLoja(p)));
-
-    if(novos.length){
-      novos.forEach((pedido,idx)=>setTimeout(()=>{
-        mostrarNotificacaoNovoPedidoLoja(pedido);
-        if(somAtivo)tocarSom();
-      },idx*1200));
-    }
-  }catch(e){
-    console.warn("Monitor de pedidos da loja:",e.message);
-  }
+    (lista||[]).forEach(p=>pedidosConhecidosCampainhaLoja.add(chavePedidoCampainhaLoja(p)));
+    novos.forEach((pedido,idx)=>setTimeout(()=>{
+      mostrarNotificacaoNovoPedidoLoja(pedido);
+      if(somAtivo)tocarSom();
+    },idx*1200));
+  }catch(e){console.warn("Detecção de novo pedido:",e.message);}
 }
 
 function iniciarMonitorCampainhaLoja(){
-  if(monitorCampainhaLoja)clearInterval(monitorCampainhaLoja);
+  // V31.53: a campainha usa a MESMA resposta de carregarPedidos().
+  // Não existe mais uma segunda consulta /api/orders a cada 3 segundos.
   primeiraMonitoracaoCampainhaLoja=true;
   pedidosConhecidosCampainhaLoja.clear();
-  monitorarNovosPedidosLoja();
-  monitorCampainhaLoja=setInterval(monitorarNovosPedidosLoja,3000);
 }
 
 function render(list){
@@ -606,7 +603,17 @@ async function atualizarClientesOnlineLojaV27(){
     console.warn("Contador online:",e.message);
   }
 }
-setInterval(atualizarClientesOnlineLojaV27,3000);
+
+
+// V31.53: consultas secundárias ficam pausadas enquanto a aba está oculta.
+// Ao voltar, a Loja sincroniza imediatamente pedidos, configuração e clientes online.
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden && token){
+    carregarPedidos().catch(()=>{});
+    carregarConfigLoja().catch(()=>{});
+    atualizarClientesOnlineLojaV27().catch(()=>{});
+  }
+});
 
 // V31 - Admin centralizado na Loja + métricas
 let adminCategoriasV31=[], adminProdutosV31=[], adminAdicionaisV31=[];
@@ -663,6 +670,7 @@ async function carregarAdminV31(){
         <input id="pd${p.id}" value="${escV31(p.description||"")}" placeholder="Descrição" style="width:100%;box-sizing:border-box;margin-top:7px;padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
          <label><input id="pa${p.id}" type="checkbox" ${p.allows_addons===true?"checked":""}> Tem adicionais</label>
+         <label><input id="pr${p.id}" type="checkbox" ${p.required_addon===true?"checked":""}> Adicional obrigatório</label>
          <label><input id="pv${p.id}" type="checkbox" ${p.available!==false?"checked":""}> Disponível</label>
          <label><input id="pe${p.id}" type="checkbox" ${p.active!==false?"checked":""}> Exibir</label>
          <button class="btn yellow" onclick="salvarProdutoV31(${p.id})">Alterar</button>
@@ -687,7 +695,7 @@ window.excluirAdicionalV31=async id=>{if(!confirm("Excluir este adicional? Ele d
 
 window.salvarProdutoV31=async id=>{try{
  const p=adminProdutosV31.find(x=>Number(x.id)===Number(id));
- await apiAdminV31({action:"save_catalog",products:[{id,category:$("pc"+id).value,name:$("pn"+id).value,description:$("pd"+id).value,price:Number($("pp"+id).value||0),active:$("pe"+id).checked,available:$("pv"+id).checked,allows_addons:$("pa"+id).checked}]});
+ await apiAdminV31({action:"save_catalog",products:[{id,category:$("pc"+id).value,name:$("pn"+id).value,description:$("pd"+id).value,price:Number($("pp"+id).value||0),active:$("pe"+id).checked,available:$("pv"+id).checked,allows_addons:$("pa"+id).checked,required_addon:$("pr"+id).checked}]});
  await carregarAdminV31(); alert("Produto alterado.");
 }catch(e){alert(e.message)}};
 window.excluirProdutoV31=async id=>{if(!confirm("Tem certeza que deseja excluir este produto?"))return;try{await apiAdminV31({action:"delete_product",id});await carregarAdminV31()}catch(e){alert(e.message)}};
@@ -710,10 +718,13 @@ if(criarAdicionalV31) criarAdicionalV31.onclick=async()=>{try{
  $("addonNome").value="";$("addonPreco").value="";await carregarAdminV31();alert("Adicional cadastrado.");
 }catch(e){alert(e.message)}};
 
+const prodObrigatorioV3153=$("prodAdicionalObrigatorio");
+if(prodObrigatorioV3153) prodObrigatorioV3153.addEventListener("change",()=>{if(prodObrigatorioV3153.checked)$("prodAdicionais").checked=true;});
+
 const criarProdutoV31=$("criarProduto");
 if(criarProdutoV31) criarProdutoV31.onclick=async()=>{try{
- await apiAdminV31({action:"create_product",category:$("prodCategoria").value,name:$("prodNome").value,description:$("prodDescricao").value,price:Number($("prodPreco").value||0),allows_addons:$("prodAdicionais").checked});
- $("prodNome").value="";$("prodDescricao").value="";$("prodPreco").value="";$("prodAdicionais").checked=false;
+ await apiAdminV31({action:"create_product",category:$("prodCategoria").value,name:$("prodNome").value,description:$("prodDescricao").value,price:Number($("prodPreco").value||0),allows_addons:$("prodAdicionais").checked,required_addon:$("prodAdicionalObrigatorio").checked});
+ $("prodNome").value="";$("prodDescricao").value="";$("prodPreco").value="";$("prodAdicionais").checked=false;$("prodAdicionalObrigatorio").checked=false;
  await carregarAdminV31();alert("Produto cadastrado.");
 }catch(e){alert(e.message)}};
 

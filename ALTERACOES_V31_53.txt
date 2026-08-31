@@ -1,0 +1,23 @@
+BEACH BURGUER — V31.53
+
+1. Livro Caixa: novo Resumo mensal com receitas, despesas, saldo anterior e saldo acumulado.
+   - Cada fechamento salvo aparece como uma unica linha Venda.
+   - Recebimentos A pagar nao duplicam a receita.
+   - Pagamentos de Contas a Pagar e lancamentos manuais aparecem automaticamente.
+   - Taxas de Cartao/Pix do fechamento entram como despesa do resumo.
+   - Receitas/despesas reiniciam por mes; saldo continua acumulado.
+
+2. Admin/Cliente: Adicional obrigatorio.
+   - Novo checkbox no cadastro/edicao do produto.
+   - Somente a pagina Cliente obriga escolher pelo menos um adicional.
+   - O Garcom nao muda.
+   - Preco do adicional continua editavel e pode ser R$ 0,00.
+   - Requer executar SQL_V31_53_RESUMO_ADICIONAL_OBRIGATORIO.sql no Supabase.
+
+3. Otimizacao Cloudflare na Loja.
+   - Uma unica consulta de pedidos a cada 3 segundos atualiza tela + campainha + notificacao.
+   - Clientes online: 30 segundos.
+   - Configuracao da Loja: 60 segundos.
+   - Configuracao/clientes online pausam quando aba oculta e atualizam ao voltar.
+   - Pedidos continuam em 3 segundos para preservar rapidez da campainha.
+   - Pix nao foi alterado.
