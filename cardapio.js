@@ -33,6 +33,7 @@ const PADRAO = {
     {id:27,categoria:"Bebidas",nome:"H2O",descricao:"H2O gelada.",preco:8,ativo:true,disponivel:true}
   ]
 };
+let ADICIONAIS_OBRIGATORIOS=[];
 let ADICIONAIS=[
   {nome:"Carne",preco:7},{nome:"Frango",preco:5},{nome:"Mussarela",preco:3},{nome:"Cheddar",preco:4},
   {nome:"Ovo",preco:2},{nome:"Calabresa",preco:2},{nome:"Bacon",preco:3},{nome:"Picles",preco:2},{nome:"Batata",preco:7}
@@ -211,6 +212,13 @@ async function carregarCatalogo(){
       ADICIONAIS=r.addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
     }
 
+    if(Array.isArray(r.required_addons)){
+      ADICIONAIS_OBRIGATORIOS=r.required_addons
+        .filter(a=>a.active!==false)
+        .map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)}))
+        .filter(a=>a.nome);
+    }
+
     if(r.store){
       estadoLojaV16=r.store;
       localStorage.setItem("bb_store_state",JSON.stringify(r.store));
@@ -235,7 +243,8 @@ async function carregarCatalogo(){
         preco:Number(p.price??p.preco??0),
         ativo:(p.active??p.ativo)!==false,
         disponivel:(p.available??p.disponivel)!==false,
-        permiteAdicionais:(p.allows_addons??p.permiteAdicionais)===true
+        permiteAdicionais:(p.allows_addons??p.permiteAdicionais)===true,
+        adicionalObrigatorio:(p.required_addon??p.adicionalObrigatorio)===true
       }));
     }
 
@@ -303,7 +312,8 @@ function abrirProduto(id,uid=null){
   $("produtoQtdV7").value=item?.quantidade||1;
   $("produtoObsV7").value=item?.observacao||"";
 
-  const aceita=!SEM_ADICIONAIS.includes(produtoSelecionado.categoria);
+  const aceita=produtoSelecionado.permiteAdicionais===true;
+  const adicionalObrigatorio=produtoSelecionado.adicionalObrigatorio===true;
   $("tituloAdicionaisV7").style.display=aceita?"":"none";
   $("listaAdicionaisV7").style.display=aceita?"":"none";
   $("listaAdicionaisV7").innerHTML=aceita?ADICIONAIS.map((a,i)=>{
@@ -311,6 +321,16 @@ function abrirProduto(id,uid=null){
     return `<label style="display:flex;justify-content:space-between;gap:10px;margin:8px 0">
       <span><input class="addV7" data-i="${i}" type="checkbox" ${checked?"checked":""}> ${a.nome}</span>
       <strong>+ ${moeda(a.preco)}</strong>
+    </label>`;
+  }).join(""):"";
+
+  $("tituloAdicionaisObrigatoriosV7").style.display=adicionalObrigatorio?"":"none";
+  $("listaAdicionaisObrigatoriosV7").style.display=adicionalObrigatorio?"":"none";
+  $("listaAdicionaisObrigatoriosV7").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>{
+    const checked=(item?.adicionais||[]).some(x=>x.nome===a.nome);
+    return `<label style="display:flex;justify-content:space-between;gap:10px;margin:8px 0">
+      <span><input class="addObrigatorioV7" name="addObrigatorioV7" data-i="${i}" type="radio" ${checked?"checked":""}> ${a.nome}</span>
+      <strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong>
     </label>`;
   }).join(""):"";
 
@@ -325,6 +345,13 @@ function confirmarProduto(){
   }
   const qtd=Math.max(1,Number($("produtoQtdV7").value||1));
   const adicionais=[...document.querySelectorAll(".addV7:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
+  const obrigatorioEl=document.querySelector(".addObrigatorioV7:checked");
+  const obrigatorio=obrigatorioEl?ADICIONAIS_OBRIGATORIOS[Number(obrigatorioEl.dataset.i)]:null;
+  if(produtoSelecionado?.adicionalObrigatorio===true && !obrigatorio){
+    alert("Escolha uma opção obrigatória antes de adicionar este item ao pedido.");
+    return;
+  }
+  if(obrigatorio)adicionais.push(obrigatorio);
   const novo={
     id:produtoSelecionado.id,
     nome:produtoSelecionado.nome,

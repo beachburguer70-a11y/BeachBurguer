@@ -1,7 +1,9 @@
-const CACHE="beach-burguer-cliente-app-v31-56-addon-obrigatorio";
+const CACHE="beach-burguer-cliente-app-v31-57-cardapio-addon-obrigatorio";
 const STATIC=[
   "/cliente-app/",
   "/cliente-app/cardapio.html",
+  "/cardapio.html",
+  "/cardapio.js?v=31_57_cliente_adicional_obrigatorio",
   "/style.css?v=850",
   "/cardapio.css",
   "/script.js?v=31_56_cliente_app_addon_obrigatorio",

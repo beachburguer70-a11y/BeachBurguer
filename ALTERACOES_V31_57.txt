@@ -1,0 +1,10 @@
+V31_57 - Correção do adicional obrigatório no cardápio do Cliente
+
+- Corrigido cardapio.js, que ainda usava a lógica antiga e ignorava required_addon.
+- A página cardapio.html agora exibe a seção Escolha obrigatória quando o produto exigir adicional obrigatório.
+- O cliente não consegue adicionar o produto sem selecionar uma opção obrigatória.
+- O preço da opção obrigatória, quando maior que zero, entra no total do item.
+- Edição do item restaura a opção obrigatória selecionada.
+- Atualizado o cache do App Cliente.
+- Garçom e demais fluxos preservados.
+- Sem SQL novo.
