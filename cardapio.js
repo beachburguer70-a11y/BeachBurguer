@@ -244,7 +244,8 @@ async function carregarCatalogo(){
         ativo:(p.active??p.ativo)!==false,
         disponivel:(p.available??p.disponivel)!==false,
         permiteAdicionais:(p.allows_addons??p.permiteAdicionais)===true,
-        adicionalObrigatorio:(p.required_addon??p.adicionalObrigatorio)===true
+        adicionalObrigatorio:(p.required_addon??p.adicionalObrigatorio)===true,
+        imagem:p.image_url||p.imagem||""
       }));
     }
 
@@ -284,7 +285,7 @@ function renderProdutos(){
   }
   $("produtosV7").innerHTML=lista.map(p=>`
     <article class="produto-v7 ${p.disponivel===false?"esgotado":""}">
-      <div class="icone">${icone(p.categoria)}</div>
+      ${p.imagem?`<img class="produto-foto-v3171" src="${p.imagem}" alt="${p.nome}" loading="lazy">`:`<div class="icone">${icone(p.categoria)}</div>`}
       <h3>${p.nome}</h3>
       <p>${p.descricao||""}</p>
       <footer>

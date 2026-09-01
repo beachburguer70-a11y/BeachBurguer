@@ -406,7 +406,7 @@ export async function onRequestGet({ request, env }) {
       // para o cardápio do cliente abrir mais rápido sem remover nenhuma validação.
       const catalogPromise=supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon&order=sort_order.asc,id.asc"
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon,image_url&order=sort_order.asc,id.asc"
       );
       const storePromise=obterEstadoLoja(env);
       const categoriesPromise=supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&active=eq.true&order=sort_order.asc,id.asc");
@@ -809,7 +809,7 @@ export async function onRequestPost({ request, env }) {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
       const catalog = await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon&order=sort_order.asc,id.asc"
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon,image_url&order=sort_order.asc,id.asc"
       );
       const categories=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&order=sort_order.asc,id.asc");
       let addons=[];
@@ -868,6 +868,38 @@ export async function onRequestPost({ request, env }) {
       return json({ok:true});
     }
 
+    if (action === "upload_product_image") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const id=Number(body.id);
+      const dataUrl=String(body.data_url||"");
+      if(!id||!dataUrl.startsWith("data:image/")) return json({ok:false,error:"Foto inválida."},400);
+      const m=dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);
+      if(!m) return json({ok:false,error:"Formato de foto inválido."},400);
+      const mime=m[1].toLowerCase();
+      const binary=atob(m[2]);
+      if(binary.length>4*1024*1024) return json({ok:false,error:"A foto ficou muito grande após otimização."},400);
+      const bytes=new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+      const base=String(env.SUPABASE_URL||"").replace(/\/$/,"");
+      const key=env.SUPABASE_SERVICE_ROLE_KEY;
+      if(!base||!key) throw new Error("Supabase não configurado.");
+      const objectPath=`produto-${id}.webp`;
+      const up=await fetch(`${base}/storage/v1/object/product-images/${objectPath}`,{method:"POST",headers:{apikey:key,Authorization:`Bearer ${key}`,"Content-Type":mime,"x-upsert":"true"},body:bytes});
+      if(!up.ok){const t=await up.text();throw new Error(t||"Não foi possível enviar a foto.");}
+      const image_url=`${base}/storage/v1/object/public/product-images/${objectPath}?v=${Date.now()}`;
+      await supabaseRequest(env,`products?id=eq.${id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({image_url,updated_at:new Date().toISOString()})});
+      return json({ok:true,image_url});
+    }
+
+    if (action === "remove_product_image") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const id=Number(body.id); if(!id)return json({ok:false,error:"Produto inválido."},400);
+      const base=String(env.SUPABASE_URL||"").replace(/\/$/,""); const key=env.SUPABASE_SERVICE_ROLE_KEY;
+      try{await fetch(`${base}/storage/v1/object/product-images/produto-${id}.webp`,{method:"DELETE",headers:{apikey:key,Authorization:`Bearer ${key}`}})}catch{}
+      await supabaseRequest(env,`products?id=eq.${id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({image_url:null,updated_at:new Date().toISOString()})});
+      return json({ok:true});
+    }
+
     if (action === "create_product") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
       const category=String(body.category||"").trim();
@@ -882,7 +914,7 @@ export async function onRequestPost({ request, env }) {
       const sortOrder=Number(maxRows?.[0]?.sort_order||0)+1;
       const inserted=await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon",
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon,image_url",
         {
           method:"POST",
           headers:{Prefer:"return=representation"},

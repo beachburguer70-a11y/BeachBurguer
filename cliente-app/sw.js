@@ -3,7 +3,7 @@ const STATIC=[
   "/cliente-app/",
   "/cliente-app/cardapio.html",
   "/cardapio.html",
-  "/cardapio.js?v=31_65_addons_exato_garcom",
+  "/cardapio.js?v=31_71_fotos_produtos",
   "/style.css?v=850",
   "/cardapio.css",
   "/script.js?v=31_56_cliente_app_addon_obrigatorio",

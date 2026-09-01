@@ -682,3 +682,6 @@ body.modo-cardapio-v6{
 .pwa-ios-x{position:absolute;right:10px;top:8px}.pwa-ios-ok{width:100%}
 @media(max-width:520px){.pwa-install-copy span{display:none}}
 @media(display-mode:standalone){.pwa-install-bar,.pwa-ios-modal{display:none!important}}
+
+/* V31_71 - fotos dos produtos */
+.produto-foto-v3171{width:100%;height:150px;object-fit:cover;border-radius:12px;border:1px solid #303030;background:#0c0c0c;margin-bottom:8px}

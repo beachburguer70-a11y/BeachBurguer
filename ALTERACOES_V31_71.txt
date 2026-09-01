@@ -1,0 +1,11 @@
+V31_71 - ADMIN LATERAL + FOTOS DOS PRODUTOS
+
+- Admin da Loja reorganizado com menu lateral.
+- Mantidas as funções já existentes de Produtos, Categorias, Adicionais e Adicionais obrigatórios.
+- Cadastro e edição de produto agora aceitam foto JPG/PNG/WEBP.
+- Foto é otimizada no navegador e enviada para Supabase Storage.
+- Foto cadastrada aparece no cardápio do Cliente e no Garçom flutuante.
+- Garçom antigo de contingência também recebeu suporte à foto.
+- Sem alteração no carrinho/Sacola nesta versão.
+
+ANTES DE USAR FOTOS: executar SQL_V31_71_FOTOS_PRODUTOS.sql no Supabase SQL Editor.

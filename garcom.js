@@ -137,7 +137,7 @@ async function carregarDisponibilidade(){
     if(Array.isArray(r.catalog)&&r.catalog.length){
       dados.produtos=r.catalog.map(p=>({
         id:Number(p.id),categoria:p.category,nome:p.name,descricao:p.description||"",
-        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false,permiteAdicionais:p.allows_addons===true
+        preco:Number(p.price||0),ativo:p.active!==false,disponivel:p.available!==false,permiteAdicionais:p.allows_addons===true,imagem:p.image_url||""
       }));
       if(Array.isArray(r.categories)&&r.categories.length){
         CATEGORIAS=r.categories.filter(c=>c.active!==false).map(c=>c.name);
@@ -370,7 +370,7 @@ function renderProdutos(){
 
   $("produtosGarcom").innerHTML=lista.length?lista.map((p,idx)=>`
     <article class="produto ${p.disponivel===false?"produto-esgotado":""} ${termo&&idx===indicePesquisaGarcomV25?"resultado-selecionado-v25":""}" data-produto-id="${p.id}">
-      <div class="icone">${icone(p.categoria)}</div>
+      ${p.imagem?`<img class="produto-foto-v3171" src="${p.imagem}" alt="${p.nome}" loading="lazy">`:`<div class="icone">${icone(p.categoria)}</div>`}
       ${p.disponivel===false?'<span class="selo-esgotado">ESGOTADO</span>':""}
       ${termo?`<small style="color:#999;font-weight:800">${esc(p.categoria)}</small>`:""}
       <h3>${p.nome}</h3>
