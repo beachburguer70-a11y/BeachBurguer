@@ -1,0 +1,5 @@
+V31_72 - Correção de enquadramento do modal do Garçom no computador e celular.
+- Modal limitado ao viewport usando dvh.
+- Cabeçalho fixo na estrutura e corpo com rolagem interna.
+- Evita conteúdo e botões ficarem para fora da tela.
+- Sem alteração na lógica de pedidos, impressão, financeiro ou fotos.
