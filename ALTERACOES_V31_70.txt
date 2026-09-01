@@ -1,0 +1,6 @@
+V31_70 - CORRECAO BOTAO DO GARCOM NO CELULAR
+
+- Corrigido o espaço inferior do carrinho do Garçom no celular.
+- O botão verde Pagamento/Finalizar pedido agora fica totalmente acessível pela rolagem.
+- Considera a área segura inferior do aparelho (barra de navegação).
+- Nenhuma regra de pedido, impressão, financeiro ou desktop foi alterada.

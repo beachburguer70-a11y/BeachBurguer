@@ -43,3 +43,12 @@ body.gm-lock{overflow:hidden}.gm-hidden{display:none!important}.gm-overlay{posit
 
 /* V31_64 - controle independente da impressora do Garçom */
 .gm-head-actions{display:flex;align-items:center;gap:8px}.gm-printer-toggle{border:1px solid #2f8f43;background:#173b20;color:#bff5c8;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer;white-space:nowrap}.gm-printer-toggle.off{border-color:#9e3636;background:#461b1b;color:#ffd0d0}@media(max-width:620px){.gm-head{gap:8px}.gm-head-actions{gap:5px}.gm-printer-toggle{font-size:12px;padding:9px 8px;max-width:170px;white-space:normal;line-height:1.15}}
+
+/* V31_70 - botão Pagamento/Finalizar sempre acessível no celular */
+@media(max-width:850px){
+  .gm-body{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))!important;scroll-padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+  .gm-cart-panel{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;overflow:visible!important}
+  .gm-cart-panel>.gm-primary{display:block!important;position:relative!important;bottom:auto!important;margin:6px 0 calc(12px + env(safe-area-inset-bottom,0px))!important;min-height:52px!important;z-index:1}
+  .gm-review-form{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;overflow:visible!important}
+  #gmFinish{display:block!important;position:relative!important;bottom:auto!important;margin-bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;min-height:56px!important}
+}
