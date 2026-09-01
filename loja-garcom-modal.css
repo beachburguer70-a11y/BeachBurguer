@@ -115,3 +115,32 @@ body.gm-lock{overflow:hidden}.gm-hidden{display:none!important}.gm-overlay{posit
   .gm-shell{height:94vh;max-height:calc(100vh - 20px)}
   @media(max-width:850px){.gm-shell{height:calc(100vh - 8px)!important;max-height:calc(100vh - 8px)!important}}
 }
+
+/* V31_73 - botão + dos produtos totalmente enquadrado */
+.gm-product{
+  grid-template-columns:auto minmax(0,1fr) 42px!important;
+  column-gap:10px!important;
+  padding:12px 10px!important;
+}
+.gm-product>button{
+  width:40px!important;
+  min-width:40px!important;
+  max-width:40px!important;
+  height:40px!important;
+  justify-self:end!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+}
+@media(max-width:850px){
+  .gm-product{
+    grid-template-columns:auto minmax(0,1fr) 40px!important;
+    column-gap:8px!important;
+    padding:11px 8px!important;
+  }
+  .gm-product>button{
+    width:38px!important;
+    min-width:38px!important;
+    max-width:38px!important;
+    height:40px!important;
+  }
+}
