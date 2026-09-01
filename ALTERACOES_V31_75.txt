@@ -1,0 +1,8 @@
+BEACH BURGUER V31.75
+
+- Checkout Cliente: nova ordem Seus dados -> Revisão da Sacola -> Pagamento -> Finalização.
+- A revisão usa a Sacola V31.74 com Peça também (Bebidas e Doces).
+- Removida exibição/cadastro de fotos de produtos do Admin, Cliente e Garçom.
+- Peça também funciona sem fotos, com nome, preço e botão +.
+- Não altera Pix, regras de pedido, impressão ou financeiro.
+- Não requer SQL.

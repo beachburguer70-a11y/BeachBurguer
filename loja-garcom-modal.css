@@ -144,3 +144,7 @@ body.gm-lock{overflow:hidden}.gm-hidden{display:none!important}.gm-overlay{posit
     height:40px!important;
   }
 }
+
+/* V31.75 - cardápio do Garçom sem fotos */
+.gm-product{grid-template-columns:minmax(0,1fr) auto!important}
+.gm-product-img-v3171{display:none!important}

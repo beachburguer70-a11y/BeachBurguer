@@ -245,7 +245,7 @@ async function carregarCatalogo(){
         disponivel:(p.available??p.disponivel)!==false,
         permiteAdicionais:(p.allows_addons??p.permiteAdicionais)===true,
         adicionalObrigatorio:(p.required_addon??p.adicionalObrigatorio)===true,
-        imagem:p.image_url||p.imagem||""
+        imagem:""
       }));
     }
 
@@ -286,7 +286,7 @@ function renderProdutos(){
   }
   $("produtosV7").innerHTML=lista.map(p=>`
     <article class="produto-v7 ${p.disponivel===false?"esgotado":""}">
-      ${p.imagem?`<img class="produto-foto-v3171" src="${p.imagem}" alt="${p.nome}" loading="lazy">`:`<div class="icone">${icone(p.categoria)}</div>`}
+      <div class="icone">${icone(p.categoria)}</div>
       <h3>${p.nome}</h3>
       <p>${p.descricao||""}</p>
       <footer>
@@ -411,7 +411,7 @@ function renderSugestoesV3174(cat,alvo,titulo,emoji){
   if(!lista.length){el.innerHTML="";return}
   el.innerHTML=`<div class="sugestao-cab-v3174"><h4>${emoji} ${titulo}</h4><button type="button" data-ver-cat="${cat}">Ver todas ›</button></div>
     <div class="sugestao-faixa-v3174">${lista.map(p=>`<article class="sugestao-card-v3174">
-      ${p.imagem?`<img src="${p.imagem}" alt="${p.nome}" loading="lazy">`:`<div class="sugestao-img-fallback-v3174">${emoji}</div>`}
+      <div class="sugestao-img-fallback-v3174">${emoji}</div>
       <strong>${p.nome}</strong><span class="sug-preco-v3174">${moeda(p.preco)}</span>
       <button class="sugestao-add-v3174" type="button" data-sug-id="${p.id}" aria-label="Adicionar ${p.nome}">+</button>
     </article>`).join("")}</div>`;
@@ -441,7 +441,6 @@ function renderCarrinhoModal(){
     box.innerHTML=carrinho.map(i=>{
       const img=imagemDoItemV3174(i);
       return `<article class="item-carrinho-v3174">
-        ${img?`<img class="item-foto-v3174" src="${img}" alt="${i.nome}" loading="lazy">`:`<div class="item-foto-fallback-v3174">${categoriaIconeV3174(i.categoria)}</div>`}
         <div class="item-carrinho-v3174-info">
           <h4>${i.nome}</h4>
           ${(i.adicionais||[]).length?`<small>${(i.adicionais||[]).map(a=>a.nome).join(" • ")}</small>`:""}
@@ -495,6 +494,12 @@ $("finalizarCarrinhoV7").onclick=async()=>{
   if(!confirmarChapeuApos22V22())return;
   if(!validarSomenteRetiradaAntesFinalizarV20())return;
   if(!validarItemPrincipalV15())return;
+  if(new URLSearchParams(location.search).get("revisao")==="1" || localStorage.getItem("bb_checkout_revisao_v3175")==="1"){
+    localStorage.removeItem("bb_checkout_revisao_v3175");
+    localStorage.setItem("bb_checkout_revisado_v3175","1");
+    location.href="/checkout.html";
+    return;
+  }
   location.href="/checkout.html";
 };
 $("limparCarrinhoV7").onclick=()=>{
@@ -521,7 +526,14 @@ $("modalTipoPedidoV10").onclick=e=>{
 };
 
 atualizarBotaoCarrinho();
-carregarCatalogo();
+carregarCatalogo().then(()=>{
+  if(new URLSearchParams(location.search).get("revisao")==="1"){
+    renderCarrinhoModal();
+    $("modalCarrinhoV7").classList.add("ativo");
+    $("tituloSacolaV3174").textContent="REVISÃO DA SACOLA";
+    $("finalizarCarrinhoV7").firstChild.textContent="Continuar para pagamento ";
+  }
+});
 
 
 async function atualizarStatusLojaV23(){

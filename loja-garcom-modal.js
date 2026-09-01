@@ -68,7 +68,7 @@
     const r=await fetch('/api/orders',{cache:'no-store'}); const d=await r.json();
     if(!r.ok||!d.ok)throw new Error(d.error||'Não foi possível carregar o cardápio.');
     catalog=(d.catalog||[]).filter(p=>p.active!==false).map(p=>({
-      id:Number(p.id),categoria:p.category||'Outros',nome:p.name||'',descricao:p.description||'',preco:Number(p.price||0),disponivel:p.available!==false,permiteAdicionais:p.allows_addons===true,adicionalObrigatorio:p.required_addon===true,imagem:p.image_url||''
+      id:Number(p.id),categoria:p.category||'Outros',nome:p.name||'',descricao:p.description||'',preco:Number(p.price||0),disponivel:p.available!==false,permiteAdicionais:p.allows_addons===true,adicionalObrigatorio:p.required_addon===true,imagem:''
     }));
     categories=(d.categories||[]).filter(c=>c.active!==false).map(c=>c.name).filter(Boolean);
     if(!categories.length)categories=[...new Set(catalog.map(p=>p.categoria))];
@@ -145,7 +145,7 @@
           <div class="gm-tabs">${categories.map(c=>`<button data-cat="${esc(c)}" class="${c===categoria?'active':''}">${esc(c)}</button>`).join('')}</div>
           <div id="gmProducts" class="gm-products">${products.length?products.map(p=>`
             <article class="gm-product ${p.disponivel?'':'soldout'}">
-              ${p.imagem?`<img class="gm-product-img-v3171" src="${esc(p.imagem)}" alt="${esc(p.nome)}" loading="lazy">`:''}
+              
               <div><strong>${esc(p.nome)}</strong><small>${esc(p.descricao)}</small><b>${money(p.preco)}</b></div>
               <button class="${p.disponivel?'':'gm-soldout-btn'}" ${p.disponivel?'':'disabled'} data-product="${p.id}">${p.disponivel?'+':'Esgotado'}</button>
             </article>`).join(''):'<p class="gm-muted">Nenhum produto encontrado.</p>'}</div>
@@ -196,7 +196,7 @@
   }
   function renderProductsOnly(){
     const box=byId('gmProducts'); if(!box)return; const products=filteredProducts();
-    box.innerHTML=products.length?products.map(p=>`<article class="gm-product ${p.disponivel?'':'soldout'}">${p.imagem?`<img class="gm-product-img-v3171" src="${esc(p.imagem)}" alt="${esc(p.nome)}" loading="lazy">`:''}<div><strong>${esc(p.nome)}</strong><small>${esc(p.descricao)}</small><b>${money(p.preco)}</b></div><button class="${p.disponivel?'':'gm-soldout-btn'}" ${p.disponivel?'':'disabled'} data-product="${p.id}">${p.disponivel?'+':'Esgotado'}</button></article>`).join(''):'<p class="gm-muted">Nenhum produto encontrado.</p>';
+    box.innerHTML=products.length?products.map(p=>`<article class="gm-product ${p.disponivel?'':'soldout'}"><div><strong>${esc(p.nome)}</strong><small>${esc(p.descricao)}</small><b>${money(p.preco)}</b></div><button class="${p.disponivel?'':'gm-soldout-btn'}" ${p.disponivel?'':'disabled'} data-product="${p.id}">${p.disponivel?'+':'Esgotado'}</button></article>`).join(''):'<p class="gm-muted">Nenhum produto encontrado.</p>';
     bindProductButtons();
   }
   function bindProductButtons(){byId('gmProducts')?.querySelectorAll('[data-product]').forEach(b=>b.onclick=()=>abrirProduto(Number(b.dataset.product)))}

@@ -661,10 +661,32 @@ $("bairroCheckout").addEventListener("change",()=>{
     abrirAvisoTaxaCartaoAtafona();
   }
 });
+function salvarDadosParaRevisaoV3175(){
+  const dados={
+    nome:$("nomeCheckout").value,telefone:$("telefoneCheckout").value,
+    endereco:$("enderecoCheckout")?.value||"",numero:$("numeroCheckout")?.value||"",
+    semNumero:Boolean($("semNumeroCheckout")?.checked),bairro:$("bairroCheckout")?.value||"",
+    referencia:$("referenciaCheckout")?.value||"",observacoes:$("observacoesCheckout")?.value||"",tipo:tipoPedido
+  };
+  localStorage.setItem("bb_checkout_dados_v3175",JSON.stringify(dados));
+}
+function restaurarDadosRevisaoV3175(){
+  try{
+    const d=JSON.parse(localStorage.getItem("bb_checkout_dados_v3175")||"null"); if(!d)return;
+    if(d.nome)$("nomeCheckout").value=d.nome;if(d.telefone)$("telefoneCheckout").value=d.telefone;
+    if($("enderecoCheckout"))$("enderecoCheckout").value=d.endereco||"";if($("numeroCheckout"))$("numeroCheckout").value=d.numero||"";
+    if($("semNumeroCheckout")){$("semNumeroCheckout").checked=!!d.semNumero;$("numeroCheckout").disabled=!!d.semNumero;}
+    if($("bairroCheckout"))$("bairroCheckout").value=d.bairro||"";if($("referenciaCheckout"))$("referenciaCheckout").value=d.referencia||"";
+    if($("observacoesCheckout"))$("observacoesCheckout").value=d.observacoes||"";
+  }catch{}
+}
 $("avancarPagamento").onclick=async()=>{
   if(!(await validarEstadoLojaAntesDeProsseguirV20()))return;
-  if(validarDados())mostrarEtapa("etapaPagamento");
-  atualizarTudo();
+  if(!validarDados())return;
+  salvarDadosParaRevisaoV3175();
+  localStorage.setItem("bb_checkout_revisao_v3175","1");
+  localStorage.setItem("bb_tipo_pedido",tipoPedido);
+  location.href="/cardapio.html?revisao=1";
 };
 $("voltarDados").onclick=()=>mostrarEtapa("etapaDados");
 async function selecionarPagamentoCheckoutV31_19(b){
@@ -704,7 +726,9 @@ $("acaoPagamento").onclick=async()=>{
       if(!pixManualFallback)return;
     }
   }
-  abrirRevisao((pagamento==="Pix"&&!pixManualFallback)?"pix":"normal");
+  // V31.75: a revisão da sacola acontece antes do pagamento.
+  if(pagamento==="Pix"&&!pixManualFallback) await gerarPix();
+  else await enviarPedido();
 };
 $("fecharRevisaoCheckout").onclick=$("voltarRevisaoCheckout").onclick=()=>{
   $("modalRevisaoCheckout").classList.remove("ativo");$("progRevisao").classList.remove("ativo");
@@ -765,7 +789,13 @@ $("modalTaxaCartaoAtafona").onclick=e=>{
   if(e.target===$("modalTaxaCartaoAtafona")) fecharAvisoTaxaCartaoAtafona();
 };
 
+restaurarDadosRevisaoV3175();
 atualizarTudo();
+if(localStorage.getItem("bb_checkout_revisado_v3175")==="1"){
+  localStorage.removeItem("bb_checkout_revisado_v3175");
+  $("progRevisao").classList.remove("ativo");
+  mostrarEtapa("etapaPagamento");
+}
 if(!carrinho.length){
   $("resumoCarrinhoDados").innerHTML='<p style="color:#aaa">Seu carrinho está vazio. Volte ao cardápio para adicionar produtos.</p>';
 }

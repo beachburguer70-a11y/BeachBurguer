@@ -268,6 +268,14 @@ body.cardapio-page-v7{background:#080808;color:#fff;min-height:100vh;padding-bot
     </div>
   </div>
 </div>
-<script src="/cardapio.js?v=31_74_sacola_peca_tambem"></script>
+<script src="/cardapio.js?v=31_75_sem_fotos_revisao"></script>
 </body>
 </html>
+<style>
+/* V31.75 - produtos sem fotos; sacola/revisão sem miniaturas */
+.produto-foto-v3171,.item-foto-v3174,.item-foto-fallback-v3174{display:none!important}
+.item-carrinho-v3174{grid-template-columns:minmax(0,1fr) auto!important}
+.item-carrinho-v3174-acoes{grid-column:auto!important;padding-left:0!important;margin-top:0!important}
+.sugestao-card-v3174 img{display:none!important}
+@media(max-width:700px){.item-carrinho-v3174{grid-template-columns:1fr!important}.item-carrinho-v3174-acoes{grid-column:1!important;padding-left:0!important;margin-top:8px!important}}
+</style>
