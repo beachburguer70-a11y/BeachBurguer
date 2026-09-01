@@ -8,11 +8,32 @@ function calcular(){const baseCash=Number($('dinheiro').dataset.base||0),baseCar
 ['apagarDinheiro','apagarCartao','taxaCartao','taxaPix'].forEach(id=>$(id).addEventListener('input',calcular));
 async function carregar(){try{const d=await api({action:'summary',date:$('data').value});const t=d.sales.totals,c=d.closing||{};$('dinheiro').dataset.base=t.Dinheiro;$('cartao').dataset.base=t['Cartão'];$('pix').dataset.base=t.Pix;$('apagarDinheiro').value=c.apagar_cash||'';$('apagarCartao').value=c.apagar_card||'';$('taxaCartao').value=c.card_fee||'';$('taxaPix').value=c.pix_fee||'';calcular();renderContas(d.accounts);renderLivro(d.ledger)}catch(e){alert(e.message)}}
 $('salvarFechamento').onclick=async()=>{try{await api({action:'save_closing',date:$('data').value,apagar_cash:num('apagarDinheiro'),apagar_card:num('apagarCartao'),card_fee:num('taxaCartao'),pix_fee:num('taxaPix')});alert('Fechamento salvo e recebimentos de “A pagar” lançados no Livro Caixa.');carregar()}catch(e){alert(e.message)}};
-$('criarConta').onclick=async()=>{try{const d=await api({action:'create_account',description:$('contaDesc').value,amount_due:$('contaValor').value});$('contaDesc').value='';$('contaValor').value='';alert(d.carried>0?`Conta criada. Saldo anterior de ${moeda(d.carried)} foi somado.`:'Conta criada.');carregar()}catch(e){alert(e.message)}};
+$('criarConta').onclick=async()=>{try{const d=await api({action:'create_account',description:$('contaDesc').value,amount_due:$('contaValor').value});$('contaDesc').value='';$('contaValor').value='';alert(d.merged?`Valor de ${moeda(d.added)} somado à conta existente.`:'Conta criada.');carregar()}catch(e){alert(e.message)}};
 $('addLanc').onclick=async()=>{try{const payload={type:$('lancTipo').value,description:$('lancDesc').value,amount:$('lancValor').value};if(ledgerEditingId)await api({action:'edit_ledger',id:ledgerEditingId,...payload});else await api({action:'add_ledger',date:$('data').value,...payload});cancelarEdicaoLancamento();carregar()}catch(e){alert(e.message)}};
 $('cancelEditLanc')?.addEventListener('click',cancelarEdicaoLancamento);
-function renderContas(list){$('contas').innerHTML=(list||[]).map(a=>`<div class="account"><div style="display:flex;justify-content:space-between;gap:8px"><strong>${esc(a.description)}</strong><span class="pill">${esc(a.status)}</span></div><div class="muted">Valor a pagar: ${moeda(a.amount_due)} • Pago: ${moeda(a.amount_paid)} • <strong>Restante: ${moeda(a.remaining)}</strong></div>${a.status!=='quitada'?`<div style="display:flex;gap:7px;margin-top:8px"><input id="pay${a.id}" type="number" step="0.01" placeholder="Valor pago"><button class="btn green" onclick="pagar(${a.id})">Registrar pagamento</button></div>`:''}</div>`).join('')||'<p class="muted">Nenhuma conta cadastrada.</p>'}
-window.pagar=async id=>{const el=$('pay'+id);try{await api({action:'pay_account',id,amount_paid:el.value,date:$('data').value});carregar()}catch(e){alert(e.message)}};
+function renderContas(list){const ativas=(list||[]).filter(a=>a.status!=='quitada' && Number(a.remaining||0)>0);$('contas').innerHTML=ativas.map(a=>`<div class="account"><div style="display:flex;justify-content:space-between;gap:8px"><strong>${esc(a.description)}</strong><span class="pill">${esc(a.status)}</span></div><div class="muted">Valor a pagar: ${moeda(a.amount_due)} • Pago: ${moeda(a.amount_paid)} • <strong>Restante: ${moeda(a.remaining)}</strong></div>${a.status!=='quitada'?`<div style="display:flex;gap:7px;margin-top:8px"><input id="pay${a.id}" type="number" step="0.01" placeholder="Valor pago"><button class="btn green" onclick="pagar(${a.id})">Registrar pagamento</button></div>`:''}</div>`).join('')||'<p class="muted">Nenhuma conta cadastrada.</p>'}
+let pagamentoPendente=null;
+function fecharModalCompoeCaixa(){ $('modalCompoeCaixa').classList.add('hidden'); pagamentoPendente=null; }
+async function confirmarPagamentoConta(compoeCaixa){
+  const p=pagamentoPendente;
+  if(!p)return;
+  $('modalCompoeCaixa').classList.add('hidden');
+  try{
+    await api({action:'pay_account',id:p.id,amount_paid:p.amount,date:$('data').value,compose_cash:!!compoeCaixa});
+    pagamentoPendente=null;
+    await carregar();
+    if(!$('painelMensal').classList.contains('hidden')) await carregarResumoMensalV3153();
+  }catch(e){pagamentoPendente=null;alert(e.message)}
+}
+window.pagar=id=>{
+  const el=$('pay'+id);
+  const amount=Number(el?.value||0);
+  if(!amount||amount<=0){alert('Informe o valor pago.');el?.focus();return;}
+  pagamentoPendente={id,amount};
+  $('modalCompoeCaixa').classList.remove('hidden');
+};
+$('compoeCaixaSim').onclick=()=>confirmarPagamentoConta(true);
+$('compoeCaixaNao').onclick=()=>confirmarPagamentoConta(false);
 function renderLivro(list){ledgerCache=list||[];$('livro').innerHTML=ledgerCache.map(x=>`<div class="ledger-line"><span>${esc(x.description)}<br><small class="muted">${esc(x.source||'')}</small></span><span class="ledger-actions"><strong class="${x.type}">${x.type==='saida'?'-':'+'} ${moeda(x.amount)}</strong><button class="btn dark edit-ledger-btn" type="button" onclick="editarLancamento(${Number(x.id)})">✏️ Editar</button><button class="btn delete-ledger-btn" type="button" onclick="apagarLancamento(${Number(x.id)})">🗑️ Apagar</button></span></div>`).join('')||'<p class="muted">Sem lançamentos nesta data.</p>'}
 window.editarLancamento=id=>{const x=ledgerCache.find(v=>Number(v.id)===Number(id));if(!x)return;ledgerEditingId=Number(id);$('lancDesc').value=x.description||'';$('lancTipo').value=x.type||'saida';$('lancValor').value=Number(x.amount||0);$('addLanc').textContent='Salvar alteração';$('addLanc').classList.remove('yellow');$('addLanc').classList.add('green');$('cancelEditLanc')?.classList.remove('hidden');$('lancDesc').focus()};
 window.apagarLancamento=async id=>{const x=ledgerCache.find(v=>Number(v.id)===Number(id));if(!x)return;const auto=String(x.source||'')&&String(x.source||'')!=='manual';const aviso=auto?'\n\nEste lançamento foi criado automaticamente. Apagar aqui remove somente o lançamento do Livro Caixa e não desfaz a operação que o originou.':'';if(!confirm(`Apagar o lançamento “${x.description||'Lançamento'}” de ${moeda(x.amount)}?${aviso}`))return;try{await api({action:'delete_ledger',id:Number(id)});if(Number(ledgerEditingId)===Number(id))cancelarEdicaoLancamento();await carregar();}catch(e){alert(e.message)}};

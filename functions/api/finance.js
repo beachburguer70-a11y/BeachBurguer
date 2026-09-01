@@ -42,7 +42,7 @@ export async function onRequestPost({request,env}){
       const sales=await salesSummary(env,date);
       const closings=await supabaseRequest(env,`cash_closings?select=*&closing_date=eq.${date}&limit=1`);
       const ledger=await supabaseRequest(env,`cash_ledger?select=*&entry_date=eq.${date}&order=created_at.desc`);
-      const accounts=await supabaseRequest(env,'accounts_payable?select=*&order=due_date.asc,created_at.asc');
+      const accounts=await supabaseRequest(env,'accounts_payable?select=*&status=in.(pendente,parcial,vencida)&order=created_at.asc');
       return json({ok:true,sales,closing:closings?.[0]||null,ledger:ledger||[],accounts:accounts||[]});
     }
     if(action==='monthly_summary'){
@@ -118,13 +118,18 @@ export async function onRequestPost({request,env}){
     }
     if(action==='create_account'){
       const desc=String(b.description||'').trim(); const base=money(b.amount_due); if(!desc||base<=0)return json({ok:false,error:'Descrição e valor são obrigatórios.'},400);
-      let carry=0;
-      const prior=await supabaseRequest(env,`accounts_payable?select=id,remaining,status&description=eq.${encodeURIComponent(desc)}&status=in.(pendente,parcial,vencida)&order=created_at.desc&limit=1`);
-      if(prior?.[0])carry=money(prior[0].remaining);
-      const total=money(base+carry);
-      const row={description:desc,due_date:null,base_amount:base,carried_amount:carry,amount_due:total,amount_paid:0,remaining:total,status:'pendente',updated_at:new Date().toISOString()};
+      const prior=await supabaseRequest(env,`accounts_payable?select=*&description=ilike.${encodeURIComponent(desc)}&status=in.(pendente,parcial,vencida)&order=created_at.desc&limit=1`);
+      if(prior?.[0]){
+        const a=prior[0];
+        const newDue=money(Number(a.amount_due||0)+base);
+        const newRemaining=money(Number(a.remaining||0)+base);
+        const newBase=money(Number(a.base_amount||0)+base);
+        await supabaseRequest(env,`accounts_payable?id=eq.${Number(a.id)}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({base_amount:newBase,amount_due:newDue,remaining:newRemaining,status:Number(a.amount_paid||0)>0?'parcial':'pendente',updated_at:new Date().toISOString()})});
+        return json({ok:true,account:{...a,base_amount:newBase,amount_due:newDue,remaining:newRemaining},merged:true,added:base});
+      }
+      const row={description:desc,due_date:null,base_amount:base,carried_amount:0,amount_due:base,amount_paid:0,remaining:base,status:'pendente',updated_at:new Date().toISOString()};
       const saved=await supabaseRequest(env,'accounts_payable',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(row)});
-      return json({ok:true,account:saved?.[0],carried:carry});
+      return json({ok:true,account:saved?.[0],merged:false,added:base});
     }
     if(action==='pay_account'){
       const id=Number(b.id), pay=money(b.amount_paid); if(!id||pay<=0)return json({ok:false,error:'Pagamento inválido.'},400);
