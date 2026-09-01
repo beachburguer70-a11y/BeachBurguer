@@ -1,0 +1,7 @@
+BEACH BURGUER V31.68 — TESTE DE IMPRESSORA SEM CONSUMIR ID DE PEDIDO
+
+- Teste não cria registro em public.orders.
+- Não altera orders.id nem C#/G#.
+- Usa fila separada public.printer_jobs.
+- Programa Windows imprime cada teste uma única vez e confirma o job.
+- Requer executar SQL_V31_68_TESTE_IMPRESSORA_SEM_PEDIDO.sql no Supabase e atualizar o programa Windows.

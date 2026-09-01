@@ -688,40 +688,18 @@ export async function onRequestPost({ request, env }) {
 
     if (action === "printer_test") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+      // V31.68: teste totalmente separado de orders. Não consome ID de pedido nem C#/G#.
+      const job={kind:"test",status:"pending",created_at:new Date().toISOString()};
+      const rows=await supabaseRequest(env,"printer_jobs",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(job)});
+      return json({ok:true,message:"Teste enviado para a impressora.",printer_job_id:rows?.[0]?.id||null});
+    }
 
-      // V31.67: o teste usa um ID interno normal gerado pelo banco.
-      // O programa de impressão já sabe confirmar IDs positivos como impressos;
-      // isso evita que o mesmo teste seja capturado e impresso várias vezes.
-      // display_number=0 continua impedindo qualquer consumo da numeração C#/G#.
-      // O registro permanece invisível para Loja/relatórios e é removido depois.
-      try{
-        await supabaseRequest(env,"orders?origem=eq.teste_impressora",{method:"DELETE",headers:{Prefer:"return=minimal"}});
-      }catch{}
-
-      const testOrder = {
-        display_number:0,
-        status:"novo",
-        printed:false,
-        cliente:"TESTE DA IMPRESSORA",
-        telefone:"",
-        endereco:"",
-        bairro:"",
-        referencia:"",
-        localidade:"Loja",
-        tipo:"Teste",
-        pagamento:"TESTE",
-        troco:"",
-        observacoes:"*** TESTE DE IMPRESSÃO - BEACH BURGUER ***",
-        itens:[{id:0,nome:"IMPRESSORA FUNCIONANDO",categoria:"Teste",quantidade:1,preco:0,adicionais:[],observacao:"",total:0}],
-        subtotal:0,
-        entrega:0,
-        total:0,
-        discount_amount:0,
-        prize_awarded:false,
-        origem:"teste_impressora"
-      };
-      await supabaseRequest(env,"orders",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(testOrder)});
-      return json({ok:true,message:"Teste enviado para a fila de impressão."});
+    if (action === "finish_printer_test") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+      const jid=Number(body.id||0);
+      if(!jid)return json({ok:false,error:"Teste inválido."},400);
+      await supabaseRequest(env,`printer_jobs?id=eq.${jid}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({status:"done",printed_at:new Date().toISOString()})});
+      return json({ok:true});
     }
 
     if (action === "list_orders") {
@@ -741,7 +719,9 @@ export async function onRequestPost({ request, env }) {
         env,
         `orders?select=*&order=created_at.desc&limit=${limit}${filtroInicio}`
       );
-      return json({ ok:true, orders:orders || [], shift_started_at:inicioExpediente });
+      let printer_tests=[];
+      try{printer_tests=await supabaseRequest(env,"printer_jobs?select=*&kind=eq.test&status=eq.pending&order=created_at.asc&limit=20");}catch{}
+      return json({ ok:true, orders:orders || [], printer_tests:printer_tests||[], shift_started_at:inicioExpediente });
     }
 
 
