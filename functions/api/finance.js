@@ -23,6 +23,7 @@ async function salesSummary(env,date){
   const totals={Dinheiro:0,Pix:0,'Cartão':0};
   let count=0;
   for(const p of rows||[]){
+    if(String(p.origem||'')==='teste_impressora')continue;
     if(String(p.status||'').toLowerCase()==='cancelado')continue;
     const pg=String(p.pagamento||'').trim();
     if(Object.prototype.hasOwnProperty.call(totals,pg)){totals[pg]+=Number(p.total||0);count++;}
@@ -131,8 +132,11 @@ export async function onRequestPost({request,env}){
       const newPaid=money(Number(a.amount_paid||0)+pay); const remaining=Math.max(0,money(Number(a.amount_due||0)-newPaid)); const status=remaining<=0?'quitada':'parcial';
       await supabaseRequest(env,`accounts_payable?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({amount_paid:newPaid,remaining,status,updated_at:new Date().toISOString()})});
       const date=String(b.date||new Date().toISOString().slice(0,10)).slice(0,10);
-      await supabaseRequest(env,'cash_ledger',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({entry_date:date,type:'saida',description:`Conta a pagar: ${a.description}`,amount:pay,source:'conta_a_pagar',account_id:id})});
-      return json({ok:true,amount_paid:newPaid,remaining,status});
+      const composeCash=b.compose_cash!==false;
+      if(composeCash){
+        await supabaseRequest(env,'cash_ledger',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({entry_date:date,type:'saida',description:`Conta a pagar: ${a.description}`,amount:pay,source:'conta_a_pagar',account_id:id})});
+      }
+      return json({ok:true,amount_paid:newPaid,remaining,status,compose_cash:composeCash});
     }
     return json({ok:false,error:'Ação inválida.'},400);
   }catch(e){console.error(e);return json({ok:false,error:e.message||'Erro interno.'},500)}

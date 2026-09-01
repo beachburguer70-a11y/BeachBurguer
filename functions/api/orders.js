@@ -686,8 +686,50 @@ export async function onRequestPost({ request, env }) {
       return json({ok:true,store:await obterEstadoLoja(env)});
     }
 
+    if (action === "printer_test") {
+      if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+
+      // V31.66: cria um trabalho temporário de impressão sem depender da existência
+      // de pedidos reais. ID negativo e display_number=0 evitam consumir a
+      // numeração C#/G#. O registro é invisível para Loja/relatórios e é limpo
+      // automaticamente depois que o programa de impressão o processar.
+      try{
+        await supabaseRequest(env,"orders?origem=eq.teste_impressora",{method:"DELETE",headers:{Prefer:"return=minimal"}});
+      }catch{}
+
+      const testId = -Date.now();
+      const testOrder = {
+        id:testId,
+        display_number:0,
+        status:"novo",
+        printed:false,
+        cliente:"TESTE DA IMPRESSORA",
+        telefone:"",
+        endereco:"",
+        bairro:"",
+        referencia:"",
+        localidade:"Loja",
+        tipo:"Teste",
+        pagamento:"TESTE",
+        troco:"",
+        observacoes:"*** TESTE DE IMPRESSÃO - BEACH BURGUER ***",
+        itens:[{id:0,nome:"IMPRESSORA FUNCIONANDO",categoria:"Teste",quantidade:1,preco:0,adicionais:[],observacao:"",total:0}],
+        subtotal:0,
+        entrega:0,
+        total:0,
+        discount_amount:0,
+        prize_awarded:false,
+        origem:"teste_impressora"
+      };
+      await supabaseRequest(env,"orders",{method:"POST",headers:{Prefer:"return=minimal"},body:JSON.stringify(testOrder)});
+      return json({ok:true,message:"Teste enviado para a fila de impressão."});
+    }
+
     if (action === "list_orders") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
+      // Remove testes que já foram impressos. Se o programa estiver desligado,
+      // um novo teste substitui o anterior, evitando acumular trabalhos antigos.
+      try{await supabaseRequest(env,"orders?origem=eq.teste_impressora&printed=eq.true",{method:"DELETE",headers:{Prefer:"return=minimal"}});}catch{}
       const limit = Math.min(Number(body.limit || 100), 300);
       const inicioExpediente=await obterInicioExpediente(env);
       const filtroInicio=inicioExpediente
@@ -779,7 +821,7 @@ export async function onRequestPost({ request, env }) {
 
       return json({
         ok:true,
-        orders:all,
+        orders:all.filter(p=>String(p.origem||"")!=="teste_impressora"),
         truncated:all.length>=maxRows
       });
     }

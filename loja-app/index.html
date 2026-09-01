@@ -367,14 +367,8 @@ async function testarImpressora(){
   const original=btn.textContent;
   btn.disabled=true;btn.textContent="Enviando teste...";
   try{
-    const d=await api("POST",{action:"list_orders",limit:30},true);
-    const pedidos=Array.isArray(d.orders)?d.orders:[];
-    const ultimo=pedidos[0];
-    if(!ultimo){alert("Ainda não há pedido neste expediente para usar no teste da impressora.");return;}
-    const ok=confirm(`TESTAR IMPRESSORA?\n\nO sistema vai reenviar o último pedido (#${ultimo.display_number||ultimo.id}) para a fila de impressão.\nNenhum pedido novo será criado e a numeração não será alterada.`);
-    if(!ok)return;
-    await atualizarPedido(ultimo.id,{printed:false});
-    alert("Teste enviado para a impressora. Verifique se o último pedido foi impresso novamente.");
+    await api("POST",{action:"printer_test"},true);
+    alert("Teste enviado para a impressora.\n\nPode usar este botão no início do expediente mesmo sem existir nenhum pedido.");
   }catch(e){
     alert("Não foi possível enviar o teste para a impressora.\n\n"+e.message);
   }finally{btn.disabled=false;btn.textContent=original;}
@@ -454,7 +448,7 @@ async function api(method,body){
 
 async function carregarPedidos(){
   const data=await api("POST",{action:"list_orders"});
-  const lista=data.orders||[];
+  const lista=(data.orders||[]).filter(p=>String(p.origem||"")!=="teste_impressora");
   processarCampainhaDaLista(lista);
   render(lista);
 
@@ -543,7 +537,7 @@ function processarCampainhaDaLista(lista){
       return;
     }
     const novos=(lista||[])
-      .filter(p=>p.status==="novo"&&!pedidosConhecidosCampainhaLoja.has(chavePedidoCampainhaLoja(p)))
+      .filter(p=>(p.status==="novo"||(String(p.origem||"")==="garcom"&&p.status==="preparo"))&&!pedidosConhecidosCampainhaLoja.has(chavePedidoCampainhaLoja(p)))
       .sort((a,b)=>Number(a.id)-Number(b.id));
     (lista||[]).forEach(p=>pedidosConhecidosCampainhaLoja.add(chavePedidoCampainhaLoja(p)));
     novos.forEach((pedido,idx)=>setTimeout(()=>{

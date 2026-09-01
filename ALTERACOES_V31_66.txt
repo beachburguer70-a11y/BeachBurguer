@@ -1,0 +1,8 @@
+BEACH BURGUER V31.66
+
+1. Teste da impressora não depende mais de pedido existente.
+2. O botão Testar impressora cria apenas um trabalho técnico temporário, sem consumir C#/G# e sem entrar em Loja, Relatórios ou Financeiro.
+3. Após a impressão, o trabalho de teste é removido automaticamente.
+4. Pedidos do Garçom com a impressora do Garçom desativada continuam indo direto para Em preparo, mas a campainha da Loja continua tocando normalmente.
+5. Pedidos do Cliente permanecem sem alteração.
+6. Sem SQL novo.
