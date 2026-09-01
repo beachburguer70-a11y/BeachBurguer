@@ -1,0 +1,8 @@
+V31.65 - CORREÇÃO DOS ADICIONAIS DO CLIENTE
+
+- Corrigido o pacote anterior, que não levava cardapio.js na atualização V31.64.
+- Adicionais do Cliente agora usam exatamente a estrutura visual do Garçom: checkbox/radio à esquerda, nome ao lado e preço à direita, tudo dentro da mesma caixa.
+- Adicionais obrigatórios seguem o mesmo padrão.
+- Cache do Cliente App atualizado para forçar a nova versão do cardápio.
+- Mantidas todas as alterações da V31.64.
+- Sem SQL.

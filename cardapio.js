@@ -318,21 +318,14 @@ function abrirProduto(id,uid=null){
   $("listaAdicionaisV7").style.display=aceita?"":"none";
   $("listaAdicionaisV7").innerHTML=aceita?ADICIONAIS.map((a,i)=>{
     const checked=(item?.adicionais||[]).some(x=>x.nome===a.nome);
-    return `<label style="display:flex;justify-content:space-between;gap:10px;margin:8px 0">
-      <span><input class="addV7" data-i="${i}" type="checkbox" ${checked?"checked":""}> ${a.nome}</span>
-      <strong>+ ${moeda(a.preco)}</strong>
-    </label>`;
+    return `<label class="cliente-addon-v65"><span><input class="addV7" data-i="${i}" type="checkbox" ${checked?"checked":""}> ${a.nome}</span><strong>+ ${moeda(a.preco)}</strong></label>`;
   }).join(""):"";
 
   $("tituloAdicionaisObrigatoriosV7").style.display=adicionalObrigatorio?"":"none";
   $("listaAdicionaisObrigatoriosV7").style.display=adicionalObrigatorio?"":"none";
   $("listaAdicionaisObrigatoriosV7").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>{
     const checked=(item?.adicionais||[]).some(x=>x.nome===a.nome);
-    return `<label style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:10px;margin:10px 0;padding:10px 12px;border:1px solid #2d2d2d;border-radius:10px;background:#101010">
-      <input class="addObrigatorioV7" name="addObrigatorioV7" data-i="${i}" type="radio" ${checked?"checked":""} style="width:auto;min-width:18px;height:18px;margin:0">
-      <span style="min-width:0;text-align:left">${a.nome}</span>
-      <strong style="white-space:nowrap">${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong>
-    </label>`;
+    return `<label class="cliente-addon-v65"><span><input class="addObrigatorioV7" name="addObrigatorioV7" data-i="${i}" type="radio" ${checked?"checked":""}> ${a.nome}</span><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></label>`;
   }).join(""):"";
 
   $("confirmarProdutoV7").textContent=item?"Salvar alteração":"Adicionar ao pedido";

@@ -89,6 +89,13 @@ body.cardapio-page-v7{background:#080808;color:#fff;min-height:100vh;padding-bot
   opacity:.5;
   cursor:not-allowed;
 }
+
+/* V31.65 - adicionais do Cliente exatamente no layout do Garçom */
+.cliente-addon-v65{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;background:#1c1c1c!important;border:1px solid #333!important;border-radius:9px!important;padding:10px!important;margin:7px 0!important;font-size:16px!important;font-weight:800!important;cursor:pointer!important;gap:10px!important}
+.cliente-addon-v65>span{display:flex!important;flex-direction:row!important;align-items:center!important;gap:8px!important;min-width:0!important;text-align:left!important}
+.cliente-addon-v65 input[type=checkbox],.cliente-addon-v65 input[type=radio]{display:inline-block!important;width:auto!important;min-width:20px!important;height:20px!important;margin:0!important;padding:0!important;flex:0 0 auto!important;accent-color:#ffb700!important}
+.cliente-addon-v65 strong{margin-left:auto!important;white-space:nowrap!important;text-align:right!important;font-size:16px!important}
+@media(max-width:600px){.cliente-addon-v65{padding:10px!important;font-size:15px!important}.cliente-addon-v65 strong{font-size:15px!important}}
 </style>
   <link rel="manifest" href="/cliente-app/manifest.json">
   <meta name="application-name" content="Beach Burguer">
@@ -210,6 +217,6 @@ body.cardapio-page-v7{background:#080808;color:#fff;min-height:100vh;padding-bot
     </div>
   </div>
 </div>
-<script src="/cardapio.js?v=31_58_addon_obrigatorio_alinhado"></script>
+<script src="/cardapio.js?v=31_65_addons_exato_garcom"></script>
 </body>
 </html>
