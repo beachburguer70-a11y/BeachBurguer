@@ -40,3 +40,6 @@ body.gm-lock{overflow:hidden}.gm-hidden{display:none!important}.gm-overlay{posit
 .gm-tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important;overflow:visible!important;width:100%!important;padding-bottom:0!important}
 .gm-tabs button{width:100%!important;min-width:0!important;white-space:normal!important;text-align:center;display:flex;align-items:center;justify-content:center;min-height:44px}
 @media(max-width:850px){.gm-tabs{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;overflow:visible!important}.gm-tabs button{padding:9px 5px!important;font-size:13px;line-height:1.15;min-height:48px}}
+
+/* V31_64 - controle independente da impressora do Garçom */
+.gm-head-actions{display:flex;align-items:center;gap:8px}.gm-printer-toggle{border:1px solid #2f8f43;background:#173b20;color:#bff5c8;border-radius:10px;padding:10px 12px;font-weight:900;cursor:pointer;white-space:nowrap}.gm-printer-toggle.off{border-color:#9e3636;background:#461b1b;color:#ffd0d0}@media(max-width:620px){.gm-head{gap:8px}.gm-head-actions{gap:5px}.gm-printer-toggle{font-size:12px;padding:9px 8px;max-width:170px;white-space:normal;line-height:1.15}}

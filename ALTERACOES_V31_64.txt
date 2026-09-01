@@ -1,0 +1,20 @@
+BEACH BURGUER V31_64
+
+1. CLIENTE APÓS HORÁRIO DE FECHAMENTO
+- Ao atingir o horário configurado de fechamento, o Cliente passa automaticamente para SOMENTE RETIRADA.
+- A loja só fecha totalmente quando o operador clicar em Fechar loja.
+- O Garçom flutuante continua com Consumir no local, Para viagem e Entrega normalmente.
+
+2. IMPRESSORA EXCLUSIVA DO GARÇOM
+- Botão dentro do Garçom: Impressora ATIVADA/DESATIVADA.
+- A escolha permanece para os próximos pedidos do Garçom.
+- Desativada: pedido do Garçom não imprime e entra direto em Em preparo.
+- Pedidos do Cliente continuam imprimindo normalmente.
+- Ao Finalizar expediente, a impressora do Garçom é reativada automaticamente.
+
+3. TESTE DE IMPRESSORA NA LOJA
+- Novo botão Testar impressora.
+- Reenvia o último pedido do expediente para a fila de impressão, sem criar pedido novo e sem alterar numeração.
+
+4. MENU RECOLHIDO
+- Garçom e Editar pedido continuam visíveis quando o menu da Loja é recolhido.

@@ -88,6 +88,14 @@ body.cardapio-page-v7{background:#080808;color:#fff;min-height:100vh;padding-bot
   opacity:.5;
   cursor:not-allowed;
 }
+
+/* V31.63 - adicionais do Cliente com o mesmo visual do Garçom */
+.cliente-addon-v63{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;background:#1c1c1c!important;border:1px solid #333!important;border-radius:9px!important;padding:12px 14px!important;margin:9px 0!important;font-size:16px!important;font-weight:800!important;cursor:pointer}
+.cliente-addon-esquerda-v63{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important;text-align:left!important}
+.cliente-addon-esquerda-v63>span{min-width:0!important}
+.cliente-addon-v63 input[type=checkbox],.cliente-addon-v63 input[type=radio]{width:20px!important;min-width:20px!important;height:20px!important;margin:0!important;padding:0!important;flex:0 0 20px!important;accent-color:#ffb700}
+.cliente-addon-v63 strong{white-space:nowrap!important;margin-left:auto!important;font-size:16px!important}
+@media(max-width:600px){.cliente-addon-v63{padding:12px!important;font-size:15px!important}.cliente-addon-v63 strong{font-size:15px!important}}
 </style>
 </head>
 <body class="cardapio-page-v7">
@@ -205,6 +213,6 @@ body.cardapio-page-v7{background:#080808;color:#fff;min-height:100vh;padding-bot
     </div>
   </div>
 </div>
-<script src="/cardapio.js?v=31_58_addon_obrigatorio_alinhado"></script>
+<script src="/cardapio.js?v=31_63_addons_visual_garcom"></script>
 </body>
 </html>

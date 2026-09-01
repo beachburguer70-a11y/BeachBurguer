@@ -4,6 +4,9 @@
   const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const parseMoney=v=>{const s=String(v??'').trim().replace(/\s/g,''); if(!s)return 0; const n=Number(s.includes(',')?s.replace(/\./g,'').replace(',','.'):s); return Number.isFinite(n)?Math.max(0,n):0};
   const storeToken=()=>localStorage.getItem('bb_store_token')||'';
+  const WAITER_PRINTER_KEY='bb_garcom_impressora_ativa';
+  const waiterPrinterEnabled=()=>localStorage.getItem(WAITER_PRINTER_KEY)!=='0';
+  const setWaiterPrinterEnabled=(enabled)=>{localStorage.setItem(WAITER_PRINTER_KEY,enabled?'1':'0');updatePrinterButton();return enabled;};
 
   let catalog=[], categories=[], addons=[], requiredAddons=[];
   let tipo='', pagamento='', categoria='', pesquisa='', carrinho=[], etapa='tipo';
@@ -18,7 +21,7 @@
         <div class="gm-shell" role="dialog" aria-modal="true" aria-label="Pedido do garçom">
           <div class="gm-head">
             <div><strong>👨‍🍳 Garçom</strong><small id="gmEtapaTitulo"></small></div>
-            <button type="button" id="gmCancelarTopo" class="gm-x" aria-label="Cancelar pedido">×</button>
+            <div class="gm-head-actions"><button type="button" id="gmPrinterToggle" class="gm-printer-toggle"></button><button type="button" id="gmCancelarTopo" class="gm-x" aria-label="Cancelar pedido">×</button></div>
           </div>
           <div id="gmBody" class="gm-body"></div>
         </div>
@@ -46,9 +49,19 @@
     byId('gmProductOverlay').addEventListener('click',e=>{ if(e.target===byId('gmProductOverlay')) e.stopPropagation(); });
     byId('gmEditOverlay').addEventListener('click',e=>{ if(e.target===byId('gmEditOverlay')) e.stopPropagation(); });
     byId('gmCancelarTopo').onclick=cancelarFluxo;
+    byId('gmPrinterToggle').onclick=()=>setWaiterPrinterEnabled(!waiterPrinterEnabled());
+    updatePrinterButton();
     byId('gmProductX').onclick=fecharProduto;
     byId('gmEditX').onclick=()=>byId('gmEditOverlay').classList.add('gm-hidden');
     byId('gmProductConfirm').onclick=salvarProduto;
+  }
+
+  function updatePrinterButton(){
+    const b=byId('gmPrinterToggle');if(!b)return;
+    const on=waiterPrinterEnabled();
+    b.textContent=on?'🖨️ Impressora: ATIVADA':'🖨️ Impressora: DESATIVADA';
+    b.classList.toggle('off',!on);
+    b.title=on?'Pedidos do Garçom serão impressos automaticamente.':'Pedidos do Garçom irão direto para Em preparo, sem impressão.';
   }
 
   async function apiCatalog(){
@@ -294,16 +307,20 @@
     if(sending)return; sending=true; const btn=byId('gmFinish');btn.disabled=true;btn.textContent=editOrderId?'Salvando...':'Enviando...';
     try{
       captureReviewDraft();
-      const body={action:editOrderId?'edit_waiter_order':'create',id:editOrderId||undefined,cliente:reviewDraft.cliente.trim(),telefone:'',endereco:tipo==='Entrega'?reviewDraft.endereco.trim():'',bairro:'',referencia:'',localidade:tipo,tipo,pagamento,troco:(tipo==='Entrega'&&pagamento==='Dinheiro')?reviewDraft.troco.trim():'',observacoes:reviewDraft.observacoes.trim(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,categoria:i.categoria,quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:itemTotal(i)})),subtotal:cartSubtotal(),entrega:entrega(),total:currentTotal(),discount_amount:desconto(),prize_awarded:false,origem:'garcom'};
+      const body={action:editOrderId?'edit_waiter_order':'create',id:editOrderId||undefined,cliente:reviewDraft.cliente.trim(),telefone:'',endereco:tipo==='Entrega'?reviewDraft.endereco.trim():'',bairro:'',referencia:'',localidade:tipo,tipo,pagamento,troco:(tipo==='Entrega'&&pagamento==='Dinheiro')?reviewDraft.troco.trim():'',observacoes:reviewDraft.observacoes.trim(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,categoria:i.categoria,quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:itemTotal(i)})),subtotal:cartSubtotal(),entrega:entrega(),total:currentTotal(),discount_amount:desconto(),prize_awarded:false,origem:'garcom',waiter_print_enabled:waiterPrinterEnabled()};
       const headers={'Content-Type':'application/json'};if(editOrderId)headers['X-Store-Token']=storeToken();
       const r=await fetch('/api/orders',{method:'POST',headers,body:JSON.stringify(body)});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Não foi possível salvar o pedido.');
       window.__gmLastOrder=d.order||{};
       if(editOrderId){
         const numero=d.order?.display_number||editOrderDisplay||d.order?.id||editOrderId;
-        const reimprimir=confirm(`Pedido G#${numero} atualizado com sucesso.\n\nDeseja reimprimir o pedido?`);
-        if(reimprimir){
-          const rr=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json','X-Store-Token':storeToken()},body:JSON.stringify({action:'update',id:editOrderId,printed:false})});
-          const rd=await rr.json();if(!rr.ok||!rd.ok)alert('Pedido salvo, mas não foi possível enviar para reimpressão.');
+        if(waiterPrinterEnabled()){
+          const reimprimir=confirm(`Pedido G#${numero} atualizado com sucesso.\n\nDeseja reimprimir o pedido?`);
+          if(reimprimir){
+            const rr=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json','X-Store-Token':storeToken()},body:JSON.stringify({action:'update',id:editOrderId,printed:false})});
+            const rd=await rr.json();if(!rr.ok||!rd.ok)alert('Pedido salvo, mas não foi possível enviar para reimpressão.');
+          }
+        }else{
+          alert(`Pedido G#${numero} atualizado com sucesso.\n\nA impressora do Garçom está DESATIVADA, então não foi enviado para reimpressão.`);
         }
         fecharTudo();
         if(typeof window.carregarPedidos==='function')window.carregarPedidos().catch(()=>{});
@@ -347,6 +364,8 @@
     render();
   }
 
+  window.reativarImpressoraGarcom=()=>setWaiterPrinterEnabled(true);
+  window.impressoraGarcomAtiva=()=>waiterPrinterEnabled();
   window.abrirEditorPedidosGarcom=abrirEditorPedidos;
   window.abrirGarcomModal=abrir;
   document.addEventListener('DOMContentLoaded',()=>{

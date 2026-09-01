@@ -205,11 +205,14 @@ function calcularStatusLoja(state){
     return {mode:"open",open:true,pickup_only:false,now:agora,hours,next_open,today:cfg,manual_date:state?.manual_date||null};
   }
 
-  // Ao atingir o horário de fechamento, não fecha imediatamente:
-  // aguarda a decisão da página Garçom.
+  // V31.64: ao atingir o horário configurado de fechamento,
+  // o Cliente continua aberto somente para RETIRADA. A Loja só fecha
+  // completamente quando o operador usa o botão manual "Fechar loja".
+  // O Garçom não é afetado por esta regra, pois pedidos dele ignoram
+  // as restrições públicas de horário no action=create.
   const passouFechamento=fim>ini ? (atual>=fim) : (atual>=fim&&atual<ini);
   if(passouFechamento){
-    return {mode:"awaiting_close_decision",open:true,pickup_only:false,now:agora,hours,next_open,today:cfg,manual_date:state?.manual_date||null};
+    return {mode:"pickup_only",open:true,pickup_only:true,now:agora,hours,next_open,today:cfg,manual_date:state?.manual_date||null};
   }
 
   return {mode:"closed",open:false,pickup_only:false,now:agora,hours,next_open,today:cfg,manual_date:state?.manual_date||null};
@@ -514,9 +517,13 @@ export async function onRequestPost({ request, env }) {
         }
       }
 
+      // V31.64: a chave de impressão do Garçom é independente dos pedidos do Cliente.
+      // Quando o operador desativa a impressão no Garçom, o pedido já nasce em
+      // "preparo" e como impresso, impedindo o programa do Windows de capturá-lo.
+      const waiterPrintEnabled = !(isGarcom && body.waiter_print_enabled === false);
       const order = {
-        status:"novo",
-        printed:false,
+        status:(isGarcom && !waiterPrintEnabled)?"preparo":"novo",
+        printed:(isGarcom && !waiterPrintEnabled)?true:false,
         cliente:String(body.cliente).trim(),
         telefone,
         endereco:String(body.endereco || "").trim(),
