@@ -689,17 +689,16 @@ export async function onRequestPost({ request, env }) {
     if (action === "printer_test") {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
 
-      // V31.66: cria um trabalho temporário de impressão sem depender da existência
-      // de pedidos reais. ID negativo e display_number=0 evitam consumir a
-      // numeração C#/G#. O registro é invisível para Loja/relatórios e é limpo
-      // automaticamente depois que o programa de impressão o processar.
+      // V31.67: o teste usa um ID interno normal gerado pelo banco.
+      // O programa de impressão já sabe confirmar IDs positivos como impressos;
+      // isso evita que o mesmo teste seja capturado e impresso várias vezes.
+      // display_number=0 continua impedindo qualquer consumo da numeração C#/G#.
+      // O registro permanece invisível para Loja/relatórios e é removido depois.
       try{
         await supabaseRequest(env,"orders?origem=eq.teste_impressora",{method:"DELETE",headers:{Prefer:"return=minimal"}});
       }catch{}
 
-      const testId = -Date.now();
       const testOrder = {
-        id:testId,
         display_number:0,
         status:"novo",
         printed:false,

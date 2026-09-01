@@ -1,0 +1,8 @@
+BEACH BURGUER V31.67 — CORREÇÃO DO TESTE DE IMPRESSORA
+
+1. O teste da impressora continua funcionando mesmo sem pedidos reais.
+2. O trabalho técnico agora usa um ID interno normal gerado pelo banco, permitindo que o programa de impressão marque o teste como impresso corretamente.
+3. Isso impede que o mesmo teste seja impresso várias vezes.
+4. O teste continua com display_number=0, portanto não altera a numeração C#/G#.
+5. O teste continua invisível na Loja, Relatórios e Financeiro e é removido automaticamente após ser processado.
+6. Nenhum SQL é necessário.
