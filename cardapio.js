@@ -252,6 +252,7 @@ async function carregarCatalogo(){
     console.info("V31.11 categorias Cliente:",CATEGORIAS);
     renderAbas();
     renderProdutos();
+    if($("modalCarrinhoV7")?.classList.contains("ativo")) renderCarrinhoModal();
   }catch(e){
     console.warn("Não foi possível carregar o cardápio:",e.message);
     renderAbas();
@@ -352,6 +353,7 @@ function confirmarProduto(){
     nome:produtoSelecionado.nome,
     categoria:produtoSelecionado.categoria,
     preco:Number(produtoSelecionado.preco),
+    imagem:produtoSelecionado.imagem||"",
     quantidade:qtd,
     adicionais,
     observacao:$("produtoObsV7").value.trim(),
@@ -372,28 +374,89 @@ function atualizarBotaoCarrinho(){
   $("resumoCarrinhoV7").textContent=`${qtd} ${qtd===1?"item":"itens"} • ${moeda(totalCarrinho())}`;
   $("verPedidoV7").classList.toggle("visivel",qtd>0);
 }
+function imagemDoItemV3174(item){
+  return item?.imagem || dados.produtos.find(p=>Number(p.id)===Number(item?.id))?.imagem || "";
+}
+function categoriaIconeV3174(cat){return cat==="Bebidas"?"🥤":cat==="Doces"?"🍰":icone(cat)}
+function ajustarQuantidadeV3174(uid,delta){
+  const item=carrinho.find(x=>String(x.uid)===String(uid));
+  if(!item)return;
+  const nova=Math.max(1,Number(item.quantidade||1)+Number(delta||0));
+  item.quantidade=nova;
+  salvarCarrinho();
+  renderCarrinhoModal();
+}
+function adicionarSugestaoV3174(id){
+  if(lojaFechadaV18()){avisarLojaFechadaV18();return}
+  const p=dados.produtos.find(x=>Number(x.id)===Number(id));
+  if(!p || p.ativo===false || p.disponivel===false)return;
+  const existente=carrinho.find(i=>Number(i.id)===Number(p.id) && !(i.adicionais||[]).length && !i.observacao);
+  if(existente){
+    existente.quantidade=Number(existente.quantidade||1)+1;
+  }else{
+    carrinho.push({id:p.id,nome:p.nome,categoria:p.categoria,preco:Number(p.preco||0),imagem:p.imagem||"",quantidade:1,adicionais:[],observacao:"",uid:Date.now()+Math.random()});
+  }
+  salvarCarrinho();
+  renderCarrinhoModal();
+}
+function abrirCategoriaDaSacolaV3174(cat){
+  if(CATEGORIAS.includes(cat))categoriaAtual=cat;
+  renderAbas();renderProdutos();
+  $("modalCarrinhoV7").classList.remove("ativo");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function renderSugestoesV3174(cat,alvo,titulo,emoji){
+  const el=$(alvo);if(!el)return;
+  const lista=dados.produtos.filter(p=>p.categoria===cat&&p.ativo&&p.disponivel!==false);
+  if(!lista.length){el.innerHTML="";return}
+  el.innerHTML=`<div class="sugestao-cab-v3174"><h4>${emoji} ${titulo}</h4><button type="button" data-ver-cat="${cat}">Ver todas ›</button></div>
+    <div class="sugestao-faixa-v3174">${lista.map(p=>`<article class="sugestao-card-v3174">
+      ${p.imagem?`<img src="${p.imagem}" alt="${p.nome}" loading="lazy">`:`<div class="sugestao-img-fallback-v3174">${emoji}</div>`}
+      <strong>${p.nome}</strong><span class="sug-preco-v3174">${moeda(p.preco)}</span>
+      <button class="sugestao-add-v3174" type="button" data-sug-id="${p.id}" aria-label="Adicionar ${p.nome}">+</button>
+    </article>`).join("")}</div>`;
+  el.querySelector("[data-ver-cat]")?.addEventListener("click",()=>abrirCategoriaDaSacolaV3174(cat));
+  el.querySelectorAll("[data-sug-id]").forEach(b=>b.onclick=()=>adicionarSugestaoV3174(Number(b.dataset.sugId)));
+}
 function renderCarrinhoModal(){
   const box=$("listaCarrinhoV7");
-  $("totalCarrinhoV7").textContent=moeda(totalCarrinho());
+  const total=totalCarrinho();
+  const qtd=carrinho.reduce((s,i)=>s+Number(i.quantidade||1),0);
+  $("totalCarrinhoV7").textContent=moeda(total);
+  $("subtotalSacolaV3174").textContent=moeda(total);
+  $("totalRodapeSacolaV3174").textContent=moeda(total);
+  $("qtdRodapeSacolaV3174").textContent=qtd?`(${qtd})`:"";
   $("finalizarCarrinhoV7").disabled=!carrinho.length;
   $("limparCarrinhoV7").disabled=!carrinho.length;
-  if(!carrinho.length){
-    box.innerHTML='<div style="padding:25px;text-align:center;color:#888">Seu carrinho está vazio.</div>';
-    return;
+  if(tipoPedido==="Retirada" || tipoPedido==="Consumir no local"){
+    $("entregaSacolaV3174").textContent="Grátis";
+    $("entregaSacolaV3174").className="gratis";
+  }else{
+    $("entregaSacolaV3174").textContent="Calculada no checkout";
+    $("entregaSacolaV3174").className="";
   }
-  box.innerHTML=carrinho.map(i=>`
-    <article class="item-carrinho-v7">
-      <div class="item-carrinho-v7-info">
-        <strong>${i.quantidade||1}x ${i.nome}</strong>
-        ${(i.adicionais||[]).length?`<small>Adicionais: ${(i.adicionais||[]).map(a=>a.nome).join(", ")}</small>`:""}
-        ${i.observacao?`<small>Obs.: ${i.observacao}</small>`:""}
-        <span>${moeda(valorItem(i))}</span>
-      </div>
-      <div class="item-carrinho-v7-acoes">
-        <button class="alt" data-uid="${i.uid}">✏️ Alterar</button>
-        <button class="excluir" data-uid="${i.uid}">🗑 Excluir</button>
-      </div>
-    </article>`).join("");
+  if(!carrinho.length){
+    box.innerHTML='<div class="sacola-vazia-v3174">Sua sacola está vazia.</div>';
+  }else{
+    box.innerHTML=carrinho.map(i=>{
+      const img=imagemDoItemV3174(i);
+      return `<article class="item-carrinho-v3174">
+        ${img?`<img class="item-foto-v3174" src="${img}" alt="${i.nome}" loading="lazy">`:`<div class="item-foto-fallback-v3174">${categoriaIconeV3174(i.categoria)}</div>`}
+        <div class="item-carrinho-v3174-info">
+          <h4>${i.nome}</h4>
+          ${(i.adicionais||[]).length?`<small>${(i.adicionais||[]).map(a=>a.nome).join(" • ")}</small>`:""}
+          ${i.observacao?`<small>Obs.: ${i.observacao}</small>`:""}
+          <span class="preco-item-v3174">${moeda(valorItem(i))}</span>
+        </div>
+        <div class="item-carrinho-v3174-acoes">
+          <div class="qtd-v3174"><button type="button" class="qtd-menor" data-uid="${i.uid}">−</button><span>${Number(i.quantidade||1)}</span><button type="button" class="qtd-maior" data-uid="${i.uid}">+</button></div>
+          <div class="acoes-item-v3174"><button class="alt" type="button" data-uid="${i.uid}">Alterar</button><button class="excluir" type="button" data-uid="${i.uid}">Excluir</button></div>
+        </div>
+      </article>`;
+    }).join("");
+  }
+  box.querySelectorAll(".qtd-menor").forEach(b=>b.onclick=()=>ajustarQuantidadeV3174(b.dataset.uid,-1));
+  box.querySelectorAll(".qtd-maior").forEach(b=>b.onclick=()=>ajustarQuantidadeV3174(b.dataset.uid,1));
   box.querySelectorAll(".alt").forEach(b=>b.onclick=()=>{
     $("modalCarrinhoV7").classList.remove("ativo");
     const item=carrinho.find(x=>String(x.uid)===String(b.dataset.uid));
@@ -407,6 +470,8 @@ function renderCarrinhoModal(){
       salvarCarrinho();renderCarrinhoModal();
     }
   });
+  renderSugestoesV3174("Bebidas","sugestoesBebidasV3174","Bebidas","🥤");
+  renderSugestoesV3174("Doces","sugestoesDocesV3174","Doces","🍰");
 }
 
 $("confirmarProdutoV7").onclick=confirmarProduto;

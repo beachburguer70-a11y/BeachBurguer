@@ -1,0 +1,15 @@
+V31.74 - SACOLA DO CLIENTE + PEÇA TAMBÉM
+
+- Reformulado somente o carrinho/sacola do Cliente.
+- Novo visual responsivo em preto/amarelo para computador e celular.
+- Itens mostram foto cadastrada no Admin quando disponível.
+- Quantidade pode ser ajustada por - e + dentro da sacola.
+- Mantidos Alterar e Excluir.
+- Adicionado bloco "Peça também" com dois carrosséis: Bebidas e Doces.
+- Sugestões usam os produtos já cadastrados nas categorias Bebidas e Doces.
+- Produtos indisponíveis não aparecem nas sugestões.
+- Botão + adiciona bebida/doce direto à sacola e atualiza o total.
+- Sem cupom.
+- Resumo mostra total dos itens; para Entrega, taxa continua sendo calculada corretamente no checkout.
+- Botão Continuar usa o checkout e todas as regras atuais (Pix, taxas, Pedido Premiado etc.).
+- Nenhuma alteração de banco/SQL nesta versão.

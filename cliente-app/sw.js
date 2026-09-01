@@ -1,9 +1,9 @@
-const CACHE="beach-burguer-cliente-app-v31-65-addons-exato-garcom";
+const CACHE="beach-burguer-cliente-app-v31-74-sacola-peca-tambem";
 const STATIC=[
   "/cliente-app/",
   "/cliente-app/cardapio.html",
   "/cardapio.html",
-  "/cardapio.js?v=31_71_fotos_produtos",
+  "/cardapio.js?v=31_74_sacola_peca_tambem",
   "/style.css?v=850",
   "/cardapio.css",
   "/script.js?v=31_56_cliente_app_addon_obrigatorio",
