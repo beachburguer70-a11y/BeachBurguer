@@ -60,6 +60,7 @@ try{carrinho=JSON.parse(localStorage.getItem("bb_carrinho")||"[]")}catch{}
 let tipoPedido=localStorage.getItem("bb_tipo_pedido")||"Retirada";
 let pagamento="Pix";
 let pedidoPremiadoElegivel=false; let pedidoPremiadoAtivo=false;
+let pedidoPremiadoRecusado=false; let pedidoPremiadoAvisado=false;
 let modoRevisao="normal";
 let pixPaymentId=null;
 let pixPolling=null;
@@ -191,7 +192,42 @@ function taxa(){
 
   return Number(op?.dataset?.taxa||0);
 }
-function descontoPremiado(){return (pedidoPremiadoElegivel && (pagamento==="Pix"||pagamento==="Dinheiro"))?Math.round((subtotal()+taxa())*0.30*100)/100:0}
+function pedidoPremiadoGarantidoV3176(){
+  return pedidoPremiadoElegivel && !pedidoPremiadoRecusado && tipoPedido!=="Entrega";
+}
+function descontoPremiado(){return pedidoPremiadoGarantidoV3176()?Math.round((subtotal()+taxa())*0.30*100)/100:0}
+function economiaPremiadaV3176(){return Math.round((subtotal()+taxa())*0.30*100)/100}
+function fecharPedidoPremiadoV3176(){ $("modalPedidoPremiadoV3176")?.classList.remove("ativo"); }
+function mostrarPremioGarantidoV3176(){
+  const modal=$("modalPedidoPremiadoV3176"); if(!modal)return;
+  $("premioTituloV3176").textContent="🎉 SEU PRÊMIO ESTÁ GARANTIDO!";
+  $("premioTextoV3176").innerHTML=`🏆 Você ganhou <strong>30% DE DESCONTO</strong> no seu pedido!<br><br><span class="premio-economia-v3176">Você economizou ${moeda(economiaPremiadaV3176())}!</span>`;
+  $("premioAcoesV3176").innerHTML='<button type="button" class="flow-btn primary" id="premioContinuarV3176">CONTINUAR COM MEU PRÊMIO 🎁</button>';
+  modal.classList.add("ativo");
+  $("premioContinuarV3176").onclick=fecharPedidoPremiadoV3176;
+}
+function abrirPedidoPremiadoV3176(){
+  if(!pedidoPremiadoElegivel || pedidoPremiadoAvisado)return;
+  pedidoPremiadoAvisado=true;
+  if(tipoPedido!=="Entrega"){ mostrarPremioGarantidoV3176(); return; }
+  const modal=$("modalPedidoPremiadoV3176"); if(!modal)return;
+  $("premioTituloV3176").textContent="🎉🍔 VOCÊ GANHOU UM PEDIDO PREMIADO!";
+  $("premioTextoV3176").innerHTML=`🏆 Seu pedido ganhou <strong>30% DE DESCONTO!</strong><br><br>Para aproveitar o prêmio, é só mudar seu pedido para <strong>RETIRADA NA BEACH BURGUER</strong>.<br><br><span class="premio-economia-v3176">🔥 Não deixe seus 30% escaparem!</span>`;
+  $("premioAcoesV3176").innerHTML='<button type="button" class="flow-btn primary" id="premioRetiradaV3176">SIM, QUERO MEUS 30% 🛍️</button><button type="button" class="flow-btn dark" id="premioEntregaV3176">NÃO, CONTINUAR COM ENTREGA</button>';
+  modal.classList.add("ativo");
+  $("premioRetiradaV3176").onclick=()=>{
+    tipoPedido="Retirada"; pedidoPremiadoRecusado=false; localStorage.setItem("bb_tipo_pedido","Retirada"); atualizarTudo();
+    document.querySelectorAll(".tipo-opcao-checkout-v11").forEach(b=>b.classList.toggle("ativa",b.dataset.tipo==="Retirada"));
+    mostrarPremioGarantidoV3176();
+  };
+  $("premioEntregaV3176").onclick=()=>{
+    $("premioTituloV3176").textContent="😢 TEM CERTEZA?";
+    $("premioTextoV3176").innerHTML='Continuando com <strong>Entrega</strong>, você perderá seu <strong>desconto de 30%</strong> deste Pedido Premiado.';
+    $("premioAcoesV3176").innerHTML='<button type="button" class="flow-btn primary" id="premioVoltarRetiradaV3176">QUERO RETIRAR E ECONOMIZAR 30% 🔥</button><button type="button" class="flow-btn dark" id="premioPerderV3176">CONTINUAR SEM O DESCONTO</button>';
+    $("premioVoltarRetiradaV3176").onclick=()=>{ tipoPedido="Retirada"; pedidoPremiadoRecusado=false; localStorage.setItem("bb_tipo_pedido","Retirada"); atualizarTudo(); mostrarPremioGarantidoV3176(); };
+    $("premioPerderV3176").onclick=()=>{ pedidoPremiadoRecusado=true; fecharPedidoPremiadoV3176(); atualizarTudo(); };
+  };
+}
 function total(){return Math.max(0,Math.round(((subtotal()+taxa())-descontoPremiado())*100)/100)}
 async function verificarPedidoPremiado(){try{const r=await fetch("/api/management",{cache:"no-store"});const d=await r.json();pedidoPremiadoAtivo=d.settings?.prize_enabled===true;pedidoPremiadoElegivel=d.prize_eligible===true;return pedidoPremiadoElegivel}catch{return false}}
 function telefoneFormat(v){
@@ -495,7 +531,7 @@ function dadosPedido(){
     entrega:taxa(),
     total:total(),
     discount_amount:descontoPremiado(),
-    prize_awarded:pedidoPremiadoElegivel && (pagamento==="Pix"||pagamento==="Dinheiro"),
+    prize_awarded:pedidoPremiadoGarantidoV3176(),
     pix_payment_id:pixPaymentId
   };
 }
@@ -795,6 +831,7 @@ if(localStorage.getItem("bb_checkout_revisado_v3175")==="1"){
   localStorage.removeItem("bb_checkout_revisado_v3175");
   $("progRevisao").classList.remove("ativo");
   mostrarEtapa("etapaPagamento");
+  verificarPedidoPremiado().then(()=>abrirPedidoPremiadoV3176());
 }
 if(!carrinho.length){
   $("resumoCarrinhoDados").innerHTML='<p style="color:#aaa">Seu carrinho está vazio. Volte ao cardápio para adicionar produtos.</p>';

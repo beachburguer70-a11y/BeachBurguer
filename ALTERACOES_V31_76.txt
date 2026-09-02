@@ -1,0 +1,8 @@
+V31.76 - Pedido Premiado por modalidade
+
+- Mantém prêmio de 30% de desconto.
+- Retirada e Consumir no local: prêmio aplicado automaticamente.
+- Entrega: cliente recebe aviso chamativo para trocar para Retirada.
+- Se recusar, recebe segunda confirmação; mantendo Entrega, perde o prêmio.
+- Removida a regra do Pedido Premiado vinculada à forma de pagamento (Pix/Dinheiro/Cartão).
+- Pix e demais rotinas não foram alterados.

@@ -1,4 +1,4 @@
-const CACHE="beach-burguer-cliente-app-v31-75-revisao-sem-fotos";
+const CACHE="beach-burguer-cliente-app-v31-76-pedido-premiado-retirada";
 const STATIC=[
   "/cliente-app/",
   "/cliente-app/cardapio.html",
