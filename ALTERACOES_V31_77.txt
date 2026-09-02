@@ -1,0 +1,14 @@
+V31.77 - Pedido Premiado aleatório
+
+- Mantém prêmio de 30% de desconto.
+- Mantém a regra da V31.76: Retirada e Consumir no local mantêm o prêmio; Entrega precisa trocar para Retirada.
+- O Pedido Premiado deixa de cair exatamente no 20º, 40º, 60º etc.
+- Agora existe 1 C# sorteado aleatoriamente dentro de cada bloco de 20 pedidos de Cliente.
+- Exemplo: C#81 a C#100 têm exatamente um número sorteado; C#101 a C#120 terão outro, e assim por diante.
+- Garçom (G#) não participa do sorteio.
+- No primeiro bloco após instalar a V31.77, o sorteio considera somente números que ainda não passaram.
+- O número sorteado é salvo no Supabase para não mudar a cada atualização da página.
+- Nenhuma alteração no Pix, impressão, Garçom ou Financeiro.
+
+IMPORTANTE:
+Execute SQL_V31_77_PEDIDO_PREMIADO_ALEATORIO.sql no Supabase antes de publicar/usar a V31.77.
