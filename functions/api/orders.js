@@ -439,6 +439,43 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json();
     const action = body.action || "create";
 
+    if (action === "check_blocked_address") {
+      // V31.83: valida o endereço antes de o cliente sair da etapa "Seus dados".
+      // A referência continua obrigatória no checkout, mas o bloqueio geográfico é
+      // definido por Rua/Avenida + número/faixa cadastrada no Admin.
+      if(String(body.tipo||"")!=="Entrega") return json({ok:true,blocked:false});
+      const norm=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\b(rua|r\.?|avenida|av\.?)\b/g," ").replace(/[^a-z0-9]/g," ").replace(/\s+/g," ").trim();
+      const localidade=norm(body.localidade||body.bairro||"");
+      if(localidade!=="chapeu do sol") return json({ok:true,blocked:false});
+      const street=norm(body.endereco_base||body.endereco||"");
+      const number=String(body.numero||"").replace(/\D/g,"");
+      const semNumero=Boolean(body.sem_numero);
+      const reference=norm(body.referencia||"");
+      if(!reference) return json({ok:false,error:"Informe um ponto de referência para a entrega."},400);
+      if(!street) return json({ok:true,blocked:false});
+      const numeroBloqueado=(regra,numeroCliente)=>{
+        const raw=String(regra||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+        if(raw==="todos" || raw==="todo" || raw==="*") return true;
+        const intervalo=raw.match(/^(\d+)\s*(?:a|ate|\-|–|—)\s*(\d+)$/i);
+        if(intervalo){
+          let ini=Number(intervalo[1]),fim=Number(intervalo[2]),n=Number(numeroCliente);
+          if(ini>fim)[ini,fim]=[fim,ini];
+          return Number.isFinite(n)&&n>=ini&&n<=fim;
+        }
+        return raw.replace(/\D/g,"")===String(numeroCliente||"").replace(/\D/g,"");
+      };
+      try{
+        const blocks=await supabaseRequest(env,"blocked_addresses?select=id,street,number,reference,active&active=eq.true");
+        const referenciaBloqueada=(regra,refCliente)=>{ const r=norm(regra),c=norm(refCliente); return !!r && !!c && (c.includes(r)||r.includes(c)); };
+        const hit=(blocks||[]).find(b=>norm(b.street)===street && referenciaBloqueada(b.reference,reference) && (semNumero || numeroBloqueado(b.number,number)));
+        if(hit) return json({ok:true,blocked:true,error:"🚫 No momento não realizamos entrega neste endereço. Para continuar, escolha Retirada no local.",rule:{street:hit.street,number:hit.number,reference:hit.reference}});
+        return json({ok:true,blocked:false});
+      }catch(e){
+        console.warn("V31.83 checagem antecipada de endereço:",e?.message||e);
+        return json({ok:false,error:"Não foi possível verificar a área de entrega agora. Tente novamente."},503);
+      }
+    }
+
     if (action === "create") {
       const isGarcom = String(body.origem || "").toLowerCase() === "garcom";
       const isBia = String(body.origem || "").toLowerCase() === "bia";
@@ -465,10 +502,13 @@ export async function onRequestPost({ request, env }) {
       if(!isGarcom && String(body.tipo)==="Entrega"){
         if(!String(body.referencia||"").trim()) return json({ok:false,error:"Informe um ponto de referência para a entrega."},400);
         const norm=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\b(rua|r\.?|avenida|av\.?)\b/g," ").replace(/[^a-z0-9]/g," ").replace(/\s+/g," ").trim();
+        const localidadeBloqueio=norm(body.localidade||body.bairro||"");
+        const aplicarBloqueioEndereco=localidadeBloqueio==="chapeu do sol";
         const street=norm(body.endereco_base || String(body.endereco||"").replace(/,\s*(n[ºo]?\s*)?\d+.*$/i,""));
         const number=String(body.numero||"").replace(/\D/g,"");
+        const semNumero=Boolean(body.sem_numero);
         const reference=norm(body.referencia);
-        if(street && number && reference){
+        if(aplicarBloqueioEndereco && street && reference && (semNumero || number)){
           try{
             const blocks=await supabaseRequest(env,"blocked_addresses?select=id,street,number,reference,active&active=eq.true");
             const numeroBloqueado=(regra,numeroCliente)=>{
@@ -482,7 +522,8 @@ export async function onRequestPost({ request, env }) {
               }
               return raw.replace(/\D/g,"")===String(numeroCliente||"").replace(/\D/g,"");
             };
-            const hit=(blocks||[]).find(b=>norm(b.street)===street && numeroBloqueado(b.number,number) && (reference.includes(norm(b.reference)) || norm(b.reference).includes(reference)));
+            const referenciaBloqueada=(regra,refCliente)=>{ const r=norm(regra),c=norm(refCliente); return !!r && !!c && (c.includes(r)||r.includes(c)); };
+            const hit=(blocks||[]).find(b=>norm(b.street)===street && referenciaBloqueada(b.reference,reference) && (semNumero || numeroBloqueado(b.number,number)));
             if(hit) return json({ok:false,error:"🚫 No momento não realizamos entrega neste endereço. Para continuar, escolha Retirada no local.",blocked_address:true},403);
           }catch(e){ console.warn("V31.80 bloqueio de endereço:",e?.message||e); }
         }

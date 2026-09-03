@@ -1,0 +1,9 @@
+V31_84 - Bloqueio Chapéu do Sol por Rua + Número + Referência
+
+- Base: V31_83.
+- Com número: bloqueia somente quando Rua, Número/faixa e Referência correspondem à regra.
+- Sem número: bloqueia quando Rua e Referência correspondem, mesmo que a regra tenha número/faixa.
+- Referência continua obrigatória.
+- Regra exclusiva para Entrega em Chapéu do Sol.
+- Sem alterações em Pix, Garçom, Financeiro ou Pedido Premiado.
+- Não requer SQL novo.

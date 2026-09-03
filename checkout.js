@@ -717,9 +717,37 @@ function restaurarDadosRevisaoV3175(){
     if($("observacoesCheckout"))$("observacoesCheckout").value=d.observacoes||"";
   }catch{}
 }
+async function verificarEnderecoBloqueadoAntesRevisaoV3183(){
+  if(tipoPedido!=="Entrega")return true;
+  const localidade=String($("bairroCheckout")?.value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+  if(localidade!=="chapeu do sol")return true;
+  try{
+    const r=await fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      action:"check_blocked_address",tipo:"Entrega",
+      endereco_base:$("enderecoCheckout")?.value.trim()||"",
+      numero:$("numeroCheckout")?.value.trim()||"",
+      sem_numero:Boolean($("semNumeroCheckout")?.checked),
+      bairro:$("bairroCheckout")?.value||"",
+      localidade:$("bairroCheckout")?.value||"",
+      referencia:$("referenciaCheckout")?.value.trim()||""
+    })});
+    const data=await r.json();
+    if(!r.ok||!data.ok){alert(data.error||"Não foi possível verificar a área de entrega.");return false;}
+    if(data.blocked){
+      alert(data.error||"🚫 No momento não realizamos entrega neste endereço. Para continuar, escolha Retirada no local.");
+      $("enderecoCheckout")?.focus();
+      return false;
+    }
+    return true;
+  }catch(e){
+    alert("Não foi possível verificar a área de entrega. Confira sua conexão e tente novamente.");
+    return false;
+  }
+}
 $("avancarPagamento").onclick=async()=>{
   if(!(await validarEstadoLojaAntesDeProsseguirV20()))return;
   if(!validarDados())return;
+  if(!(await verificarEnderecoBloqueadoAntesRevisaoV3183()))return;
   salvarDadosParaRevisaoV3175();
   localStorage.setItem("bb_checkout_revisao_v3175","1");
   localStorage.setItem("bb_tipo_pedido",tipoPedido);
