@@ -66,6 +66,7 @@ let pixPaymentId=null;
 let pixPolling=null;
 let enviando=false;
 let deliveryZoneLatV3178=null, deliveryZoneLngV3178=null;
+let deliveryGpsV3179=null;
 
 let estadoLojaCheckoutV16={open:true,pickup_only:false,rain_mode:false,pix_operational:true,mode:"open"};
 let pixManualFallback=false;
@@ -147,7 +148,22 @@ async function validarAreaEntregaChapeuV3178(){
   const endereco=String($('enderecoCheckout')?.value||'').trim();
   const numero=$('semNumeroCheckout')?.checked?'':String($('numeroCheckout')?.value||'').trim();
   try{
-    const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check_delivery_area',locality:'Chapéu do Sol',endereco,numero}),cache:'no-store'});
+    // V31_79: localização é obrigatória. Na etapa do endereço, confirma novamente o GPS.
+    deliveryGpsV3179=null;
+    try{
+      if(navigator.geolocation){
+        deliveryGpsV3179=await new Promise(resolve=>navigator.geolocation.getCurrentPosition(
+          p=>resolve({lat:Number(p.coords.latitude),lng:Number(p.coords.longitude),accuracy:Number(p.coords.accuracy||0)}),
+          ()=>resolve(null),{enableHighAccuracy:true,timeout:12000,maximumAge:30000}
+        ));
+      }
+    }catch{}
+    if(!deliveryGpsV3179){
+      alert('📍 Para continuar com a entrega, é obrigatório ativar sua localização. Libere a permissão de Localização para este site e tente novamente.');
+      return false;
+    }
+    try{localStorage.setItem('bb_localizacao_v3179',JSON.stringify({...deliveryGpsV3179,at:Date.now()}))}catch{}
+    const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check_delivery_area',locality:'Chapéu do Sol',endereco,numero,gps_lat:deliveryGpsV3179.lat,gps_lng:deliveryGpsV3179.lng,gps_accuracy:deliveryGpsV3179.accuracy}),cache:'no-store'});
     const d=await r.json(); if(!r.ok||!d.ok)throw new Error(d.error||'Não foi possível validar a área de entrega.');
     if(d.located){deliveryZoneLatV3178=Number(d.lat);deliveryZoneLngV3178=Number(d.lng);}
     if(d.blocked){
@@ -904,3 +920,17 @@ iniciarMonitorStatusCheckoutV23();
 
 
 ['enderecoCheckout','numeroCheckout','bairroCheckout','semNumeroCheckout'].forEach(id=>$(id)?.addEventListener('change',()=>{deliveryZoneLatV3178=null;deliveryZoneLngV3178=null;}));
+
+// V31_79 - proteção também para acesso direto ao checkout
+(function exigirLocalizacaoCheckoutV3179(){
+  function pedir(){
+    if(!navigator.geolocation){alert('Este navegador não oferece suporte à localização.');location.href='/';return;}
+    navigator.geolocation.getCurrentPosition(p=>{
+      try{localStorage.setItem('bb_localizacao_v3179',JSON.stringify({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy||0,at:Date.now()}))}catch{}
+    },()=>{
+      alert('📍 A localização é obrigatória para realizar o pedido. Ative a permissão de Localização deste site e tente novamente.');
+      location.href='/';
+    },{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',pedir,{once:true});else pedir();
+})();

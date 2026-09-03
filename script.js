@@ -1550,3 +1550,48 @@ window.addEventListener("pageshow",()=>{
 
   iniciar();
 })();
+
+// V31_79 - localização obrigatória para realizar pedidos
+(function localizacaoObrigatoriaV3179(){
+  const KEY='bb_localizacao_v3179';
+  let overlay=null, tentando=false;
+  function salvar(pos){
+    const d={lat:Number(pos.coords.latitude),lng:Number(pos.coords.longitude),accuracy:Number(pos.coords.accuracy||0),at:Date.now()};
+    localStorage.setItem(KEY,JSON.stringify(d));
+    if(overlay)overlay.remove(); overlay=null;
+    document.documentElement.style.overflow='';document.body.style.overflow='';
+  }
+  function textoErro(err){
+    if(err?.code===1)return 'A permissão de localização está bloqueada. Abra as permissões deste site no navegador, permita Localização e toque em TENTAR NOVAMENTE.';
+    if(err?.code===2)return 'Não conseguimos obter sua localização. Ative a localização/GPS do aparelho e tente novamente.';
+    if(err?.code===3)return 'A localização demorou para responder. Confira se o GPS está ativo e tente novamente.';
+    return 'É necessário ativar a localização para continuar seu pedido.';
+  }
+  function mostrar(msg='Para realizar pedidos no Beach Burguer, é necessário ativar sua localização.'){
+    if(!overlay){
+      overlay=document.createElement('div');overlay.id='bbLocationGateV3179';
+      overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;padding:20px;font-family:Arial,sans-serif';
+      overlay.innerHTML=`<div style="width:min(430px,100%);background:#111;border:2px solid #f5c400;border-radius:18px;padding:24px;color:#fff;text-align:center;box-shadow:0 20px 70px #000"><div style="font-size:42px">📍</div><h2 style="margin:8px 0;color:#f5c400">Ative sua localização</h2><p id="bbLocMsgV3179" style="line-height:1.5;color:#ddd">${msg}</p><p style="font-size:12px;color:#999">Sua localização será usada para confirmar nossa área de atendimento.</p><button id="bbLocBtnV3179" type="button" style="width:100%;border:0;border-radius:10px;padding:14px;background:#f5c400;color:#111;font-weight:900;font-size:16px;cursor:pointer">📍 ATIVAR LOCALIZAÇÃO</button></div>`;
+      document.body.appendChild(overlay);
+      document.documentElement.style.overflow='hidden';document.body.style.overflow='hidden';
+      overlay.querySelector('#bbLocBtnV3179').onclick=pedir;
+    }
+    const p=overlay.querySelector('#bbLocMsgV3179');if(p)p.textContent=msg;
+  }
+  function pedir(){
+    if(tentando)return;
+    if(!navigator.geolocation){mostrar('Seu navegador não oferece suporte à localização. Abra o site em um navegador com localização habilitada.');return;}
+    tentando=true;const b=overlay?.querySelector('#bbLocBtnV3179');if(b){b.disabled=true;b.textContent='LOCALIZANDO...';}
+    navigator.geolocation.getCurrentPosition(p=>{tentando=false;salvar(p);},e=>{tentando=false;mostrar(textoErro(e));const x=overlay?.querySelector('#bbLocBtnV3179');if(x){x.disabled=false;x.textContent=e?.code===1?'📍 TENTAR NOVAMENTE':'📍 ATIVAR LOCALIZAÇÃO';}}, {enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+  }
+  function iniciar(){
+    let antiga=null;try{antiga=JSON.parse(localStorage.getItem(KEY)||'null')}catch{}
+    // Sempre confirma a permissão na entrada; uma leitura recente pode ser reaproveitada apenas pelo navegador/GPS.
+    mostrar();pedir();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar,{once:true});else iniciar();
+  window.garantirLocalizacaoV3179=()=>new Promise(resolve=>{
+    if(!navigator.geolocation)return resolve(null);
+    navigator.geolocation.getCurrentPosition(p=>{salvar(p);resolve(JSON.parse(localStorage.getItem(KEY)||'null'));},()=>{mostrar('Para informar o endereço de entrega, ative sua localização e toque em TENTAR NOVAMENTE.');resolve(null);},{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+  });
+})();

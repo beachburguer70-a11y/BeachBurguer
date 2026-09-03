@@ -61,14 +61,27 @@ async function geocodificarEnderecoV3178(endereco,numero,locality){
   const lat=Number(hit.lat),lng=Number(hit.lon); if(!Number.isFinite(lat)||!Number.isFinite(lng))return null;
   return {lat,lng,display_name:String(hit.display_name||'')};
 }
-async function validarAreaEntregaV3178(env,{locality,endereco,numero,lat,lng}){
+function distanciaMetrosV3179(a,b){
+  const R=6371000,rad=x=>x*Math.PI/180;
+  const dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng),la1=rad(a.lat),la2=rad(b.lat);
+  const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
+}
+async function validarAreaEntregaV3178(env,{locality,endereco,numero,lat,lng,gps_lat,gps_lng,gps_accuracy}){
   const zones=await zonasAtivasV3178(env,locality);
   if(!zones.length)return {ok:true,blocked:false,configured:false};
-  let point={lat:Number(lat),lng:Number(lng),display_name:''};
-  if(!Number.isFinite(point.lat)||!Number.isFinite(point.lng)) point=await geocodificarEnderecoV3178(endereco,numero,locality);
-  if(!point)return {ok:true,blocked:false,configured:true,located:false,error:'Não foi possível localizar este endereço automaticamente.'};
-  const zone=zones.find(z=>pontoDentroPoligonoV3178(point.lat,point.lng,z.polygon));
-  return {ok:true,blocked:Boolean(zone),configured:true,located:true,lat:point.lat,lng:point.lng,display_name:point.display_name,zone:zone?{id:zone.id,name:zone.name}:null};
+  let addressPoint={lat:Number(lat),lng:Number(lng),display_name:''};
+  if(!Number.isFinite(addressPoint.lat)||!Number.isFinite(addressPoint.lng)) addressPoint=await geocodificarEnderecoV3178(endereco,numero,locality);
+  if(!addressPoint)return {ok:true,blocked:false,configured:true,located:false,error:'Não foi possível localizar este endereço automaticamente.'};
+  const gps={lat:Number(gps_lat),lng:Number(gps_lng)};
+  const gpsOk=Number.isFinite(gps.lat)&&Number.isFinite(gps.lng);
+  const distancia=gpsOk?distanciaMetrosV3179(addressPoint,gps):null;
+  // Até 500 m: GPS confirma o endereço e também pode bloquear. Mais longe: pessoa pode estar pedindo para outro local; vale o endereço de entrega.
+  const gpsProximo=gpsOk&&distancia<=500;
+  const zoneEndereco=zones.find(z=>pontoDentroPoligonoV3178(addressPoint.lat,addressPoint.lng,z.polygon));
+  const zoneGps=gpsProximo?zones.find(z=>pontoDentroPoligonoV3178(gps.lat,gps.lng,z.polygon)):null;
+  const zone=zoneEndereco||zoneGps;
+  return {ok:true,blocked:Boolean(zone),configured:true,located:true,lat:addressPoint.lat,lng:addressPoint.lng,display_name:addressPoint.display_name,zone:zone?{id:zone.id,name:zone.name}:null,gps_received:gpsOk,gps_near_address:gpsProximo,gps_distance_m:distancia===null?null:Math.round(distancia),gps_accuracy:Number(gps_accuracy)||null};
 }
 
 async function sendWhatsAppTemplate(env, telefone, templateName, nomeCliente, orderId) {
@@ -489,7 +502,7 @@ export async function onRequestPost({ request, env }) {
       if(normalizarTextoV3178(locality)!=='chapeu do sol')return json({ok:true,blocked:false,configured:false});
       const endereco=String(body.endereco||'').trim();
       if(!endereco)return json({ok:false,error:'Informe o endereço para validar a área de entrega.'},400);
-      const result=await validarAreaEntregaV3178(env,{locality,endereco,numero:body.numero,lat:body.lat,lng:body.lng});
+      const result=await validarAreaEntregaV3178(env,{locality,endereco,numero:body.numero,lat:body.lat,lng:body.lng,gps_lat:body.gps_lat,gps_lng:body.gps_lng,gps_accuracy:body.gps_accuracy});
       return json(result);
     }
 
