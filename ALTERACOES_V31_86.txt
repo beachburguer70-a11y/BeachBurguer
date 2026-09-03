@@ -1,0 +1,5 @@
+V31_86 - Remove solicitação obrigatória de localização na entrada do site.
+Base: V31_85.
+Arquivos restaurados da base sem localização obrigatória: index.html e script.js.
+Não altera bloqueio de endereços de Chapéu do Sol, Pix, Pedido Premiado, Garçom, Financeiro ou impressão.
+Sem SQL.
