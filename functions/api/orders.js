@@ -26,64 +26,6 @@ async function verifyApprovedPix(env, paymentId, expectedAmount) {
 }
 
 
-
-
-// V31_78 - áreas geográficas sem entrega
-function normalizarTextoV3178(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase()}
-function pontoDentroPoligonoV3178(lat,lng,poly){
-  let dentro=false;
-  const pts=(Array.isArray(poly)?poly:[]).map(p=>({lat:Number(p.lat),lng:Number(p.lng)})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
-  if(pts.length<3)return false;
-  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
-    const yi=pts[i].lat, xi=pts[i].lng, yj=pts[j].lat, xj=pts[j].lng;
-    const cruza=((yi>lat)!==(yj>lat)) && (lng < (xj-xi)*(lat-yi)/((yj-yi)||1e-12)+xi);
-    if(cruza)dentro=!dentro;
-  }
-  return dentro;
-}
-async function zonasAtivasV3178(env,locality){
-  try{
-    const rows=await supabaseRequest(env,'delivery_blocked_zones?select=id,name,locality,polygon,active&active=eq.true&order=id.asc');
-    const alvo=normalizarTextoV3178(locality);
-    return (rows||[]).filter(z=>normalizarTextoV3178(z.locality)===alvo);
-  }catch(e){
-    console.warn('Áreas de entrega V31_78:',e?.message||e); return [];
-  }
-}
-async function geocodificarEnderecoV3178(endereco,numero,locality){
-  const partes=[String(endereco||'').trim(),String(numero||'').trim(),String(locality||'').trim(),'São João da Barra','RJ','Brasil'].filter(Boolean);
-  const q=partes.join(', ');
-  const url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&addressdetails=1&q='+encodeURIComponent(q);
-  const r=await fetch(url,{headers:{'Accept':'application/json','Accept-Language':'pt-BR,pt;q=0.9','User-Agent':'BeachBurguerDelivery/31.78 (https://beachburguer.pages.dev/)'}});
-  if(!r.ok)return null;
-  const data=await r.json(); const hit=Array.isArray(data)?data[0]:null;
-  if(!hit)return null;
-  const lat=Number(hit.lat),lng=Number(hit.lon); if(!Number.isFinite(lat)||!Number.isFinite(lng))return null;
-  return {lat,lng,display_name:String(hit.display_name||'')};
-}
-function distanciaMetrosV3179(a,b){
-  const R=6371000,rad=x=>x*Math.PI/180;
-  const dLat=rad(b.lat-a.lat),dLng=rad(b.lng-a.lng),la1=rad(a.lat),la2=rad(b.lat);
-  const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;
-  return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
-}
-async function validarAreaEntregaV3178(env,{locality,endereco,numero,lat,lng,gps_lat,gps_lng,gps_accuracy}){
-  const zones=await zonasAtivasV3178(env,locality);
-  if(!zones.length)return {ok:true,blocked:false,configured:false};
-  let addressPoint={lat:Number(lat),lng:Number(lng),display_name:''};
-  if(!Number.isFinite(addressPoint.lat)||!Number.isFinite(addressPoint.lng)) addressPoint=await geocodificarEnderecoV3178(endereco,numero,locality);
-  if(!addressPoint)return {ok:true,blocked:false,configured:true,located:false,error:'Não foi possível localizar este endereço automaticamente.'};
-  const gps={lat:Number(gps_lat),lng:Number(gps_lng)};
-  const gpsOk=Number.isFinite(gps.lat)&&Number.isFinite(gps.lng);
-  const distancia=gpsOk?distanciaMetrosV3179(addressPoint,gps):null;
-  // Até 500 m: GPS confirma o endereço e também pode bloquear. Mais longe: pessoa pode estar pedindo para outro local; vale o endereço de entrega.
-  const gpsProximo=gpsOk&&distancia<=500;
-  const zoneEndereco=zones.find(z=>pontoDentroPoligonoV3178(addressPoint.lat,addressPoint.lng,z.polygon));
-  const zoneGps=gpsProximo?zones.find(z=>pontoDentroPoligonoV3178(gps.lat,gps.lng,z.polygon)):null;
-  const zone=zoneEndereco||zoneGps;
-  return {ok:true,blocked:Boolean(zone),configured:true,located:true,lat:addressPoint.lat,lng:addressPoint.lng,display_name:addressPoint.display_name,zone:zone?{id:zone.id,name:zone.name}:null,gps_received:gpsOk,gps_near_address:gpsProximo,gps_distance_m:distancia===null?null:Math.round(distancia),gps_accuracy:Number(gps_accuracy)||null};
-}
-
 async function sendWhatsAppTemplate(env, telefone, templateName, nomeCliente, orderId) {
   const token = env.WHATSAPP_ACCESS_TOKEN;
   const phoneNumberId = env.WHATSAPP_PHONE_NUMBER_ID;
@@ -497,37 +439,6 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json();
     const action = body.action || "create";
 
-    if(action === "check_delivery_area"){
-      const locality=String(body.locality||'').trim();
-      if(normalizarTextoV3178(locality)!=='chapeu do sol')return json({ok:true,blocked:false,configured:false});
-      const endereco=String(body.endereco||'').trim();
-      if(!endereco)return json({ok:false,error:'Informe o endereço para validar a área de entrega.'},400);
-      const result=await validarAreaEntregaV3178(env,{locality,endereco,numero:body.numero,lat:body.lat,lng:body.lng,gps_lat:body.gps_lat,gps_lng:body.gps_lng,gps_accuracy:body.gps_accuracy});
-      return json(result);
-    }
-
-    if(action === "list_delivery_zones"){
-      if(!authorized(request,env))return json({ok:false,error:'Não autorizado.'},401);
-      let zones=[];try{zones=await supabaseRequest(env,'delivery_blocked_zones?select=id,name,locality,polygon,active,created_at,updated_at&order=id.asc')}catch(e){return json({ok:false,error:'Execute primeiro o SQL_V31_78_AREA_SEM_ENTREGA.sql no Supabase.'},400)}
-      return json({ok:true,zones:zones||[]});
-    }
-    if(action === "save_delivery_zone"){
-      if(!authorized(request,env))return json({ok:false,error:'Não autorizado.'},401);
-      const name=String(body.name||'').trim()||'Área sem entrega';const locality=String(body.locality||'').trim();
-      const polygon=Array.isArray(body.polygon)?body.polygon.map(p=>({lat:Number(p.lat),lng:Number(p.lng)})).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)):[];
-      if(!locality||polygon.length<3)return json({ok:false,error:'Informe a localidade e marque pelo menos 3 pontos no mapa.'},400);
-      const payload={name,locality,polygon,active:body.active!==false,updated_at:new Date().toISOString()};
-      const id=Number(body.id||0);
-      if(id){await supabaseRequest(env,`delivery_blocked_zones?id=eq.${id}`,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(payload)});return json({ok:true,id});}
-      const rows=await supabaseRequest(env,'delivery_blocked_zones?select=id,name,locality,polygon,active',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)});
-      return json({ok:true,zone:Array.isArray(rows)?rows[0]:rows});
-    }
-    if(action === "delete_delivery_zone"){
-      if(!authorized(request,env))return json({ok:false,error:'Não autorizado.'},401);
-      const id=Number(body.id||0);if(!id)return json({ok:false,error:'Área inválida.'},400);
-      await supabaseRequest(env,`delivery_blocked_zones?id=eq.${id}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});return json({ok:true});
-    }
-
     if (action === "create") {
       const isGarcom = String(body.origem || "").toLowerCase() === "garcom";
       const isBia = String(body.origem || "").toLowerCase() === "bia";
@@ -544,15 +455,25 @@ export async function onRequestPost({ request, env }) {
           if(localChuva!=="atafona") return json({ok:false,error:"Devido à chuva, estamos aceitando entrega somente para Atafona. Para São João da Barra e Chapéu do Sol, escolha retirada no local."},403);
         }
       }
-      if(!isGarcom && String(body.tipo)==='Entrega' && normalizarTextoV3178(body.localidade||body.bairro)==='chapeu do sol'){
-        const area=await validarAreaEntregaV3178(env,{locality:body.localidade||body.bairro,endereco:body.endereco_base||body.endereco,numero:body.numero,lat:body.delivery_lat,lng:body.delivery_lng});
-        if(area.blocked)return json({ok:false,error:'Esta região de Chapéu do Sol está fora da nossa área de entrega. Escolha Retirada para continuar.'},403);
-      }
-
       const required = isGarcom ? ["cliente","itens","total","pagamento","tipo"] : ["cliente","telefone","itens","total","pagamento","tipo"];
       for (const field of required) {
         if (body[field] === undefined || body[field] === "" || body[field] === null) {
           return json({ ok:false, error:`Campo obrigatório: ${field}` }, 400);
+        }
+      }
+
+      if(!isGarcom && String(body.tipo)==="Entrega"){
+        if(!String(body.referencia||"").trim()) return json({ok:false,error:"Informe um ponto de referência para a entrega."},400);
+        const norm=v=>String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\b(rua|r\.?|avenida|av\.?)\b/g," ").replace(/[^a-z0-9]/g," ").replace(/\s+/g," ").trim();
+        const street=norm(body.endereco_base || String(body.endereco||"").replace(/,\s*(n[ºo]?\s*)?\d+.*$/i,""));
+        const number=String(body.numero||"").replace(/\D/g,"");
+        const reference=norm(body.referencia);
+        if(street && number && reference){
+          try{
+            const blocks=await supabaseRequest(env,"blocked_addresses?select=id,street,number,reference,active&active=eq.true");
+            const hit=(blocks||[]).find(b=>norm(b.street)===street && String(b.number||"").replace(/\D/g,"")===number && (reference.includes(norm(b.reference)) || norm(b.reference).includes(reference)));
+            if(hit) return json({ok:false,error:"🚫 No momento não realizamos entrega neste endereço. Para continuar, escolha Retirada no local.",blocked_address:true},403);
+          }catch(e){ console.warn("V31.80 bloqueio de endereço:",e?.message||e); }
         }
       }
 
@@ -910,7 +831,9 @@ export async function onRequestPost({ request, env }) {
       try{ addons=await supabaseRequest(env,"addons?select=id,name,price,active,sort_order&order=sort_order.asc,id.asc"); }catch(e){ console.warn("Adicionais ainda não migrados:",e?.message||e); }
       let requiredAddons=[];
       try{ requiredAddons=await supabaseRequest(env,"required_addons?select=id,name,price,active,sort_order&order=sort_order.asc,id.asc"); }catch(e){ console.warn("Adicionais obrigatorios ainda não migrados:",e?.message||e); }
-      return json({ ok:true, catalog:catalog || [], categories:categories||[], addons:addons||[], required_addons:requiredAddons||[], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})) });
+      let blockedAddresses=[];
+      try{ blockedAddresses=await supabaseRequest(env,"blocked_addresses?select=id,street,number,reference,active,created_at&order=street.asc,number.asc,id.asc"); }catch(e){ console.warn("Bloqueios de endereço ainda não migrados:",e?.message||e); }
+      return json({ ok:true, catalog:catalog || [], categories:categories||[], addons:addons||[], required_addons:requiredAddons||[], blocked_addresses:blockedAddresses||[], products:(catalog || []).map(p=>({product_id:p.id,available:p.available})) });
     }
 
     if (action === "create_addon") {
@@ -960,6 +883,26 @@ export async function onRequestPost({ request, env }) {
       const id=Number(body.id); if(!id)return json({ok:false,error:"Adicional obrigatório inválido."},400);
       await supabaseRequest(env,`required_addons?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});
       return json({ok:true});
+    }
+
+    if (action === "create_blocked_address") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const street=String(body.street||"").trim(),number=String(body.number||"").trim(),reference=String(body.reference||"").trim();
+      if(!street||!number||!reference)return json({ok:false,error:"Preencha Rua/Avenida, Número e Referência."},400);
+      const rows=await supabaseRequest(env,"blocked_addresses?select=*",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify({street,number,reference,active:true})});
+      return json({ok:true,blocked_address:Array.isArray(rows)?rows[0]:rows});
+    }
+    if (action === "save_blocked_address") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const id=Number(body.id),street=String(body.street||"").trim(),number=String(body.number||"").trim(),reference=String(body.reference||"").trim();
+      if(!id||!street||!number||!reference)return json({ok:false,error:"Dados do bloqueio inválidos."},400);
+      await supabaseRequest(env,`blocked_addresses?id=eq.${id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({street,number,reference,updated_at:new Date().toISOString()})});
+      return json({ok:true});
+    }
+    if (action === "delete_blocked_address") {
+      if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
+      const id=Number(body.id);if(!id)return json({ok:false,error:"Bloqueio inválido."},400);
+      await supabaseRequest(env,`blocked_addresses?id=eq.${id}`,{method:"DELETE",headers:{Prefer:"return=minimal"}});return json({ok:true});
     }
 
     if (action === "upload_product_image") {

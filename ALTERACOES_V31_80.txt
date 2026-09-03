@@ -1,0 +1,10 @@
+V31.80 - Endereços sem entrega
+- Base: V31.77.
+- Admin ganhou aba "Endereços sem entrega".
+- Bloqueio cadastrado por Rua/Avenida + Número + Referência.
+- Referência passou a ser obrigatória para pedidos de Entrega do Cliente.
+- Backend confere o bloqueio antes de criar o pedido.
+- Rua tolera abreviações simples (Rua/R./Avenida/Av.) e acentos.
+- Referência aceita texto contendo a referência cadastrada.
+- Garçom não foi alterado.
+- Pix e Pedido Premiado V31.77 não foram alterados.

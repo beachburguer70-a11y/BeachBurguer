@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#080808">
 <title>Beach Burguer — Tela de Pedidos</title>
 <link rel="icon" href="/assets/logo.png">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
 :root{--y:#ffb700;--bg:#080808;--p:#151515;--b:#303030;--t:#eee;--g:#25d366;--r:#ff5b5b}
 *{box-sizing:border-box}body{margin:0;font-family:Arial;background:var(--bg);color:var(--t)}
@@ -44,9 +43,6 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
 /* V31_71 - Admin com menu lateral + fotos dos produtos */
 .admin-v3171-box{width:min(1320px,98vw)!important;height:min(92vh,920px);max-height:92vh!important;padding:0!important;overflow:hidden!important;display:grid;grid-template-columns:240px minmax(0,1fr);background:#0d0d0d!important}.admin-v3171-sidebar{background:#090909;border-right:1px solid #2d2d2d;padding:18px 12px;display:flex;flex-direction:column;gap:8px}.admin-v3171-brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid #242424;margin-bottom:8px;font-weight:900}.admin-v3171-brand img{width:46px;height:46px;object-fit:contain}.admin-v3171-brand span{color:var(--y)}.admin-v3171-nav{display:grid;gap:6px}.admin-v3171-nav button{border:0;background:transparent;color:#ddd;text-align:left;padding:12px 13px;border-radius:10px;font-weight:800;cursor:pointer}.admin-v3171-nav button:hover,.admin-v3171-nav button.active{background:#2a2105;color:#ffbf16}.admin-v3171-content{overflow:auto;padding:22px 24px}.admin-v3171-content h2{margin:0 42px 20px 0}.admin-v3171-panel{display:none}.admin-v3171-panel.active{display:block}.admin-v3171-card{border:1px solid #333;border-radius:14px;padding:16px;background:#121212;margin-bottom:16px}.admin-v3171-photo{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;align-items:center;margin-top:10px;padding:10px;border:1px solid #333;border-radius:12px;background:#101010}.admin-v3171-photo img{width:110px;height:90px;object-fit:cover;border-radius:10px;border:1px solid #3b3b3b}.admin-v3171-photo-empty{width:110px;height:90px;display:grid;place-items:center;background:#1c1c1c;border:1px dashed #555;border-radius:10px;color:#777;font-size:32px}.admin-v3171-photo-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.admin-v3171-photo-actions input[type=file]{max-width:290px;color:#ccc}.admin-v3171-photo-note{color:#888;font-size:12px;margin-top:5px}.admin-v3171-newphoto{margin-top:10px;padding:12px;border:1px solid #333;border-radius:12px;background:#0e0e0e}.admin-v3171-close{z-index:5;right:14px;top:10px;background:#252525!important;width:42px;height:42px;border-radius:10px!important}.produto-foto-admin-v3171{object-fit:cover}.admin-v3171-mobile-title{display:none}
 @media(max-width:760px){.admin-v3171-box{width:100%!important;height:100vh;max-height:100vh!important;border-radius:0!important;grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.admin-v3171-sidebar{border-right:0;border-bottom:1px solid #2d2d2d;padding:8px 10px;gap:5px}.admin-v3171-brand{padding:2px 4px 8px;margin:0}.admin-v3171-brand img{width:34px;height:34px}.admin-v3171-nav{display:flex;overflow:auto;gap:5px}.admin-v3171-nav button{white-space:nowrap;padding:9px 11px}.admin-v3171-content{padding:14px 10px 28px}.admin-v3171-photo{grid-template-columns:86px 1fr}.admin-v3171-photo img,.admin-v3171-photo-empty{width:86px;height:74px}.admin-v3171-content [style*="grid-template-columns"]{grid-template-columns:1fr!important}.admin-v3171-close{position:fixed!important;right:10px;top:8px}.admin-v3171-content h2{margin-right:50px}.admin-v3171-brand div{font-size:14px}}
-
-/* V31_78 - áreas sem entrega no mapa */
-.delivery-zone-layout-v3178{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px}.delivery-map-v3178{height:560px;border-radius:14px;border:1px solid #333;overflow:hidden;background:#181818}.delivery-zone-side-v3178{display:flex;flex-direction:column;gap:10px}.delivery-zone-side-v3178 input,.delivery-zone-side-v3178 select{width:100%;padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px}.delivery-zone-help-v3178{background:#211b09;border:1px solid #5b4710;padding:12px;border-radius:10px;color:#e9d99b;line-height:1.45}.delivery-zone-list-v3178{display:grid;gap:8px;margin-top:10px}.delivery-zone-item-v3178{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px;background:#0d0d0d;border:1px solid #333;border-radius:10px}.zone-dot-v3178{width:11px;height:11px;border-radius:50%;display:inline-block;background:#ef4444;margin-right:7px}.leaflet-container{font-family:Arial,sans-serif}.leaflet-control-attribution{font-size:9px!important}@media(max-width:900px){.delivery-zone-layout-v3178{grid-template-columns:1fr}.delivery-map-v3178{height:55vh;min-height:360px}}
 </style>
   <link rel="apple-touch-icon" href="/assets/loja-apple-touch-icon.png">
   <meta name="application-name" content="Beach Burguer Loja">
@@ -55,7 +51,6 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
   <meta name="apple-mobile-web-app-title" content="Beach Burguer Loja">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="/loja-garcom-modal.css?v=31_73">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 </head>
 <body>
 <div id="login" class="login">
@@ -174,7 +169,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     <button type="button" data-admin-tab="categorias">📁 Categorias</button>
     <button type="button" data-admin-tab="adicionais">✨ Adicionais</button>
     <button type="button" data-admin-tab="obrigatorios">☑️ Adicionais obrigatórios</button>
-    <button type="button" data-admin-tab="entregas">📍 Área de entrega</button>
+    <button type="button" data-admin-tab="bloqueios">🚫 Endereços sem entrega</button>
    </nav>
   </aside>
   <main class="admin-v3171-content">
@@ -228,27 +223,17 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     </div>
    </section>
 
-   <section class="admin-v3171-panel" data-admin-panel="entregas">
-    <h2>📍 Área de entrega</h2>
+   <section class="admin-v3171-panel" data-admin-panel="bloqueios">
+    <h2>🚫 Endereços sem entrega</h2>
     <div class="admin-v3171-card">
-      <p class="muted">Desenhe no mapa a região onde a Beach Burguer <strong>não realiza entrega</strong>. O endereço do cliente em Chapéu do Sol será conferido contra esta área.</p>
-      <div class="delivery-zone-layout-v3178">
-        <div>
-          <div id="deliveryMapV3178" class="delivery-map-v3178"></div>
-          <div class="delivery-zone-help-v3178" style="margin-top:10px"><strong>Como marcar:</strong> clique nos pontos do mapa contornando a área sem entrega. Use pelo menos 3 pontos e feche o contorno. Se errar, use <strong>Limpar desenho</strong>.</div>
-        </div>
-        <div class="delivery-zone-side-v3178">
-          <label>Nome da área<input id="zoneNameV3178" value="Chapéu do Sol - Área sem entrega"></label>
-          <label>Localidade<select id="zoneLocalityV3178"><option value="Chapéu do Sol">Chapéu do Sol</option></select></label>
-          <label style="display:flex;align-items:center;gap:8px"><input id="zoneActiveV3178" type="checkbox" checked style="width:auto"> Área ativa</label>
-          <button id="zoneClearV3178" type="button" class="btn dark">🧹 Limpar desenho</button>
-          <button id="zoneSaveV3178" type="button" class="btn yellow">💾 Salvar área sem entrega</button>
-          <div>
-            <strong>Áreas salvas</strong>
-            <div id="zoneListV3178" class="delivery-zone-list-v3178"></div>
-          </div>
-        </div>
-      </div>
+     <p class="muted">Cadastre Rua/Avenida + Número + Referência. Quando os três dados coincidirem, o Cliente não poderá escolher entrega para esse endereço.</p>
+     <div style="display:grid;grid-template-columns:1fr 150px 1fr auto;gap:8px">
+      <input id="bloqRua" placeholder="Rua / Avenida" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+      <input id="bloqNumero" placeholder="Número" inputmode="numeric" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+      <input id="bloqReferencia" placeholder="Referência (ex.: Pousada Kactus)" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+      <button id="criarBloqueioEndereco" class="btn red">Bloquear</button>
+     </div>
+     <div id="listaBloqueiosEndereco" style="margin-top:12px"></div>
     </div>
    </section>
   </main>
@@ -684,7 +669,7 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 // V31 - Admin centralizado na Loja + métricas
-let adminCategoriasV31=[], adminProdutosV31=[], adminAdicionaisV31=[], adminReqAdicionaisV31=[];
+let adminCategoriasV31=[], adminProdutosV31=[], adminAdicionaisV31=[], adminReqAdicionaisV31=[], adminBloqueiosEnderecoV3180=[];
 function escV31(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 const fotoProdutoPendenteV3171=new Map();
 async function fotoParaDataUrlV3171(file){
@@ -711,7 +696,7 @@ async function apiAdminV31(body){
 }
 async function carregarAdminV31(){
   const d=await apiAdminV31({action:"list_products"});
-  adminCategoriasV31=d.categories||[]; adminProdutosV31=d.catalog||[]; adminAdicionaisV31=d.addons||[]; adminReqAdicionaisV31=d.required_addons||[];
+  adminCategoriasV31=d.categories||[]; adminProdutosV31=d.catalog||[]; adminAdicionaisV31=d.addons||[]; adminReqAdicionaisV31=d.required_addons||[]; adminBloqueiosEnderecoV3180=d.blocked_addresses||[];
   const sel=$("prodCategoria");
   sel.innerHTML=adminCategoriasV31.filter(c=>c.active!==false).map(c=>`<option>${escV31(c.name)}</option>`).join("");
   $("listaCategoriasAdmin").innerHTML=adminCategoriasV31.map(c=>`
@@ -741,6 +726,15 @@ async function carregarAdminV31(){
       <button class="btn yellow" onclick="salvarReqAdicionalV31(${a.id})">Alterar</button>
       <button class="btn red" onclick="excluirReqAdicionalV31(${a.id})">Excluir</button>
     </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum adicional obrigatório cadastrado.</div>`;
+
+  $("listaBloqueiosEndereco").innerHTML=adminBloqueiosEnderecoV3180.length?adminBloqueiosEnderecoV3180.map(a=>`
+    <div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px minmax(180px,1fr) auto auto;gap:7px;margin:7px 0;align-items:center">
+      <input id="br${a.id}" value="${escV31(a.street)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+      <input id="bn${a.id}" value="${escV31(a.number)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+      <input id="bf${a.id}" value="${escV31(a.reference)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+      <button class="btn yellow" onclick="salvarBloqueioEnderecoV3180(${a.id})">Alterar</button>
+      <button class="btn red" onclick="excluirBloqueioEnderecoV3180(${a.id})">Excluir</button>
+    </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum endereço bloqueado.</div>`;
 
   // V31.17: produtos organizados em pastas por categoria no Admin.
   // A ordem das pastas segue a ordem cadastrada das categorias e, dentro de
@@ -800,54 +794,8 @@ window.excluirProdutoV31=async id=>{if(!confirm("Tem certeza que deseja excluir 
 function abrirAbaAdminV3171(nome){
  document.querySelectorAll('[data-admin-tab]').forEach(b=>b.classList.toggle('active',b.dataset.adminTab===nome));
  document.querySelectorAll('[data-admin-panel]').forEach(p=>p.classList.toggle('active',p.dataset.adminPanel===nome));
- if(nome==='entregas') setTimeout(()=>iniciarMapaEntregaV3178(),80);
 }
 document.querySelectorAll('[data-admin-tab]').forEach(b=>b.addEventListener('click',()=>abrirAbaAdminV3171(b.dataset.adminTab)));
-
-
-// V31_78 - editor de área sem entrega (Leaflet + OpenStreetMap)
-let deliveryMapV3178=null, deliveryPolygonV3178=null, deliveryPointsV3178=[], deliveryZonesV3178=[];
-function redesenharAreaV3178(){
-  if(!deliveryMapV3178)return;
-  if(deliveryPolygonV3178){deliveryMapV3178.removeLayer(deliveryPolygonV3178);deliveryPolygonV3178=null;}
-  if(deliveryPointsV3178.length>=2){
-    deliveryPolygonV3178=L.polygon(deliveryPointsV3178,{color:'#ef4444',weight:3,fillColor:'#ef4444',fillOpacity:.30}).addTo(deliveryMapV3178);
-  }else if(deliveryPointsV3178.length===1){
-    deliveryPolygonV3178=L.circleMarker(deliveryPointsV3178[0],{radius:6,color:'#ef4444',fillOpacity:1}).addTo(deliveryMapV3178);
-  }
-}
-async function carregarAreasEntregaV3178(){
-  const d=await apiAdminV31({action:'list_delivery_zones'});
-  deliveryZonesV3178=d.zones||[];
-  const list=$('zoneListV3178'); if(!list)return;
-  list.innerHTML=deliveryZonesV3178.length?deliveryZonesV3178.map(z=>`<div class="delivery-zone-item-v3178"><div><span class="zone-dot-v3178"></span><strong>${escV31(z.name)}</strong><br><small>${escV31(z.locality)} • ${z.active!==false?'Ativa':'Desativada'}</small></div><div style="display:flex;gap:5px"><button class="btn dark" type="button" onclick="editarAreaV3178(${z.id})">Editar</button><button class="btn red" type="button" onclick="excluirAreaV3178(${z.id})">Excluir</button></div></div>`).join(''):'<div style="color:#888;padding:8px">Nenhuma área cadastrada.</div>';
-}
-window.editarAreaV3178=id=>{
-  const z=deliveryZonesV3178.find(x=>Number(x.id)===Number(id)); if(!z)return;
-  $('zoneNameV3178').value=z.name||'';$('zoneLocalityV3178').value=z.locality||'Chapéu do Sol';$('zoneActiveV3178').checked=z.active!==false;
-  $('zoneSaveV3178').dataset.id=String(z.id);
-  deliveryPointsV3178=(Array.isArray(z.polygon)?z.polygon:[]).map(p=>[Number(p.lat),Number(p.lng)]).filter(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]));
-  redesenharAreaV3178(); if(deliveryPolygonV3178?.getBounds)deliveryMapV3178.fitBounds(deliveryPolygonV3178.getBounds(),{padding:[25,25]});
-};
-window.excluirAreaV3178=async id=>{if(!confirm('Excluir esta área sem entrega?'))return;try{await apiAdminV31({action:'delete_delivery_zone',id});$('zoneSaveV3178').dataset.id='';deliveryPointsV3178=[];redesenharAreaV3178();await carregarAreasEntregaV3178()}catch(e){alert(e.message)}};
-async function iniciarMapaEntregaV3178(){
-  if(typeof L==='undefined'){alert('Não foi possível carregar o mapa. Verifique a internet e abra o Admin novamente.');return;}
-  if(!deliveryMapV3178){
-    deliveryMapV3178=L.map('deliveryMapV3178',{zoomControl:true}).setView([-21.66565,-41.02603],16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(deliveryMapV3178);
-    deliveryMapV3178.on('click',e=>{deliveryPointsV3178.push([e.latlng.lat,e.latlng.lng]);redesenharAreaV3178()});
-    $('zoneClearV3178').onclick=()=>{deliveryPointsV3178=[];$('zoneSaveV3178').dataset.id='';redesenharAreaV3178()};
-    $('zoneSaveV3178').onclick=async()=>{
-      if(deliveryPointsV3178.length<3)return alert('Marque pelo menos 3 pontos para formar a área sem entrega.');
-      try{
-        await apiAdminV31({action:'save_delivery_zone',id:Number($('zoneSaveV3178').dataset.id||0)||null,name:$('zoneNameV3178').value.trim(),locality:$('zoneLocalityV3178').value,active:$('zoneActiveV3178').checked,polygon:deliveryPointsV3178.map(p=>({lat:p[0],lng:p[1]}))});
-        alert('Área sem entrega salva.'); $('zoneSaveV3178').dataset.id='';deliveryPointsV3178=[];redesenharAreaV3178();await carregarAreasEntregaV3178();
-      }catch(e){alert(e.message)}
-    };
-  }
-  setTimeout(()=>deliveryMapV3178.invalidateSize(),100);
-  try{await carregarAreasEntregaV3178()}catch(e){console.warn(e)}
-}
 
 const adminLojaBtnV31=$("adminLojaBtn");
 if(adminLojaBtnV31) adminLojaBtnV31.onclick=async()=>{try{await carregarAdminV31();$("modalAdminLoja").classList.remove("hidden")}catch(e){alert("Não foi possível abrir o Admin: "+e.message)}};
@@ -872,6 +820,10 @@ window.salvarReqAdicionalV31=async id=>{try{await apiAdminV31({action:"save_requ
 window.excluirReqAdicionalV31=async id=>{if(!confirm("Excluir este adicional obrigatório?"))return;try{await apiAdminV31({action:"delete_required_addon",id});await carregarAdminV31()}catch(e){alert(e.message)}};
 const criarReqAdicionalV31=$("criarReqAdicional");
 if(criarReqAdicionalV31) criarReqAdicionalV31.onclick=async()=>{try{const nome=$("reqAddonNome").value.trim();const preco=Number($("reqAddonPreco").value||0);if(!nome)return alert("Informe o nome do adicional obrigatório.");await apiAdminV31({action:"create_required_addon",name:nome,price:preco});$("reqAddonNome").value="";$("reqAddonPreco").value="";await carregarAdminV31();alert("Adicional obrigatório cadastrado.")}catch(e){alert(e.message)}};
+window.salvarBloqueioEnderecoV3180=async id=>{try{const street=$("br"+id).value.trim(),number=$("bn"+id).value.trim(),reference=$("bf"+id).value.trim();if(!street||!number||!reference)return alert("Preencha Rua/Avenida, Número e Referência.");await apiAdminV31({action:"save_blocked_address",id,street,number,reference});await carregarAdminV31();alert("Bloqueio alterado.")}catch(e){alert(e.message)}};
+window.excluirBloqueioEnderecoV3180=async id=>{if(!confirm("Excluir este endereço da lista de bloqueio?"))return;try{await apiAdminV31({action:"delete_blocked_address",id});await carregarAdminV31()}catch(e){alert(e.message)}};
+const criarBloqueioEnderecoV3180=$("criarBloqueioEndereco");
+if(criarBloqueioEnderecoV3180)criarBloqueioEnderecoV3180.onclick=async()=>{try{const street=$("bloqRua").value.trim(),number=$("bloqNumero").value.trim(),reference=$("bloqReferencia").value.trim();if(!street||!number||!reference)return alert("Preencha Rua/Avenida, Número e Referência.");await apiAdminV31({action:"create_blocked_address",street,number,reference});$("bloqRua").value="";$("bloqNumero").value="";$("bloqReferencia").value="";await carregarAdminV31();alert("Endereço bloqueado.")}catch(e){alert(e.message)}};
 
 const criarProdutoV31=$("criarProduto");
 if(criarProdutoV31) criarProdutoV31.onclick=async()=>{try{
