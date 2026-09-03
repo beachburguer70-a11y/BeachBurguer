@@ -1,0 +1,8 @@
+V31_85 — Correção Endereços sem entrega (Chapéu do Sol)
+
+- Com número informado: bloqueia quando Rua/Avenida + número específico/faixa/Todos correspondem.
+- A referência não precisa coincidir quando existe número válido no endereço.
+- Se o cliente marcar Sem número: bloqueia quando Rua/Avenida + Referência correspondem.
+- A referência continua obrigatória no formulário de Entrega.
+- Regra continua exclusiva para Chapéu do Sol.
+- Pix, Garçom, Financeiro e Pedido Premiado não foram alterados.

@@ -440,7 +440,7 @@ export async function onRequestPost({ request, env }) {
     const action = body.action || "create";
 
     if (action === "check_blocked_address") {
-      // V31.83: valida o endereço antes de o cliente sair da etapa "Seus dados".
+      // V31.85: valida Rua + Número/faixa; se Sem número, usa Rua + Referência.
       // A referência continua obrigatória no checkout, mas o bloqueio geográfico é
       // definido por Rua/Avenida + número/faixa cadastrada no Admin.
       if(String(body.tipo||"")!=="Entrega") return json({ok:true,blocked:false});
@@ -467,11 +467,17 @@ export async function onRequestPost({ request, env }) {
       try{
         const blocks=await supabaseRequest(env,"blocked_addresses?select=id,street,number,reference,active&active=eq.true");
         const referenciaBloqueada=(regra,refCliente)=>{ const r=norm(regra),c=norm(refCliente); return !!r && !!c && (c.includes(r)||r.includes(c)); };
-        const hit=(blocks||[]).find(b=>norm(b.street)===street && referenciaBloqueada(b.reference,reference) && (semNumero || numeroBloqueado(b.number,number)));
+        const hit=(blocks||[]).find(b=>{
+          if(norm(b.street)!==street) return false;
+          // V31.85: com número informado, Rua + Número/faixa bastam para bloquear.
+          // A referência é usada como segurança quando o cliente marca Sem número.
+          if(!semNumero) return numeroBloqueado(b.number,number);
+          return referenciaBloqueada(b.reference,reference);
+        });
         if(hit) return json({ok:true,blocked:true,error:"🚫 No momento não realizamos entrega neste endereço. Para continuar, escolha Retirada no local.",rule:{street:hit.street,number:hit.number,reference:hit.reference}});
         return json({ok:true,blocked:false});
       }catch(e){
-        console.warn("V31.83 checagem antecipada de endereço:",e?.message||e);
+        console.warn("V31.85 checagem antecipada de endereço:",e?.message||e);
         return json({ok:false,error:"Não foi possível verificar a área de entrega agora. Tente novamente."},503);
       }
     }
@@ -523,7 +529,13 @@ export async function onRequestPost({ request, env }) {
               return raw.replace(/\D/g,"")===String(numeroCliente||"").replace(/\D/g,"");
             };
             const referenciaBloqueada=(regra,refCliente)=>{ const r=norm(regra),c=norm(refCliente); return !!r && !!c && (c.includes(r)||r.includes(c)); };
-            const hit=(blocks||[]).find(b=>norm(b.street)===street && referenciaBloqueada(b.reference,reference) && (semNumero || numeroBloqueado(b.number,number)));
+            const hit=(blocks||[]).find(b=>{
+          if(norm(b.street)!==street) return false;
+          // V31.85: com número informado, Rua + Número/faixa bastam para bloquear.
+          // A referência é usada como segurança quando o cliente marca Sem número.
+          if(!semNumero) return numeroBloqueado(b.number,number);
+          return referenciaBloqueada(b.reference,reference);
+        });
             if(hit) return json({ok:false,error:"🚫 No momento não realizamos entrega neste endereço. Para continuar, escolha Retirada no local.",blocked_address:true},403);
           }catch(e){ console.warn("V31.80 bloqueio de endereço:",e?.message||e); }
         }
