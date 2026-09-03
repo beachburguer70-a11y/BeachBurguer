@@ -1,0 +1,12 @@
+V31_78 — ÁREA SEM ENTREGA NO MAPA
+
+- Novo item "Área de entrega" no Admin da Loja.
+- Mapa OpenStreetMap/Leaflet para desenhar polígonos de regiões sem entrega.
+- Área pode ser ativada/desativada, editada ou excluída.
+- Endereços de entrega em Chapéu do Sol são geolocalizados e conferidos contra a área salva.
+- Se o endereço cair dentro da área bloqueada, o Cliente é convidado a mudar para Retirada.
+- O backend também valida a área ao criar o pedido.
+- Não altera Pix, impressão, Garçom, Financeiro ou Pedido Premiado.
+
+ANTES DE USAR:
+Execute SQL_V31_78_AREA_SEM_ENTREGA.sql no Supabase.

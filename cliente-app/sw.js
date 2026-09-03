@@ -1,4 +1,4 @@
-const CACHE="beach-burguer-cliente-app-v31-76-pedido-premiado-retirada";
+const CACHE="beach-burguer-cliente-app-v31-78-area-entrega";
 const STATIC=[
   "/cliente-app/",
   "/cliente-app/cardapio.html",

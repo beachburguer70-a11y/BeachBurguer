@@ -65,6 +65,7 @@ let modoRevisao="normal";
 let pixPaymentId=null;
 let pixPolling=null;
 let enviando=false;
+let deliveryZoneLatV3178=null, deliveryZoneLngV3178=null;
 
 let estadoLojaCheckoutV16={open:true,pickup_only:false,rain_mode:false,pix_operational:true,mode:"open"};
 let pixManualFallback=false;
@@ -136,6 +137,35 @@ async function validarEstadoLojaAntesDeProsseguirV20(){
   if(estadoLojaCheckoutV16?.rain_mode===true&&tipoPedido==="Entrega"){const local=String($("bairroCheckout")?.value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();if(local!=="atafona"){alert("🌧️ Devido à chuva, estamos aceitando entrega somente para Atafona ou retirada no local.");return false;}}
 
   return true;
+}
+
+
+async function validarAreaEntregaChapeuV3178(){
+  if(tipoPedido!=='Entrega')return true;
+  const local=String($('bairroCheckout')?.value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  if(local!=='chapeu do sol')return true;
+  const endereco=String($('enderecoCheckout')?.value||'').trim();
+  const numero=$('semNumeroCheckout')?.checked?'':String($('numeroCheckout')?.value||'').trim();
+  try{
+    const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check_delivery_area',locality:'Chapéu do Sol',endereco,numero}),cache:'no-store'});
+    const d=await r.json(); if(!r.ok||!d.ok)throw new Error(d.error||'Não foi possível validar a área de entrega.');
+    if(d.located){deliveryZoneLatV3178=Number(d.lat);deliveryZoneLngV3178=Number(d.lng);}
+    if(d.blocked){
+      const retirar=confirm('📍 ESTE ENDEREÇO ESTÁ FORA DA NOSSA ÁREA DE ENTREGA EM CHAPÉU DO SOL.\n\nDeseja mudar o pedido para RETIRADA e continuar?\n\nOK = Retirada\nCancelar = Voltar e alterar o endereço');
+      if(!retirar)return false;
+      tipoPedido='Retirada';localStorage.setItem('bb_tipo_pedido','Retirada');
+      document.querySelectorAll('.tipo-opcao-checkout-v11').forEach(b=>b.classList.toggle('ativa',b.dataset.tipo==='Retirada'));
+      atualizarTudo();return true;
+    }
+    if(d.configured && d.located===false){
+      alert('Não conseguimos localizar este endereço com precisão no mapa. Confira rua, número e localidade antes de continuar.');
+    }
+    return true;
+  }catch(e){
+    console.warn('Validação da área de entrega:',e);
+    alert('Não foi possível conferir a área de entrega agora. Confira o endereço e tente novamente.');
+    return false;
+  }
 }
 
 async function carregarEstadoLojaCheckoutV16(){
@@ -532,6 +562,8 @@ function dadosPedido(){
     total:total(),
     discount_amount:descontoPremiado(),
     prize_awarded:pedidoPremiadoGarantidoV3176(),
+    delivery_lat:tipoPedido==="Entrega"?deliveryZoneLatV3178:null,
+    delivery_lng:tipoPedido==="Entrega"?deliveryZoneLngV3178:null,
     pix_payment_id:pixPaymentId
   };
 }
@@ -719,6 +751,7 @@ function restaurarDadosRevisaoV3175(){
 $("avancarPagamento").onclick=async()=>{
   if(!(await validarEstadoLojaAntesDeProsseguirV20()))return;
   if(!validarDados())return;
+  if(!(await validarAreaEntregaChapeuV3178()))return;
   salvarDadosParaRevisaoV3175();
   localStorage.setItem("bb_checkout_revisao_v3175","1");
   localStorage.setItem("bb_tipo_pedido",tipoPedido);
@@ -868,3 +901,6 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 iniciarMonitorStatusCheckoutV23();
+
+
+['enderecoCheckout','numeroCheckout','bairroCheckout','semNumeroCheckout'].forEach(id=>$(id)?.addEventListener('change',()=>{deliveryZoneLatV3178=null;deliveryZoneLngV3178=null;}));
