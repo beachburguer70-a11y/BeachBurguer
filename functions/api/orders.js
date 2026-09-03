@@ -471,7 +471,18 @@ export async function onRequestPost({ request, env }) {
         if(street && number && reference){
           try{
             const blocks=await supabaseRequest(env,"blocked_addresses?select=id,street,number,reference,active&active=eq.true");
-            const hit=(blocks||[]).find(b=>norm(b.street)===street && String(b.number||"").replace(/\D/g,"")===number && (reference.includes(norm(b.reference)) || norm(b.reference).includes(reference)));
+            const numeroBloqueado=(regra,numeroCliente)=>{
+              const raw=String(regra||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+              if(raw==="todos" || raw==="todo" || raw==="*") return true;
+              const intervalo=raw.match(/^(\d+)\s*(?:a|ate|\-|–|—)\s*(\d+)$/i);
+              if(intervalo){
+                let ini=Number(intervalo[1]),fim=Number(intervalo[2]),n=Number(numeroCliente);
+                if(ini>fim)[ini,fim]=[fim,ini];
+                return Number.isFinite(n)&&n>=ini&&n<=fim;
+              }
+              return raw.replace(/\D/g,"")===String(numeroCliente||"").replace(/\D/g,"");
+            };
+            const hit=(blocks||[]).find(b=>norm(b.street)===street && numeroBloqueado(b.number,number) && (reference.includes(norm(b.reference)) || norm(b.reference).includes(reference)));
             if(hit) return json({ok:false,error:"🚫 No momento não realizamos entrega neste endereço. Para continuar, escolha Retirada no local.",blocked_address:true},403);
           }catch(e){ console.warn("V31.80 bloqueio de endereço:",e?.message||e); }
         }
@@ -889,6 +900,7 @@ export async function onRequestPost({ request, env }) {
       if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
       const street=String(body.street||"").trim(),number=String(body.number||"").trim(),reference=String(body.reference||"").trim();
       if(!street||!number||!reference)return json({ok:false,error:"Preencha Rua/Avenida, Número e Referência."},400);
+      if(!/^todos$/i.test(number) && !/^\d+$/.test(number) && !/^\d+\s*(?:a|até|ate|-|–|—)\s*\d+$/i.test(number))return json({ok:false,error:"No campo Número use Todos, um número específico ou um intervalo como 200 a 400."},400);
       const rows=await supabaseRequest(env,"blocked_addresses?select=*",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify({street,number,reference,active:true})});
       return json({ok:true,blocked_address:Array.isArray(rows)?rows[0]:rows});
     }
@@ -896,6 +908,7 @@ export async function onRequestPost({ request, env }) {
       if (!authorized(request, env)) return json({ok:false,error:"Não autorizado."},401);
       const id=Number(body.id),street=String(body.street||"").trim(),number=String(body.number||"").trim(),reference=String(body.reference||"").trim();
       if(!id||!street||!number||!reference)return json({ok:false,error:"Dados do bloqueio inválidos."},400);
+      if(!/^todos$/i.test(number) && !/^\d+$/.test(number) && !/^\d+\s*(?:a|até|ate|-|–|—)\s*\d+$/i.test(number))return json({ok:false,error:"No campo Número use Todos, um número específico ou um intervalo como 200 a 400."},400);
       await supabaseRequest(env,`blocked_addresses?id=eq.${id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({street,number,reference,updated_at:new Date().toISOString()})});
       return json({ok:true});
     }

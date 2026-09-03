@@ -226,10 +226,10 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
    <section class="admin-v3171-panel" data-admin-panel="bloqueios">
     <h2>🚫 Endereços sem entrega</h2>
     <div class="admin-v3171-card">
-     <p class="muted">Cadastre Rua/Avenida + Número + Referência. Quando os três dados coincidirem, o Cliente não poderá escolher entrega para esse endereço.</p>
+     <p class="muted">Cadastre Rua/Avenida + Número + Referência. No Número use: Todos, um número específico (ex.: 250) ou um intervalo (ex.: 200 a 400).</p>
      <div style="display:grid;grid-template-columns:1fr 150px 1fr auto;gap:8px">
       <input id="bloqRua" placeholder="Rua / Avenida" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
-      <input id="bloqNumero" placeholder="Número" inputmode="numeric" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+      <input id="bloqNumero" placeholder="Todos / 250 / 200 a 400" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
       <input id="bloqReferencia" placeholder="Referência (ex.: Pousada Kactus)" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
       <button id="criarBloqueioEndereco" class="btn red">Bloquear</button>
      </div>
@@ -730,7 +730,7 @@ async function carregarAdminV31(){
   $("listaBloqueiosEndereco").innerHTML=adminBloqueiosEnderecoV3180.length?adminBloqueiosEnderecoV3180.map(a=>`
     <div style="display:grid;grid-template-columns:minmax(180px,1fr) 110px minmax(180px,1fr) auto auto;gap:7px;margin:7px 0;align-items:center">
       <input id="br${a.id}" value="${escV31(a.street)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
-      <input id="bn${a.id}" value="${escV31(a.number)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+      <input id="bn${a.id}" value="${escV31(a.number)}" placeholder="Todos / 250 / 200 a 400" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
       <input id="bf${a.id}" value="${escV31(a.reference)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
       <button class="btn yellow" onclick="salvarBloqueioEnderecoV3180(${a.id})">Alterar</button>
       <button class="btn red" onclick="excluirBloqueioEnderecoV3180(${a.id})">Excluir</button>
@@ -820,10 +820,12 @@ window.salvarReqAdicionalV31=async id=>{try{await apiAdminV31({action:"save_requ
 window.excluirReqAdicionalV31=async id=>{if(!confirm("Excluir este adicional obrigatório?"))return;try{await apiAdminV31({action:"delete_required_addon",id});await carregarAdminV31()}catch(e){alert(e.message)}};
 const criarReqAdicionalV31=$("criarReqAdicional");
 if(criarReqAdicionalV31) criarReqAdicionalV31.onclick=async()=>{try{const nome=$("reqAddonNome").value.trim();const preco=Number($("reqAddonPreco").value||0);if(!nome)return alert("Informe o nome do adicional obrigatório.");await apiAdminV31({action:"create_required_addon",name:nome,price:preco});$("reqAddonNome").value="";$("reqAddonPreco").value="";await carregarAdminV31();alert("Adicional obrigatório cadastrado.")}catch(e){alert(e.message)}};
-window.salvarBloqueioEnderecoV3180=async id=>{try{const street=$("br"+id).value.trim(),number=$("bn"+id).value.trim(),reference=$("bf"+id).value.trim();if(!street||!number||!reference)return alert("Preencha Rua/Avenida, Número e Referência.");await apiAdminV31({action:"save_blocked_address",id,street,number,reference});await carregarAdminV31();alert("Bloqueio alterado.")}catch(e){alert(e.message)}};
+function numeroBloqueioValidoV3181(v){const x=String(v||"").trim();return /^todos$/i.test(x)||/^\d+$/.test(x)||/^\d+\s*(?:a|até|ate|-|–|—)\s*\d+$/i.test(x)}
+function validarNumeroBloqueioV3181(v){if(!numeroBloqueioValidoV3181(v)){alert("No campo Número use: Todos, um número (ex.: 250) ou um intervalo (ex.: 200 a 400).");return false}return true}
+window.salvarBloqueioEnderecoV3180=async id=>{try{const street=$("br"+id).value.trim(),number=$("bn"+id).value.trim(),reference=$("bf"+id).value.trim();if(!street||!number||!reference)return alert("Preencha Rua/Avenida, Número e Referência.");if(!validarNumeroBloqueioV3181(number))return;await apiAdminV31({action:"save_blocked_address",id,street,number,reference});await carregarAdminV31();alert("Bloqueio alterado.")}catch(e){alert(e.message)}};
 window.excluirBloqueioEnderecoV3180=async id=>{if(!confirm("Excluir este endereço da lista de bloqueio?"))return;try{await apiAdminV31({action:"delete_blocked_address",id});await carregarAdminV31()}catch(e){alert(e.message)}};
 const criarBloqueioEnderecoV3180=$("criarBloqueioEndereco");
-if(criarBloqueioEnderecoV3180)criarBloqueioEnderecoV3180.onclick=async()=>{try{const street=$("bloqRua").value.trim(),number=$("bloqNumero").value.trim(),reference=$("bloqReferencia").value.trim();if(!street||!number||!reference)return alert("Preencha Rua/Avenida, Número e Referência.");await apiAdminV31({action:"create_blocked_address",street,number,reference});$("bloqRua").value="";$("bloqNumero").value="";$("bloqReferencia").value="";await carregarAdminV31();alert("Endereço bloqueado.")}catch(e){alert(e.message)}};
+if(criarBloqueioEnderecoV3180)criarBloqueioEnderecoV3180.onclick=async()=>{try{const street=$("bloqRua").value.trim(),number=$("bloqNumero").value.trim(),reference=$("bloqReferencia").value.trim();if(!street||!number||!reference)return alert("Preencha Rua/Avenida, Número e Referência.");if(!validarNumeroBloqueioV3181(number))return;await apiAdminV31({action:"create_blocked_address",street,number,reference});$("bloqRua").value="";$("bloqNumero").value="";$("bloqReferencia").value="";await carregarAdminV31();alert("Endereço bloqueado.")}catch(e){alert(e.message)}};
 
 const criarProdutoV31=$("criarProduto");
 if(criarProdutoV31) criarProdutoV31.onclick=async()=>{try{
