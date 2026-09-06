@@ -1,4 +1,4 @@
-const CACHE="beach-burguer-cliente-app-v31-79-localizacao-obrigatoria";
+const CACHE="beach-burguer-cliente-app-v31-87-estoque";
 const STATIC=[
   "/cliente-app/",
   "/cliente-app/cardapio.html",
@@ -6,7 +6,7 @@ const STATIC=[
   "/cardapio.js?v=31_75_sem_fotos_revisao",
   "/style.css?v=850",
   "/cardapio.css",
-  "/script.js?v=31_79_localizacao_obrigatoria",
+  "/script.js?v=31_56_cliente_app_addon_obrigatorio",
   "/assets/logo.png",
   "/assets/pwa-192.png",
   "/assets/pwa-512.png",

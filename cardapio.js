@@ -245,6 +245,7 @@ async function carregarCatalogo(){
         disponivel:(p.available??p.disponivel)!==false,
         permiteAdicionais:(p.allows_addons??p.permiteAdicionais)===true,
         adicionalObrigatorio:(p.required_addon??p.adicionalObrigatorio)===true,
+        estoque:(p.stock_quantity===null||p.stock_quantity===undefined||p.stock_quantity==="")?null:Number(p.stock_quantity),
         imagem:""
       }));
     }
@@ -291,8 +292,8 @@ function renderProdutos(){
       <p>${p.descricao||""}</p>
       <footer>
         <span class="preco">${moeda(p.preco)}</span>
-        <button ${(p.disponivel===false||lojaFechadaV18())?"disabled":""} data-id="${p.id}">
-          ${p.disponivel===false?"Esgotado":lojaFechadaV18()?"Loja fechada":"Adicionar"}
+        <button ${(p.disponivel===false||(p.estoque!==null&&p.estoque<=0)||lojaFechadaV18())?"disabled":""} data-id="${p.id}">
+          ${p.disponivel===false|| (p.estoque!==null&&p.estoque<=0)?"Esgotado":lojaFechadaV18()?"Loja fechada":"Adicionar"}
         </button>
       </footer>
     </article>`).join("");
@@ -306,12 +307,14 @@ function abrirProduto(id,uid=null){
   const item=uid?carrinho.find(x=>String(x.uid)===String(uid)):null;
   produtoSelecionado=dados.produtos.find(p=>Number(p.id)===Number(item?.id||id));
   if(!produtoSelecionado)return;
+  if(!uid && produtoSelecionado.estoque!==null && produtoSelecionado.estoque<=0){alert("Este produto está esgotado.");return;}
   itemEditandoUid=item?.uid??null;
 
   $("produtoNomeV7").textContent=produtoSelecionado.nome;
   $("produtoDescricaoV7").textContent=produtoSelecionado.descricao||"";
   $("produtoPrecoV7").textContent=moeda(produtoSelecionado.preco);
   $("produtoQtdV7").value=item?.quantidade||1;
+  if(produtoSelecionado?.estoque!==null){ $("produtoQtdV7").max=String(Math.max(1,Number(produtoSelecionado.estoque||0))); } else { $("produtoQtdV7").removeAttribute("max"); }
   $("produtoObsV7").value=item?.observacao||"";
 
   const aceita=produtoSelecionado.permiteAdicionais===true;
@@ -340,6 +343,7 @@ function confirmarProduto(){
     return;
   }
   const qtd=Math.max(1,Number($("produtoQtdV7").value||1));
+  if(produtoSelecionado?.estoque!==null){ const jaNoCarrinho=itemEditandoUid?Number(carrinho.find(i=>String(i.uid)===String(itemEditandoUid))?.quantidade||0):0; const limite=Number(produtoSelecionado.estoque||0)+jaNoCarrinho; if(qtd>limite){alert(`Quantidade máxima disponível: ${limite}.`);return;} }
   const adicionais=[...document.querySelectorAll(".addV7:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
   const obrigatorioEl=document.querySelector(".addObrigatorioV7:checked");
   const obrigatorio=obrigatorioEl?ADICIONAIS_OBRIGATORIOS[Number(obrigatorioEl.dataset.i)]:null;
@@ -389,9 +393,10 @@ function ajustarQuantidadeV3174(uid,delta){
 function adicionarSugestaoV3174(id){
   if(lojaFechadaV18()){avisarLojaFechadaV18();return}
   const p=dados.produtos.find(x=>Number(x.id)===Number(id));
-  if(!p || p.ativo===false || p.disponivel===false)return;
+  if(!p || p.ativo===false || p.disponivel===false || (p.estoque!==null&&p.estoque<=0))return;
   const existente=carrinho.find(i=>Number(i.id)===Number(p.id) && !(i.adicionais||[]).length && !i.observacao);
   if(existente){
+    if(p.estoque!==null && Number(existente.quantidade||1)+1>Number(p.estoque)) return;
     existente.quantidade=Number(existente.quantidade||1)+1;
   }else{
     carrinho.push({id:p.id,nome:p.nome,categoria:p.categoria,preco:Number(p.preco||0),imagem:p.imagem||"",quantidade:1,adicionais:[],observacao:"",uid:Date.now()+Math.random()});

@@ -406,7 +406,7 @@ export async function onRequestGet({ request, env }) {
       // para o cardápio do cliente abrir mais rápido sem remover nenhuma validação.
       const catalogPromise=supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon,image_url&order=sort_order.asc,id.asc"
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon,image_url,stock_quantity&order=sort_order.asc,id.asc"
       );
       const storePromise=obterEstadoLoja(env);
       const categoriesPromise=supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&active=eq.true&order=sort_order.asc,id.asc");
@@ -549,6 +549,24 @@ export async function onRequestPost({ request, env }) {
       if (!Array.isArray(body.itens) || !body.itens.length) {
         return json({ ok:false, error:"Adicione pelo menos um produto ao pedido." }, 400);
       }
+
+      // V31.87: pré-confere estoque antes de validar Pix/persistir o pedido.
+      // A reserva definitiva é feita pelo trigger SQL de forma atômica.
+      try {
+        const porProduto=new Map();
+        for(const item of body.itens){
+          const pid=Number(item?.id); if(!Number.isInteger(pid)||pid<=0) continue;
+          const q=Math.max(1,Math.floor(Number(item?.quantidade||1)));
+          porProduto.set(pid,(porProduto.get(pid)||0)+q);
+        }
+        for(const [pid,q] of porProduto){
+          const rows=await supabaseRequest(env,`products?select=id,name,stock_quantity&id=eq.${pid}&limit=1`);
+          const prod=Array.isArray(rows)?rows[0]:null;
+          if(prod && prod.stock_quantity!==null && prod.stock_quantity!==undefined && Number(prod.stock_quantity)<q){
+            return json({ok:false,error:`O produto "${String(prod.name||"Produto")}" possui apenas ${Number(prod.stock_quantity)} unidade(s) disponível(is).`},409);
+          }
+        }
+      } catch(e) { console.warn("V31.87 pré-checagem de estoque:",e?.message||e); }
 
       let categoriasRegra={};
       try{
@@ -888,7 +906,7 @@ export async function onRequestPost({ request, env }) {
       if (!authorized(request, env)) return json({ ok:false, error:"Não autorizado." }, 401);
       const catalog = await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon,image_url&order=sort_order.asc,id.asc"
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon,image_url,stock_quantity&order=sort_order.asc,id.asc"
       );
       const categories=await supabaseRequest(env,"categories?select=id,name,rule,sort_order,active&order=sort_order.asc,id.asc");
       let addons=[];
@@ -1011,13 +1029,16 @@ export async function onRequestPost({ request, env }) {
       const price=Number(body.price||0);
       const allowsAddons=body.allows_addons===true;
       const requiredAddon=body.required_addon===true;
+      const stockRaw=body.stock_quantity;
+      const stockQuantity=(stockRaw===undefined || stockRaw===null || String(stockRaw).trim()==="") ? null : Number(stockRaw);
+      if(stockQuantity!==null && (!Number.isInteger(stockQuantity)||stockQuantity<0)) return json({ok:false,error:"Estoque inválido. Use inteiro ou deixe vazio para ilimitado."},400);
       if(!category||!name||price<0) return json({ok:false,error:"Preencha categoria, nome e preço."},400);
 
       const maxRows=await supabaseRequest(env,"products?select=sort_order&order=sort_order.desc&limit=1");
       const sortOrder=Number(maxRows?.[0]?.sort_order||0)+1;
       const inserted=await supabaseRequest(
         env,
-        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon,image_url",
+        "products?select=id,category,name,description,price,active,available,sort_order,allows_addons,required_addon,image_url,stock_quantity",
         {
           method:"POST",
           headers:{Prefer:"return=representation"},
@@ -1031,6 +1052,7 @@ export async function onRequestPost({ request, env }) {
             sort_order:sortOrder,
             allows_addons:allowsAddons,
             required_addon:requiredAddon,
+            stock_quantity:stockQuantity,
             updated_at:new Date().toISOString()
           })
         }
@@ -1073,6 +1095,7 @@ export async function onRequestPost({ request, env }) {
             available:p.available!==false,
             allows_addons:p.allows_addons===true,
             required_addon:p.required_addon===true,
+            stock_quantity:(p.stock_quantity===null || p.stock_quantity===undefined || String(p.stock_quantity).trim()==="") ? null : Number(p.stock_quantity),
             updated_at:new Date().toISOString()
           })
         });
