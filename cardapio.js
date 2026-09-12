@@ -209,13 +209,13 @@ async function carregarCatalogo(){
     const r=await resposta.json();
 
     if(Array.isArray(r.addons) && r.addons.length){
-      ADICIONAIS=r.addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
+      ADICIONAIS=r.addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0),destinos:Array.isArray(a.target_product_ids)?a.target_product_ids.map(Number):[]})).filter(a=>a.nome);
     }
 
     if(Array.isArray(r.required_addons)){
       ADICIONAIS_OBRIGATORIOS=r.required_addons
         .filter(a=>a.active!==false)
-        .map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)}))
+        .map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0),destinos:Array.isArray(a.target_product_ids)?a.target_product_ids.map(Number):[]}))
         .filter(a=>a.nome);
     }
 
@@ -319,16 +319,18 @@ function abrirProduto(id,uid=null){
 
   const aceita=produtoSelecionado.permiteAdicionais===true;
   const adicionalObrigatorio=produtoSelecionado.adicionalObrigatorio===true;
-  $("tituloAdicionaisV7").style.display=aceita?"":"none";
-  $("listaAdicionaisV7").style.display=aceita?"":"none";
-  $("listaAdicionaisV7").innerHTML=aceita?ADICIONAIS.map((a,i)=>{
+  const adicionaisDoProduto=ADICIONAIS.filter(a=>!a.destinos.length||a.destinos.includes(Number(produtoSelecionado.id)));
+  const obrigatoriosDoProduto=ADICIONAIS_OBRIGATORIOS.filter(a=>!a.destinos.length||a.destinos.includes(Number(produtoSelecionado.id)));
+  $("tituloAdicionaisV7").style.display=aceita&&adicionaisDoProduto.length?"":"none";
+  $("listaAdicionaisV7").style.display=aceita&&adicionaisDoProduto.length?"":"none";
+  $("listaAdicionaisV7").innerHTML=aceita?adicionaisDoProduto.map((a,i)=>{
     const checked=(item?.adicionais||[]).some(x=>x.nome===a.nome);
     return `<label class="cliente-addon-v65"><span><input class="addV7" data-i="${i}" type="checkbox" ${checked?"checked":""}> ${a.nome}</span><strong>+ ${moeda(a.preco)}</strong></label>`;
   }).join(""):"";
 
-  $("tituloAdicionaisObrigatoriosV7").style.display=adicionalObrigatorio?"":"none";
-  $("listaAdicionaisObrigatoriosV7").style.display=adicionalObrigatorio?"":"none";
-  $("listaAdicionaisObrigatoriosV7").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>{
+  $("tituloAdicionaisObrigatoriosV7").style.display=adicionalObrigatorio&&obrigatoriosDoProduto.length?"":"none";
+  $("listaAdicionaisObrigatoriosV7").style.display=adicionalObrigatorio&&obrigatoriosDoProduto.length?"":"none";
+  $("listaAdicionaisObrigatoriosV7").innerHTML=adicionalObrigatorio?obrigatoriosDoProduto.map((a,i)=>{
     const checked=(item?.adicionais||[]).some(x=>x.nome===a.nome);
     return `<label class="cliente-addon-v65"><span><input class="addObrigatorioV7" name="addObrigatorioV7" data-i="${i}" type="radio" ${checked?"checked":""}> ${a.nome}</span><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></label>`;
   }).join(""):"";
@@ -343,10 +345,12 @@ function confirmarProduto(){
     return;
   }
   const qtd=Math.max(1,Number($("produtoQtdV7").value||1));
+  const adicionaisDoProduto=ADICIONAIS.filter(a=>!a.destinos.length||a.destinos.includes(Number(produtoSelecionado?.id)));
+  const obrigatoriosDoProduto=ADICIONAIS_OBRIGATORIOS.filter(a=>!a.destinos.length||a.destinos.includes(Number(produtoSelecionado?.id)));
   if(produtoSelecionado?.estoque!==null){ const jaNoCarrinho=itemEditandoUid?Number(carrinho.find(i=>String(i.uid)===String(itemEditandoUid))?.quantidade||0):0; const limite=Number(produtoSelecionado.estoque||0)+jaNoCarrinho; if(qtd>limite){alert(`Quantidade máxima disponível: ${limite}.`);return;} }
-  const adicionais=[...document.querySelectorAll(".addV7:checked")].map(c=>ADICIONAIS[Number(c.dataset.i)]);
+  const adicionais=[...document.querySelectorAll(".addV7:checked")].map(c=>adicionaisDoProduto[Number(c.dataset.i)]);
   const obrigatorioEl=document.querySelector(".addObrigatorioV7:checked");
-  const obrigatorio=obrigatorioEl?ADICIONAIS_OBRIGATORIOS[Number(obrigatorioEl.dataset.i)]:null;
+  const obrigatorio=obrigatorioEl?obrigatoriosDoProduto[Number(obrigatorioEl.dataset.i)]:null;
   if(produtoSelecionado?.adicionalObrigatorio===true && !obrigatorio){
     alert("Escolha uma opção obrigatória antes de adicionar este item ao pedido.");
     return;
