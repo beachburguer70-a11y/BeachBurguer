@@ -688,22 +688,7 @@ $("listaAdicionaisAdmin").innerHTML=adminAdicionaisV31.length?adminAdicionaisV31
             ${escV31(p.name)}
           </label>`).join("")}
       </div>
-    </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum adicional cadastrado. Execute o SQL da V31.18 se esta for a primeira publicação.</div>`;
-    <div style="margin:0 0 12px;padding:8px;background:#111;border:1px solid #333;border-radius:7px">
-      <div style="font-size:12px;color:#f5c400;margin-bottom:6px">Aplicar este adicional em produtos</div>
-      <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-        <input id="atall${a.id}" type="checkbox" ${!Array.isArray(a.target_product_ids)||a.target_product_ids.length===0?"checked":""}>
-        Todos os produtos
-      </label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${(adminProdutosV31||[]).map(p=>`
-          <label style="display:flex;align-items:center;gap:5px;padding:5px 8px;background:#080808;border:1px solid #444;border-radius:6px;font-size:12px">
-            <input class="atp${a.id}" type="checkbox" value="${p.id}" ${Array.isArray(a.target_product_ids)&&a.target_product_ids.map(Number).includes(Number(p.id))?"checked":""}>
-            ${escV31(p.name)}
-          </label>`).join("")}
-      </div>
     </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum adicional cadastrado.</div>`;
-
   $("listaReqAdicionaisAdmin").innerHTML=adminReqAdicionaisV31.length?adminReqAdicionaisV31.map(a=>`
     <div style="display:grid;grid-template-columns:minmax(160px,1fr) 150px auto auto auto;gap:7px;margin:7px 0;align-items:center">
       <input id="ran${a.id}" value="${escV31(a.name)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
