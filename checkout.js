@@ -59,7 +59,7 @@ let carrinho=[];
 try{carrinho=JSON.parse(localStorage.getItem("bb_carrinho")||"[]")}catch{}
 let tipoPedido=localStorage.getItem("bb_tipo_pedido")||"Retirada";
 let pagamento="Pix";
-let pedidoPremiadoElegivel=false; let pedidoPremiadoAtivo=false;
+let pedidoPremiadoElegivel=false; let pedidoPremiadoAtivo=false; let pedidoPremiadoPercentual=30;
 let pedidoPremiadoRecusado=false; let pedidoPremiadoAvisado=false;
 let modoRevisao="normal";
 let pixPaymentId=null;
@@ -195,13 +195,14 @@ function taxa(){
 function pedidoPremiadoGarantidoV3176(){
   return pedidoPremiadoElegivel && !pedidoPremiadoRecusado && tipoPedido!=="Entrega";
 }
-function descontoPremiado(){return pedidoPremiadoGarantidoV3176()?Math.round((subtotal()+taxa())*0.30*100)/100:0}
-function economiaPremiadaV3176(){return Math.round((subtotal()+taxa())*0.30*100)/100}
+function fatorPremioV3189(){return Math.max(0,Math.min(100,Number(pedidoPremiadoPercentual||30)))/100}
+function descontoPremiado(){return pedidoPremiadoGarantidoV3176()?Math.round((subtotal()+taxa())*fatorPremioV3189()*100)/100:0}
+function economiaPremiadaV3176(){return Math.round((subtotal()+taxa())*fatorPremioV3189()*100)/100}
 function fecharPedidoPremiadoV3176(){ $("modalPedidoPremiadoV3176")?.classList.remove("ativo"); }
 function mostrarPremioGarantidoV3176(){
   const modal=$("modalPedidoPremiadoV3176"); if(!modal)return;
   $("premioTituloV3176").textContent="🎉 SEU PRÊMIO ESTÁ GARANTIDO!";
-  $("premioTextoV3176").innerHTML=`🏆 Você ganhou <strong>30% DE DESCONTO</strong> no seu pedido!<br><br><span class="premio-economia-v3176">Você economizou ${moeda(economiaPremiadaV3176())}!</span>`;
+  $("premioTextoV3176").innerHTML=`🏆 Você ganhou <strong>${pedidoPremiadoPercentual}% DE DESCONTO</strong> no seu pedido!<br><br><span class="premio-economia-v3176">Você economizou ${moeda(economiaPremiadaV3176())}!</span>`;
   $("premioAcoesV3176").innerHTML='<button type="button" class="flow-btn primary" id="premioContinuarV3176">CONTINUAR COM MEU PRÊMIO 🎁</button>';
   modal.classList.add("ativo");
   $("premioContinuarV3176").onclick=fecharPedidoPremiadoV3176;
@@ -212,8 +213,8 @@ function abrirPedidoPremiadoV3176(){
   if(tipoPedido!=="Entrega"){ mostrarPremioGarantidoV3176(); return; }
   const modal=$("modalPedidoPremiadoV3176"); if(!modal)return;
   $("premioTituloV3176").textContent="🎉🍔 VOCÊ GANHOU UM PEDIDO PREMIADO!";
-  $("premioTextoV3176").innerHTML=`🏆 Seu pedido ganhou <strong>30% DE DESCONTO!</strong><br><br>Para aproveitar o prêmio, é só mudar seu pedido para <strong>RETIRADA NA BEACH BURGUER</strong>.<br><br><span class="premio-economia-v3176">🔥 Não deixe seus 30% escaparem!</span>`;
-  $("premioAcoesV3176").innerHTML='<button type="button" class="flow-btn primary" id="premioRetiradaV3176">SIM, QUERO MEUS 30% 🛍️</button><button type="button" class="flow-btn dark" id="premioEntregaV3176">NÃO, CONTINUAR COM ENTREGA</button>';
+  $("premioTextoV3176").innerHTML=`🏆 Seu pedido ganhou <strong>${pedidoPremiadoPercentual}% DE DESCONTO!</strong><br><br>Para aproveitar o prêmio, é só mudar seu pedido para <strong>RETIRADA NA BEACH BURGUER</strong>.<br><br><span class="premio-economia-v3176">🔥 Não deixe seu desconto escapar!</span>`;
+  $("premioAcoesV3176").innerHTML='<button type="button" class="flow-btn primary" id="premioRetiradaV3176">SIM, QUERO MEU DESCONTO 🛍️</button><button type="button" class="flow-btn dark" id="premioEntregaV3176">NÃO, CONTINUAR COM ENTREGA</button>';
   modal.classList.add("ativo");
   $("premioRetiradaV3176").onclick=()=>{
     tipoPedido="Retirada"; pedidoPremiadoRecusado=false; localStorage.setItem("bb_tipo_pedido","Retirada"); atualizarTudo();
@@ -222,14 +223,14 @@ function abrirPedidoPremiadoV3176(){
   };
   $("premioEntregaV3176").onclick=()=>{
     $("premioTituloV3176").textContent="😢 TEM CERTEZA?";
-    $("premioTextoV3176").innerHTML='Continuando com <strong>Entrega</strong>, você perderá seu <strong>desconto de 30%</strong> deste Pedido Premiado.';
-    $("premioAcoesV3176").innerHTML='<button type="button" class="flow-btn primary" id="premioVoltarRetiradaV3176">QUERO RETIRAR E ECONOMIZAR 30% 🔥</button><button type="button" class="flow-btn dark" id="premioPerderV3176">CONTINUAR SEM O DESCONTO</button>';
+    $("premioTextoV3176").innerHTML='Continuando com <strong>Entrega</strong>, você perderá seu <strong>desconto de ${pedidoPremiadoPercentual}%</strong> deste Pedido Premiado.';
+    $("premioAcoesV3176").innerHTML='<button type="button" class="flow-btn primary" id="premioVoltarRetiradaV3176">QUERO RETIRAR E ECONOMIZAR 🔥</button><button type="button" class="flow-btn dark" id="premioPerderV3176">CONTINUAR SEM O DESCONTO</button>';
     $("premioVoltarRetiradaV3176").onclick=()=>{ tipoPedido="Retirada"; pedidoPremiadoRecusado=false; localStorage.setItem("bb_tipo_pedido","Retirada"); atualizarTudo(); mostrarPremioGarantidoV3176(); };
     $("premioPerderV3176").onclick=()=>{ pedidoPremiadoRecusado=true; fecharPedidoPremiadoV3176(); atualizarTudo(); };
   };
 }
 function total(){return Math.max(0,Math.round(((subtotal()+taxa())-descontoPremiado())*100)/100)}
-async function verificarPedidoPremiado(){try{const r=await fetch("/api/management",{cache:"no-store"});const d=await r.json();pedidoPremiadoAtivo=d.settings?.prize_enabled===true;pedidoPremiadoElegivel=d.prize_eligible===true;return pedidoPremiadoElegivel}catch{return false}}
+async function verificarPedidoPremiado(){try{const r=await fetch("/api/management",{cache:"no-store"});const d=await r.json();pedidoPremiadoAtivo=d.settings?.prize_enabled===true;pedidoPremiadoPercentual=Math.max(0,Math.min(100,Number(d.settings?.prize_discount_percent??30)));pedidoPremiadoElegivel=d.prize_eligible===true;return pedidoPremiadoElegivel}catch{return false}}
 function telefoneFormat(v){
   const n=String(v||"").replace(/\D/g,"").slice(0,11);
   if(n.length<=2)return n;
@@ -547,7 +548,7 @@ function abrirRevisao(modo){
     <div class="review-box"><strong>Itens</strong>${d.itens.map(i=>`${i.quantidade}x ${i.nome}${i.observacao?` — ${i.observacao}`:""}`).join("<br>")}</div>
     <div class="review-box"><strong>Pagamento</strong>${d.pix_manual?"Pix manual — aguardando comprovante":d.pagamento}${d.troco?`<br>Troco para: ${d.troco}`:""}</div>
     ${d.observacoes?`<div class="review-box"><strong>Observações</strong>${d.observacoes}</div>`:""}
-    <div class="review-box"><strong>Total</strong>${d.discount_amount>0?`<span style="color:#2ecc71;font-weight:900">🎁 PEDIDO PREMIADO — 30% OFF (${moeda(d.discount_amount)})</span>`:""}<span style="font-size:22px">${moeda(d.total)}</span></div>`;
+    <div class="review-box"><strong>Total</strong>${d.discount_amount>0?`<span style="color:#2ecc71;font-weight:900">🎁 PEDIDO PREMIADO — ${pedidoPremiadoPercentual}% OFF (${moeda(d.discount_amount)})</span>`:""}<span style="font-size:22px">${moeda(d.total)}</span></div>`;
   $("confirmarRevisaoCheckout").textContent=modo==="pix"?"Confirmar e gerar Pix":"Finalizar pedido";
   $("modalRevisaoCheckout").classList.add("ativo");
   $("progRevisao").classList.add("ativo");

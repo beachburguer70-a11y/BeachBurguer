@@ -406,7 +406,7 @@ function atualizarTrocoCalculadoGarcom(){
   const recebido=numeroMoedaGarcom($("trocoGarcom").value);
   const valorTotal=total();
   if(!recebido){el.textContent="";return;}
-  const troco=recebido-valorTotal;
+  const troco=Number((recebido-valorTotal).toFixed(2));
   el.textContent=troco<0?`Valor insuficiente: faltam ${moeda(Math.abs(troco))}`:`Troco a dar: ${moeda(troco)}`;
 }
 

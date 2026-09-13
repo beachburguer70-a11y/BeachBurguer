@@ -1,0 +1,8 @@
+V31.89 — Pedido Premiado configurável + troco Garçom
+
+- Loja: mantém ativar/desativar Pedido Premiado.
+- Admin: nova aba Pedido Premiado para definir desconto de 0% a 100%.
+- Cliente: usa o percentual configurado no prêmio e nas mensagens/revisão.
+- Garçom (modal da Loja): cálculo visual do troco em tempo real no pagamento em dinheiro para Entrega.
+- Garçom standalone: arredondamento do cálculo do troco para centavos.
+- Base: Beach_Burguer_PRODUCAO_V31_87_ESTOQUE_PRODUTOS.

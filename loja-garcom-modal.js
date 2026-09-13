@@ -72,8 +72,8 @@
     }));
     categories=(d.categories||[]).filter(c=>c.active!==false).map(c=>c.name).filter(Boolean);
     if(!categories.length)categories=[...new Set(catalog.map(p=>p.categoria))];
-    addons=(d.addons||[]).filter(a=>a.active!==false).map(a=>({nome:a.name||a.nome||'',preco:Number(a.price??a.preco??0),destinos:Array.isArray(a.target_product_ids)?a.target_product_ids.map(Number):[]})).filter(a=>a.nome);
-    requiredAddons=(d.required_addons||[]).filter(a=>a.active!==false).map(a=>({nome:a.name||a.nome||'',preco:Number(a.price??a.preco??0),destinos:Array.isArray(a.target_product_ids)?a.target_product_ids.map(Number):[]})).filter(a=>a.nome);
+    addons=(d.addons||[]).filter(a=>a.active!==false).map(a=>({nome:a.name||a.nome||'',preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
+    requiredAddons=(d.required_addons||[]).filter(a=>a.active!==false).map(a=>({nome:a.name||a.nome||'',preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
     categoria=categories[0]||'';
   }
 
@@ -227,9 +227,7 @@
     byId('gmProductQty').value=item?.quantidade||1; if(p.estoque!==null) byId('gmProductQty').max=String(Math.max(1,Number(p.estoque||0))); else byId('gmProductQty').removeAttribute('max');byId('gmProductObs').value=item?.observacao||'';
     const area=byId('gmAddonArea'); area.style.display=(p.permiteAdicionais===true||p.adicionalObrigatorio===true)?'block':'none';
     const selected=new Set((item?.adicionais||[]).map(a=>a.nome));
-    const addonsDoProduto=addons.filter(a=>!a.destinos.length||a.destinos.includes(Number(p.id)));
-    const requiredDoProduto=requiredAddons.filter(a=>!a.destinos.length||a.destinos.includes(Number(p.id)));
-    byId('gmAddonList').innerHTML=(p.permiteAdicionais===true?addonsDoProduto.map((a,n)=>`<label class="gm-addon"><span><input type="checkbox" data-addon="${n}" ${selected.has(a.nome)?'checked':''}> ${esc(a.nome)}</span><strong>+ ${money(a.preco)}</strong></label>`).join(''):'')+(p.adicionalObrigatorio===true&&requiredDoProduto.length?`<h4 style="margin:12px 0 6px">Escolha obrigatória</h4>`+requiredDoProduto.map((a,n)=>`<label class="gm-addon"><span><input type="radio" name="gm-required-addon" data-required-addon="${n}" ${selected.has(a.nome)?'checked':''}> ${esc(a.nome)}</span><strong>${Number(a.preco||0)>0?'+ '+money(a.preco):money(0)}</strong></label>`).join(''):'');
+    byId('gmAddonList').innerHTML=(p.permiteAdicionais===true?addons.map((a,n)=>`<label class="gm-addon"><span><input type="checkbox" data-addon="${n}" ${selected.has(a.nome)?'checked':''}> ${esc(a.nome)}</span><strong>+ ${money(a.preco)}</strong></label>`).join(''):'')+(p.adicionalObrigatorio===true?`<h4 style="margin:12px 0 6px">Escolha obrigatória</h4>`+requiredAddons.map((a,n)=>`<label class="gm-addon"><span><input type="radio" name="gm-required-addon" data-required-addon="${n}" ${selected.has(a.nome)?'checked':''}> ${esc(a.nome)}</span><strong>${Number(a.preco||0)>0?'+ '+money(a.preco):money(0)}</strong></label>`).join(''):'');
     byId('gmProductConfirm').textContent=item?'Salvar alteração':'Adicionar ao pedido';
     byId('gmProductOverlay').classList.remove('gm-hidden');
   }
@@ -245,13 +243,11 @@
   },true);
   function salvarProduto(){
     const p=catalog.find(x=>x.id===productModalId);if(!p)return;
-    const addonsDoProduto=addons.filter(a=>!a.destinos.length||a.destinos.includes(Number(p.id)));
-    const requiredDoProduto=requiredAddons.filter(a=>!a.destinos.length||a.destinos.includes(Number(p.id)));
     const qtd=Math.max(1,Math.floor(Number(byId('gmProductQty').value)||1)); if(p.estoque!==null){ const oldQty=editingUid?Number(carrinho.find(i=>String(i.uid)===String(editingUid))?.quantidade||0):0; if(qtd>Number(p.estoque||0)+oldQty){alert(`Quantidade máxima disponível: ${Number(p.estoque||0)+oldQty}.`);return;} }
-    const ad=[...byId('gmAddonList').querySelectorAll('[data-addon]:checked')].map(c=>addonsDoProduto[Number(c.dataset.addon)]).filter(Boolean);
+    const ad=[...byId('gmAddonList').querySelectorAll('[data-addon]:checked')].map(c=>addons[Number(c.dataset.addon)]).filter(Boolean);
     const req=byId('gmAddonList').querySelector('[data-required-addon]:checked');
     if(p.adicionalObrigatorio===true&&!req){alert('Escolha uma opção obrigatória antes de adicionar este item.');return;}
-    if(req)ad.push(requiredDoProduto[Number(req.dataset.requiredAddon)]);
+    if(req)ad.push(requiredAddons[Number(req.dataset.requiredAddon)]);
     const item={uid:editingUid||`${Date.now()}-${Math.random()}`,id:p.id,nome:p.nome,categoria:p.categoria,preco:p.preco,quantidade:qtd,adicionais:ad,observacao:byId('gmProductObs').value.trim()};
     if(editingUid){const idx=carrinho.findIndex(x=>String(x.uid)===String(editingUid));if(idx>=0)carrinho[idx]=item}else carrinho.push(item);
     fecharProduto();renderMenu();
@@ -276,8 +272,10 @@
     if(byId('gmDiscount'))reviewDraft.desconto=byId('gmDiscount').value;
   }
   function bindReviewDraft(){
-    ['gmClient','gmAddress','gmNotes','gmChange','gmDelivery','gmDiscount'].forEach(id=>{const el=byId(id);if(!el)return;el.addEventListener('input',()=>{captureReviewDraft();if(id==='gmDelivery'||id==='gmDiscount')updateReviewTotal()})});
+    ['gmClient','gmAddress','gmNotes','gmChange','gmDelivery','gmDiscount'].forEach(id=>{const el=byId(id);if(!el)return;el.addEventListener('input',()=>{captureReviewDraft();if(id==='gmDelivery'||id==='gmDiscount')updateReviewTotal();if(id==='gmChange')updateChange()})});
   }
+  function parseChangeValue(v){const t=String(v||'').trim().replace(/R\$/gi,'').replace(/\s/g,'').replace(/\./g,'').replace(',','.');const n=Number(t);return Number.isFinite(n)&&n>0?n:0}
+  function updateChange(){const el=byId('gmChangeCalc');if(!el)return;const pago=parseChangeValue(byId('gmChange')?.value);if(!pago){el.textContent='';return}const dif=Number((pago-currentTotal()).toFixed(2));el.textContent=dif<0?`Valor insuficiente. Faltam ${money(Math.abs(dif))}.`:dif===0?'Pagamento exato. Sem troco.':`Troco a dar: ${money(dif)}`;}
 
   function renderRevisao(){
     setTitle('Revisão do pedido');
@@ -294,7 +292,7 @@
           <label>Cliente<input id="gmClient" placeholder="Digite o nome do cliente" value="${esc(reviewDraft.cliente)}"></label>
           ${delivery?`<label>Endereço <small>(opcional)</small><input id="gmAddress" placeholder="Digite o endereço" value="${esc(reviewDraft.endereco)}"></label>`:''}
           <label>Observações gerais<textarea id="gmNotes" placeholder="Ex.: mesa 4, sem talher, separar bebidas...">${esc(reviewDraft.observacoes)}</textarea></label>
-          ${delivery&&pagamento==='Dinheiro'?`<label>Troco para quanto? <small>(opcional)</small><input id="gmChange" inputmode="decimal" placeholder="Ex.: 50,00" value="${esc(reviewDraft.troco)}"></label>`:''}
+          ${delivery&&pagamento==='Dinheiro'?`<label>Troco para quanto? <small>(opcional)</small><input id="gmChange" inputmode="decimal" placeholder="Ex.: 50,00" value="${esc(reviewDraft.troco)}"><strong id="gmChangeCalc" style="color:#ffcf4a;margin-top:5px;display:block"></strong></label>`:''}
           <div class="gm-money-grid"><label>Entrega R$<input id="gmDelivery" inputmode="decimal" placeholder="0,00" value="${esc(reviewDraft.entrega)}"></label><label>Desconto R$<input id="gmDiscount" inputmode="decimal" placeholder="0,00" value="${esc(reviewDraft.desconto)}"></label></div>
           <div class="gm-final-total"><span>Total final</span><strong id="gmFinalTotal">${money(cartSubtotal())}</strong></div>
           <button id="gmFinish" class="gm-primary gm-big">${editOrderId?'💾 Salvar alterações':'✅ Finalizar pedido'}</button>
@@ -303,6 +301,7 @@
     byId('gmBackPay').onclick=()=>{captureReviewDraft();etapa='pagamento';render()};
     bindReviewDraft();
     updateReviewTotal();
+    updateChange();
     byId('gmFinish').onclick=enviar;
   }
   function currentTotal(){return Math.max(0,cartSubtotal()+entrega()-desconto())}
