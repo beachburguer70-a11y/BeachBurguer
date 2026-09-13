@@ -666,14 +666,28 @@ async function carregarAdminV31(){
       <button class="btn yellow" onclick="salvarCategoriaV31(${c.id})">Alterar</button>
       <button class="btn red" onclick="excluirCategoriaV31(${c.id})">Excluir</button>
     </div>`).join("");
-  $("listaAdicionaisAdmin").innerHTML=adminAdicionaisV31.length?adminAdicionaisV31.map(a=>`
+ $("listaAdicionaisAdmin").innerHTML=adminAdicionaisV31.length?adminAdicionaisV31.map(a=>`
     <div style="display:grid;grid-template-columns:minmax(160px,1fr) 150px auto auto auto;gap:7px;margin:7px 0;align-items:center">
       <input id="an${a.id}" value="${escV31(a.name)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
       <input id="ap${a.id}" type="number" step=".01" min="0" value="${Number(a.price||0)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
       <label style="display:flex;align-items:center;gap:6px;white-space:nowrap"><input id="ai${a.id}" type="checkbox" ${a.active===false?"checked":""}> Indisponível</label>
       <button class="btn yellow" onclick="salvarAdicionalV31(${a.id})">Alterar</button>
       <button class="btn red" onclick="excluirAdicionalV31(${a.id})">Excluir</button>
-    </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum adicional cadastrado. Execute o SQL da V31.18 se esta for a primeira publicação.</div>`;
+    </div>
+    <div style="margin:0 0 12px;padding:8px;background:#111;border:1px solid #333;border-radius:7px">
+      <div style="font-size:12px;color:#f5c400;margin-bottom:6px">Aplicar este adicional em produtos</div>
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <input id="atall${a.id}" type="checkbox" ${!Array.isArray(a.target_product_ids)||a.target_product_ids.length===0?"checked":""}>
+        Todos os produtos
+      </label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${(adminProdutosV31||[]).map(p=>`
+          <label style="display:flex;align-items:center;gap:5px;padding:5px 8px;background:#080808;border:1px solid #444;border-radius:6px;font-size:12px">
+            <input class="atp${a.id}" type="checkbox" value="${p.id}" ${Array.isArray(a.target_product_ids)&&a.target_product_ids.map(Number).includes(Number(p.id))?"checked":""}>
+            ${escV31(p.name)}
+          </label>`).join("")}
+      </div>
+    </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum adicional cadastrado.</div>`;
 
   $("listaReqAdicionaisAdmin").innerHTML=adminReqAdicionaisV31.length?adminReqAdicionaisV31.map(a=>`
     <div style="display:grid;grid-template-columns:minmax(160px,1fr) 150px auto auto auto;gap:7px;margin:7px 0;align-items:center">
@@ -682,6 +696,20 @@ async function carregarAdminV31(){
       <label style="display:flex;align-items:center;gap:6px;white-space:nowrap"><input id="rai${a.id}" type="checkbox" ${a.active===false?"checked":""}> Indisponível</label>
       <button class="btn yellow" onclick="salvarReqAdicionalV31(${a.id})">Alterar</button>
       <button class="btn red" onclick="excluirReqAdicionalV31(${a.id})">Excluir</button>
+    </div>
+    <div style="margin:0 0 12px;padding:8px;background:#111;border:1px solid #333;border-radius:7px">
+      <div style="font-size:12px;color:#f5c400;margin-bottom:6px">Aplicar este adicional obrigatório em produtos</div>
+      <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <input id="ratall${a.id}" type="checkbox" ${!Array.isArray(a.target_product_ids)||a.target_product_ids.length===0?"checked":""}>
+        Todos os produtos
+      </label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${(adminProdutosV31||[]).map(p=>`
+          <label style="display:flex;align-items:center;gap:5px;padding:5px 8px;background:#080808;border:1px solid #444;border-radius:6px;font-size:12px">
+            <input class="ratp${a.id}" type="checkbox" value="${p.id}" ${Array.isArray(a.target_product_ids)&&a.target_product_ids.map(Number).includes(Number(p.id))?"checked":""}>
+            ${escV31(p.name)}
+          </label>`).join("")}
+      </div>
     </div>`).join(""):`<div style="padding:12px;color:#888">Nenhum adicional obrigatório cadastrado.</div>`;
 
   // V31.17: produtos organizados em pastas por categoria no Admin.
@@ -704,7 +732,12 @@ async function carregarAdminV31(){
         <div style="display:grid;grid-template-columns:minmax(160px,1fr) minmax(150px,1fr) 120px;gap:7px">
          <input id="pn${p.id}" value="${escV31(p.name)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
          <select id="pc${p.id}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">${adminCategoriasV31.map(c=>`<option ${c.name===p.category?"selected":""}>${escV31(c.name)}</option>`).join("")}</select>
-         <input id="pp${p.id}" type="number" step=".01" value="${Number(p.price||0)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+                  <input id="pp${p.id}" type="number" step=".01" value="${Number(p.price||0)}" style="padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:7px">
+          <label style="font-size:12px;color:#f5c400">Estoque:</label>
+          <input id="ps${p.id}" type="number" min="0" step="1" value="${p.stock_quantity==null?"":Number(p.stock_quantity)}" placeholder="Ilimitado" style="width:120px;padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
+          <span style="font-size:11px;color:#aaa">vazio = ilimitado</span>
         </div>
         <input id="pd${p.id}" value="${escV31(p.description||"")}" placeholder="Descrição" style="width:100%;box-sizing:border-box;margin-top:7px;padding:8px;background:#080808;color:#fff;border:1px solid #444;border-radius:7px">
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px">
@@ -729,12 +762,12 @@ async function carregarAdminV31(){
 }
 window.salvarCategoriaV31=async id=>{try{await apiAdminV31({action:"save_category",id,name:$("cn"+id).value,rule:$("cr"+id).value});await carregarAdminV31();alert("Categoria alterada.")}catch(e){alert(e.message)}};
 window.excluirCategoriaV31=async id=>{if(!confirm("Excluir esta categoria?"))return;try{await apiAdminV31({action:"delete_category",id});await carregarAdminV31()}catch(e){alert(e.message)}};
-window.salvarAdicionalV31=async id=>{try{await apiAdminV31({action:"save_addon",id,name:$("an"+id).value,price:Number($("ap"+id).value||0),active:!$("ai"+id).checked});await carregarAdminV31();alert("Adicional alterado.")}catch(e){alert(e.message)}};
+window.salvarAdicionalV31=async id=>{try{const all=$("atall"+id).checked;const target_product_ids=all?[]:Array.from(document.querySelectorAll(".atp"+id+":checked")).map(x=>Number(x.value));await apiAdminV31({action:"save_addon",id,name:$("an"+id).value,price:Number($("ap"+id).value||0),active:!$("ai"+id).checked,target_product_ids});await carregarAdminV31();alert("Adicional alterado.")}catch(e){alert(e.message)}};
 window.excluirAdicionalV31=async id=>{if(!confirm("Excluir este adicional? Ele deixará de aparecer para novos pedidos."))return;try{await apiAdminV31({action:"delete_addon",id});await carregarAdminV31()}catch(e){alert(e.message)}};
 
 window.salvarProdutoV31=async id=>{try{
  const p=adminProdutosV31.find(x=>Number(x.id)===Number(id));
- await apiAdminV31({action:"save_catalog",products:[{id,category:$("pc"+id).value,name:$("pn"+id).value,description:$("pd"+id).value,price:Number($("pp"+id).value||0),active:$("pe"+id).checked,available:$("pv"+id).checked,allows_addons:$("pa"+id).checked,required_addon:$("pr"+id).checked}]});
+ await apiAdminV31({action:"save_catalog",products:[{id,category:$("pc"+id).value,name:$("pn"+id).value,description:$("pd"+id).value,price:Number($("pp"+id).value||0),active:$("pe"+id).checked,available:$("pv"+id).checked,allows_addons:$("pa"+id).checked,required_addon:$("pr"+id).checked,stock_quantity:$("ps"+id).value===""?null:Number($("ps"+id).value)}]});
  await carregarAdminV31(); alert("Produto alterado.");
 }catch(e){alert(e.message)}};
 window.excluirProdutoV31=async id=>{if(!confirm("Tem certeza que deseja excluir este produto?"))return;try{await apiAdminV31({action:"delete_product",id});await carregarAdminV31()}catch(e){alert(e.message)}};
@@ -758,7 +791,12 @@ if(criarAdicionalV31) criarAdicionalV31.onclick=async()=>{try{
 }catch(e){alert(e.message)}};
 
 
-window.salvarReqAdicionalV31=async id=>{try{await apiAdminV31({action:"save_required_addon",id,name:$("ran"+id).value,price:Number($("rap"+id).value||0),active:!$("rai"+id).checked});await carregarAdminV31()}catch(e){alert(e.message)}};
+window.salvarReqAdicionalV31=async id=>{try{
+ const all=$("ratall"+id).checked;
+ const target_product_ids=all?[]:Array.from(document.querySelectorAll(".ratp"+id+":checked")).map(x=>Number(x.value));
+ await apiAdminV31({action:"save_required_addon",id,name:$("ran"+id).value,price:Number($("rap"+id).value||0),active:!$("rai"+id).checked,target_product_ids});
+ await carregarAdminV31();
+}catch(e){alert(e.message)}};
 window.excluirReqAdicionalV31=async id=>{if(!confirm("Excluir este adicional obrigatório?"))return;try{await apiAdminV31({action:"delete_required_addon",id});await carregarAdminV31()}catch(e){alert(e.message)}};
 const criarReqAdicionalV31=$("criarReqAdicional");
 if(criarReqAdicionalV31) criarReqAdicionalV31.onclick=async()=>{try{const nome=$("reqAddonNome").value.trim();const preco=Number($("reqAddonPreco").value||0);if(!nome)return alert("Informe o nome do adicional obrigatório.");await apiAdminV31({action:"create_required_addon",name:nome,price:preco});$("reqAddonNome").value="";$("reqAddonPreco").value="";await carregarAdminV31();alert("Adicional obrigatório cadastrado.")}catch(e){alert(e.message)}};
