@@ -205,12 +205,32 @@ async function carregarDisponibilidade(){
     const resultado=await apiPedidos("GET",null,"");
 
     if(Array.isArray(resultado.addons)){
-      ADICIONAIS=resultado.addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
-    }
-    if(Array.isArray(resultado.required_addons)){
-      ADICIONAIS_OBRIGATORIOS=resultado.required_addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0)})).filter(a=>a.nome);
-    }
+  ADICIONAIS=resultado.addons
+    .filter(a=>a.active!==false)
+    .map(a=>({
+      id:a.id??null,
+      nome:String(a.name||a.nome||""),
+      preco:Number(a.price??a.preco??0),
+      target_product_ids:Array.isArray(a.target_product_ids)
+        ? a.target_product_ids.map(Number).filter(Number.isFinite)
+        : []
+    }))
+    .filter(a=>a.nome);
+}
 
+if(Array.isArray(resultado.required_addons)){
+  ADICIONAIS_OBRIGATORIOS=resultado.required_addons
+    .filter(a=>a.active!==false)
+    .map(a=>({
+      id:a.id??null,
+      nome:String(a.name||a.nome||""),
+      preco:Number(a.price??a.preco??0),
+      target_product_ids:Array.isArray(a.target_product_ids)
+        ? a.target_product_ids.map(Number).filter(Number.isFinite)
+        : []
+    }))
+    .filter(a=>a.nome);
+}
     // Se por compatibilidade a resposta normal também trouxer categorias,
     // faz união por nome. A chamada exclusiva sempre tem prioridade.
     const mapaCategorias=new Map();
@@ -444,6 +464,19 @@ function renderProdutos(){
     </article>`).join("");
 }
 
+// código que já existe acima...
+
+function adicionalDisponivelParaProduto(adicional, produtoId){
+  const ids=Array.isArray(adicional?.target_product_ids)
+    ? adicional.target_product_ids.map(Number).filter(Number.isFinite)
+    : [];
+
+  // Lista vazia = disponível para todos os produtos
+  if(ids.length===0)return true;
+
+  return ids.includes(Number(produtoId));
+}
+
 function abrirProduto(id){
   produtoSelecionado=dados.produtos.find(p=>p.id===id);
   if(!produtoSelecionado||produtoSelecionado.disponivel===false){
@@ -461,13 +494,16 @@ function abrirProduto(id){
   $("tituloAdicionais").hidden=!aceitaAdicionais;
   $("tituloAdicionais").textContent="Adicionais";
   $("listaAdicionais").hidden=!aceitaAdicionais;
-  $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>`
-    <div class="adicional"><label><input type="checkbox" class="checkAdicional" data-i="${i}"> ${a.nome}</label><strong>+ ${moeda(a.preco)}</strong></div>`).join(""):"";
+  $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>{
+    if(!adicionalDisponivelParaProduto(a,produtoSelecionado.id))return "";
+    return `<div class="adicional"><label><input type="checkbox" class="checkAdicional" data-i="${i}"> ${a.nome}</label><strong>+ ${moeda(a.preco)}</strong></div>`;
+  }).join(""):"";
   $("tituloAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
   $("listaAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
-  $("listaAdicionaisObrigatorios").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>`
-    <div class="adicional"><label><input type="radio" name="adicionalObrigatorio" class="checkAdicionalObrigatorio" data-i="${i}"> ${a.nome}</label><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></div>`).join(""):"";
-
+  $("listaAdicionaisObrigatorios").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>{
+    if(!adicionalDisponivelParaProduto(a,produtoSelecionado.id))return "";
+    return `<div class="adicional"><label><input type="radio" name="adicionalObrigatorio" class="checkAdicionalObrigatorio" data-i="${i}"> ${a.nome}</label><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></div>`;
+  }).join(""):"";
   $("modalProduto").classList.add("ativo");
 }
 
@@ -585,12 +621,14 @@ function editarItemCliente(uid){
   $("tituloAdicionais").textContent="Adicionais";
   $("listaAdicionais").hidden=!aceitaAdicionais;
   $("listaAdicionais").innerHTML=aceitaAdicionais?ADICIONAIS.map((a,i)=>{
+    if(!adicionalDisponivelParaProduto(a,produtoSelecionado.id))return "";
     const marcado=(item.adicionais||[]).some(x=>x.nome===a.nome);
     return `<div class="adicional"><label><input type="checkbox" class="checkAdicional" data-i="${i}" ${marcado?"checked":""}> ${a.nome}</label><strong>+ ${moeda(a.preco)}</strong></div>`;
   }).join(""):"";
   $("tituloAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
   $("listaAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
   $("listaAdicionaisObrigatorios").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>{
+    if(!adicionalDisponivelParaProduto(a,produtoSelecionado.id))return "";
     const marcado=(item.adicionais||[]).some(x=>x.nome===a.nome);
     return `<div class="adicional"><label><input type="radio" name="adicionalObrigatorio" class="checkAdicionalObrigatorio" data-i="${i}" ${marcado?"checked":""}> ${a.nome}</label><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></div>`;
   }).join(""):"";
