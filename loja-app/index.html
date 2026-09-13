@@ -202,7 +202,8 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     <select id="prodCategoria" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px"></select>
     <input id="prodNome" placeholder="Nome" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
     <input id="prodPreco" type="number" step=".01" min="0" placeholder="Preço" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
-    <input id="prodDescricao" placeholder="Descrição / ingredientes" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+   <input id="prodEstoque" type="number" min="0" step="1" placeholder="Estoque (vazio = ilimitado)" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
+       <input id="prodDescricao" placeholder="Descrição / ingredientes" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px">
    </div>
    <div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0">
     <label><input id="prodAdicionais" type="checkbox"> Tem adicionais</label>
@@ -803,11 +804,10 @@ if(criarReqAdicionalV31) criarReqAdicionalV31.onclick=async()=>{try{const nome=$
 
 const criarProdutoV31=$("criarProduto");
 if(criarProdutoV31) criarProdutoV31.onclick=async()=>{try{
- await apiAdminV31({action:"create_product",category:$("prodCategoria").value,name:$("prodNome").value,description:$("prodDescricao").value,price:Number($("prodPreco").value||0),allows_addons:$("prodAdicionais").checked,required_addon:$("prodAdicionalObrigatorio").checked});
- $("prodNome").value="";$("prodDescricao").value="";$("prodPreco").value="";$("prodAdicionais").checked=false;$("prodAdicionalObrigatorio").checked=false;
+ await apiAdminV31({action:"create_product",category:$("prodCategoria").value,name:$("prodNome").value,description:$("prodDescricao").value,price:Number($("prodPreco").value||0),stock_quantity:$("prodEstoque").value===""?null:Number($("prodEstoque").value),allows_addons:$("prodAdicionais").checked,required_addon:$("prodAdicionalObrigatorio").checked});
+ $("prodNome").value="";$("prodDescricao").value="";$("prodPreco").value="";$("prodEstoque").value="";$("prodAdicionais").checked=false;$("prodAdicionalObrigatorio").checked=false;
  await carregarAdminV31();alert("Produto cadastrado.");
 }catch(e){alert(e.message)}};
-
 
 </script>
 
