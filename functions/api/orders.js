@@ -816,9 +816,20 @@ export async function onRequestPost({ request, env }) {
         env,
         `orders?select=*&order=created_at.desc&limit=${limit}${filtroInicio}`
       );
+      const pedidosParaFila=(orders||[]).map(p=>{
+        const isGarcom=String(p.origem||'').toLowerCase()==='garcom';
+        const isDinheiro=String(p.pagamento||'').toLowerCase()==='dinheiro';
+        if(!isGarcom || !isDinheiro || p.troco===null || p.troco===undefined || String(p.troco).trim()==='') return p;
+        const bruto=String(p.troco).trim().replace(/\s/g,'');
+        const recebido=Number(bruto.includes(',')?bruto.replace(/\./g,'').replace(',','.'):bruto);
+        const total=Number(p.total||0);
+        if(!Number.isFinite(recebido) || recebido<=0) return p;
+        const valorTroco=Math.max(0,Number((recebido-total).toFixed(2)));
+        return {...p,troco_recebido:p.troco,troco:`R$ ${valorTroco.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}`};
+      });
       let printer_tests=[];
       try{printer_tests=await supabaseRequest(env,"printer_jobs?select=*&kind=eq.test&status=eq.pending&order=created_at.asc&limit=20");}catch{}
-      return json({ ok:true, orders:orders || [], printer_tests:printer_tests||[], shift_started_at:inicioExpediente });
+      return json({ ok:true, orders:pedidosParaFila, printer_tests:printer_tests||[], shift_started_at:inicioExpediente });
     }
 
 

@@ -363,7 +363,7 @@
     editOrderId=Number(o.id);editOrderDisplay=o.display_number||o.id;
     tipo=String(o.tipo||o.localidade||'Consumir no local');pagamento=String(o.pagamento||'A pagar');pesquisa='';etapa='menu';
     carrinho=(Array.isArray(o.itens)?o.itens:[]).map((i,n)=>({uid:`edit-${n}-${Date.now()}`,id:Number(i.id||0),nome:i.nome||'',categoria:i.categoria||'',preco:Number(i.preco||0),quantidade:Number(i.quantidade||1),adicionais:Array.isArray(i.adicionais)?i.adicionais:[],observacao:i.observacao||''}));
-    reviewDraft={cliente:String(o.cliente||''),endereco:String(o.endereco||''),observacoes:String(o.observacoes||''),troco:String(o.troco||''),entrega:moneyInputValue(o.entrega),desconto:moneyInputValue(o.discount_amount)};
+    reviewDraft={cliente:String(o.cliente||''),endereco:String(o.endereco||''),observacoes:String(o.observacoes||''),troco:String((o.troco_recebido??o.troco)||''),entrega:moneyInputValue(o.entrega),desconto:moneyInputValue(o.discount_amount)};
     const main=byId('gmOverlay');main.classList.remove('gm-hidden');main.setAttribute('aria-hidden','false');document.body.classList.add('gm-lock');
     render();
   }
