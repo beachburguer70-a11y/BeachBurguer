@@ -211,6 +211,9 @@ async function carregarDisponibilidade(){
       id:a.id??null,
       nome:String(a.name||a.nome||""),
       preco:Number(a.price??a.preco??0),
+      stock_product_id:a.stock_product_id??null,
+      stock_quantity:Number(a.stock_quantity||1),
+      stock_available:a.stock_available===null||a.stock_available===undefined?null:Number(a.stock_available),
       target_product_ids:Array.isArray(a.target_product_ids)
         ? a.target_product_ids.map(Number).filter(Number.isFinite)
         : []
@@ -225,6 +228,9 @@ if(Array.isArray(resultado.required_addons)){
       id:a.id??null,
       nome:String(a.name||a.nome||""),
       preco:Number(a.price??a.preco??0),
+      stock_product_id:a.stock_product_id??null,
+      stock_quantity:Number(a.stock_quantity||1),
+      stock_available:a.stock_available===null||a.stock_available===undefined?null:Number(a.stock_available),
       target_product_ids:Array.isArray(a.target_product_ids)
         ? a.target_product_ids.map(Number).filter(Number.isFinite)
         : []
@@ -288,7 +294,11 @@ if(Array.isArray(resultado.required_addons)){
         ativo:p.active!==false,
         disponivel:p.available!==false,
         permiteAdicionais:p.allows_addons===true,
-        adicionalObrigatorio:p.required_addon===true
+        adicionalObrigatorio:p.required_addon===true,
+        estoque:p.stock_quantity===null||p.stock_quantity===undefined?null:Number(p.stock_quantity),
+        stock_component_product_id:p.stock_component_product_id??null,
+        stock_component_quantity:Number(p.stock_component_quantity||0),
+        stock_component_available:p.stock_component_available===null||p.stock_component_available===undefined?null:Number(p.stock_component_available)
       }));
     }else if(Array.isArray(resultado.products)){
       resultado.products.forEach(status=>{
@@ -452,14 +462,14 @@ function iconeProduto(categoria){
 function renderProdutos(){
   const lista=dados.produtos.filter(p=>p.categoria===categoriaAtual&&p.ativo);
   $("produtos").innerHTML=lista.map(p=>`
-    <article class="produto ${p.disponivel===false?"produto-esgotado":""}">
+    <article class="produto ${!comboDisponivelPorComponentes(p)?"produto-esgotado":""}">
       <div class="icone">${iconeProduto(p.categoria)}</div>
-      ${p.disponivel===false?'<span class="selo-esgotado">ESGOTADO</span>':""}
+      ${!comboDisponivelPorComponentes(p)?'<span class="selo-esgotado">ESGOTADO</span>':""}
       <h3>${p.nome}</h3>
       <p>${p.descricao}</p>
       <div class="produto-rodape">
         <span class="preco">${moeda(p.preco)}</span>
-        <button ${p.disponivel===false?"disabled":""} onclick="abrirProduto(${p.id})">${p.disponivel===false?"Em falta":"Adicionar"}</button>
+        <button ${!comboDisponivelPorComponentes(p)?"disabled":""} onclick="abrirProduto(${p.id})">${!comboDisponivelPorComponentes(p)?"Em falta":"Adicionar"}</button>
       </div>
     </article>`).join("");
 }
@@ -470,16 +480,27 @@ function adicionalDisponivelParaProduto(adicional, produtoId){
   const ids=Array.isArray(adicional?.target_product_ids)
     ? adicional.target_product_ids.map(Number).filter(Number.isFinite)
     : [];
-
-  // Lista vazia = disponível para todos os produtos
-  if(ids.length===0)return true;
-
-  return ids.includes(Number(produtoId));
+  if(ids.length>0 && !ids.includes(Number(produtoId)))return false;
+  if(adicional?.stock_product_id){
+    const estoque=adicional.stock_available;
+    const necessidade=Math.max(1,Number(adicional.stock_quantity||1));
+    if(estoque!==null && estoque!==undefined && Number(estoque)<necessidade)return false;
+  }
+  return true;
+}
+function comboDisponivelPorComponentes(produto){
+  if(!produto)return false;
+  if(produto.stock_component_product_id){
+    const estoque=produto.stock_component_available;
+    const necessidade=Math.max(1,Number(produto.stock_component_quantity||1));
+    if(estoque!==null && estoque!==undefined && Number(estoque)<necessidade)return false;
+  }
+  return produto.disponivel!==false && (produto.estoque===null||produto.estoque===undefined||Number(produto.estoque)>0);
 }
 
 function abrirProduto(id){
   produtoSelecionado=dados.produtos.find(p=>p.id===id);
-  if(!produtoSelecionado||produtoSelecionado.disponivel===false){
+  if(!produtoSelecionado||!comboDisponivelPorComponentes(produtoSelecionado)){
     alert("Este produto está em falta no momento.");return;
   }
   $("produtoNome").textContent=produtoSelecionado.nome;
@@ -501,8 +522,8 @@ function abrirProduto(id){
   $("tituloAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
   $("listaAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
   $("listaAdicionaisObrigatorios").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>{
-    if(!adicionalDisponivelParaProduto(a,produtoSelecionado.id))return "";
-    return `<div class="adicional"><label><input type="radio" name="adicionalObrigatorio" class="checkAdicionalObrigatorio" data-i="${i}"> ${a.nome}</label><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></div>`;
+    const disponivel=adicionalDisponivelParaProduto(a,produtoSelecionado.id);
+    return `<div class="adicional ${disponivel?"":"adicional-esgotado"}"><label><input type="radio" name="adicionalObrigatorio" class="checkAdicionalObrigatorio" data-i="${i}" ${disponivel?"":"disabled"}> ${a.nome}${disponivel?"":" — Esgotado"}</label><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></div>`;
   }).join(""):"";
   $("modalProduto").classList.add("ativo");
 }
@@ -628,9 +649,9 @@ function editarItemCliente(uid){
   $("tituloAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
   $("listaAdicionaisObrigatorios").hidden=!adicionalObrigatorio;
   $("listaAdicionaisObrigatorios").innerHTML=adicionalObrigatorio?ADICIONAIS_OBRIGATORIOS.map((a,i)=>{
-    if(!adicionalDisponivelParaProduto(a,produtoSelecionado.id))return "";
+    const disponivel=adicionalDisponivelParaProduto(a,produtoSelecionado.id);
     const marcado=(item.adicionais||[]).some(x=>x.nome===a.nome);
-    return `<div class="adicional"><label><input type="radio" name="adicionalObrigatorio" class="checkAdicionalObrigatorio" data-i="${i}" ${marcado?"checked":""}> ${a.nome}</label><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></div>`;
+    return `<div class="adicional ${disponivel?"":"adicional-esgotado"}"><label><input type="radio" name="adicionalObrigatorio" class="checkAdicionalObrigatorio" data-i="${i}" ${marcado&&disponivel?"checked":""} ${disponivel?"":"disabled"}> ${a.nome}${disponivel?"":" — Esgotado"}</label><strong>${Number(a.preco||0)>0?'+ '+moeda(a.preco):moeda(0)}</strong></div>`;
   }).join(""):"";
 
   if($("confirmarProduto"))$("confirmarProduto").textContent="Salvar alteração";
