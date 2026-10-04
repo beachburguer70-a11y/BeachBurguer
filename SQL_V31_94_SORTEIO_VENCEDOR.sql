@@ -181,3 +181,17 @@ begin
   return query select c.id,c.coupon_number,c.customer_name,c.phone,c.order_id,now();
 end;
 $$;
+
+-- Limpeza controlada para testes: apaga somente cupons e histórico do sorteio.
+-- Não altera pedidos, clientes, estoque ou outras tabelas do sistema.
+create or replace function public.reset_raffle_history()
+returns void
+language plpgsql
+security definer
+set search_path=public
+as $$
+begin
+  delete from public.raffle_draws;
+  delete from public.raffle_coupons;
+end;
+$$;
