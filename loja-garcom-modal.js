@@ -11,7 +11,7 @@
   let catalog=[], categories=[], addons=[], requiredAddons=[];
   let tipo='', pagamento='', categoria='', pesquisa='', carrinho=[], etapa='tipo';
   let editingUid=null, productModalId=null, sending=false, countdownTimer=null, searchIndex=0;
-  let editOrderId=null, editOrderDisplay=null, reviewDraft={cliente:'',endereco:'',observacoes:'',troco:'',entrega:'',desconto:''};
+  let editOrderId=null, editOrderDisplay=null, reviewDraft={cliente:'',telefone:'',endereco:'',observacoes:'',troco:'',entrega:'',desconto:''};
 
   function inject(){
     if(byId('gmOverlay'))return;
@@ -79,7 +79,7 @@
 
   async function abrir(){
     inject();
-    tipo=''; pagamento=''; categoria=''; pesquisa=''; carrinho=[]; etapa='tipo'; editingUid=null; productModalId=null; editOrderId=null; editOrderDisplay=null; reviewDraft={cliente:'',endereco:'',observacoes:'',troco:'',entrega:'',desconto:''};
+    tipo=''; pagamento=''; categoria=''; pesquisa=''; carrinho=[]; etapa='tipo'; editingUid=null; productModalId=null; editOrderId=null; editOrderDisplay=null; reviewDraft={cliente:'',telefone:'',endereco:'',observacoes:'',troco:'',entrega:'',desconto:''};
     byId('gmCancelarTopo').style.display='';
     const o=byId('gmOverlay'); o.classList.remove('gm-hidden'); o.setAttribute('aria-hidden','false'); document.body.classList.add('gm-lock');
     byId('gmBody').innerHTML='<div class="gm-loading">Carregando cardápio...</div>';
@@ -96,7 +96,7 @@
     byId('gmProductOverlay')?.classList.add('gm-hidden');
     byId('gmOverlay')?.classList.add('gm-hidden');
     document.body.classList.remove('gm-lock');
-    tipo='';pagamento='';carrinho=[];etapa='tipo';editingUid=null;productModalId=null;editOrderId=null;editOrderDisplay=null;reviewDraft={cliente:'',endereco:'',observacoes:'',troco:'',entrega:'',desconto:''};
+    tipo='';pagamento='';carrinho=[];etapa='tipo';editingUid=null;productModalId=null;editOrderId=null;editOrderDisplay=null;reviewDraft={cliente:'',telefone:'',endereco:'',observacoes:'',troco:'',entrega:'',desconto:''};
   }
 
   function setTitle(t){byId('gmEtapaTitulo').textContent=t?` • ${t}`:''}
@@ -277,6 +277,7 @@
   function moneyInputValue(v){const n=Number(v||0);return n>0?n.toFixed(2).replace('.',','):''}
   function captureReviewDraft(){
     if(byId('gmClient'))reviewDraft.cliente=byId('gmClient').value;
+    if(byId('gmPhone'))reviewDraft.telefone=byId('gmPhone').value;
     if(byId('gmAddress'))reviewDraft.endereco=byId('gmAddress').value;
     if(byId('gmNotes'))reviewDraft.observacoes=byId('gmNotes').value;
     if(byId('gmChange'))reviewDraft.troco=byId('gmChange').value;
@@ -302,6 +303,7 @@
         </section>
         <section class="gm-review-form">
           <label>Cliente<input id="gmClient" placeholder="Digite o nome do cliente" value="${esc(reviewDraft.cliente)}"></label>
+          <label>Telefone para o cupom <small>(opcional)</small><input id="gmPhone" inputmode="tel" placeholder="(22) 99999-9999" value="${esc(reviewDraft.telefone)}"></label>
           ${delivery?`<label>Endereço <small>(opcional)</small><input id="gmAddress" placeholder="Digite o endereço" value="${esc(reviewDraft.endereco)}"></label>`:''}
           <label>Observações gerais<textarea id="gmNotes" placeholder="Ex.: mesa 4, sem talher, separar bebidas...">${esc(reviewDraft.observacoes)}</textarea></label>
           ${delivery&&pagamento==='Dinheiro'?`<label>Troco para quanto? <small>(opcional)</small><input id="gmChange" inputmode="decimal" placeholder="Ex.: 50,00" value="${esc(reviewDraft.troco)}"><strong id="gmChangeCalc" style="color:#ffcf4a;margin-top:5px;display:block"></strong></label>`:''}
@@ -323,7 +325,7 @@
     if(sending)return; sending=true; const btn=byId('gmFinish');btn.disabled=true;btn.textContent=editOrderId?'Salvando...':'Enviando...';
     try{
       captureReviewDraft();
-      const body={action:editOrderId?'edit_waiter_order':'create',id:editOrderId||undefined,cliente:reviewDraft.cliente.trim(),telefone:'',endereco:tipo==='Entrega'?reviewDraft.endereco.trim():'',bairro:'',referencia:'',localidade:tipo,tipo,pagamento,troco:(tipo==='Entrega'&&pagamento==='Dinheiro')?reviewDraft.troco.trim():'',observacoes:reviewDraft.observacoes.trim(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,categoria:i.categoria,quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:itemTotal(i)})),subtotal:cartSubtotal(),entrega:entrega(),total:currentTotal(),discount_amount:desconto(),prize_awarded:false,origem:'garcom',waiter_print_enabled:waiterPrinterEnabled()};
+      const body={action:editOrderId?'edit_waiter_order':'create',id:editOrderId||undefined,cliente:reviewDraft.cliente.trim(),telefone:reviewDraft.telefone.trim(),endereco:tipo==='Entrega'?reviewDraft.endereco.trim():'',bairro:'',referencia:'',localidade:tipo,tipo,pagamento,troco:(tipo==='Entrega'&&pagamento==='Dinheiro')?reviewDraft.troco.trim():'',observacoes:reviewDraft.observacoes.trim(),itens:carrinho.map(i=>({id:i.id,nome:i.nome,categoria:i.categoria,quantidade:i.quantidade,preco:i.preco,adicionais:i.adicionais,observacao:i.observacao,total:itemTotal(i)})),subtotal:cartSubtotal(),entrega:entrega(),total:currentTotal(),discount_amount:desconto(),prize_awarded:false,origem:'garcom',waiter_print_enabled:waiterPrinterEnabled()};
       const headers={'Content-Type':'application/json'};if(editOrderId)headers['X-Store-Token']=storeToken();
       const r=await fetch('/api/orders',{method:'POST',headers,body:JSON.stringify(body)});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||'Não foi possível salvar o pedido.');
       window.__gmLastOrder=d.order||{};
@@ -375,7 +377,7 @@
     editOrderId=Number(o.id);editOrderDisplay=o.display_number||o.id;
     tipo=String(o.tipo||o.localidade||'Consumir no local');pagamento=String(o.pagamento||'A pagar');pesquisa='';etapa='menu';
     carrinho=(Array.isArray(o.itens)?o.itens:[]).map((i,n)=>({uid:`edit-${n}-${Date.now()}`,id:Number(i.id||0),nome:i.nome||'',categoria:i.categoria||'',preco:Number(i.preco||0),quantidade:Number(i.quantidade||1),adicionais:Array.isArray(i.adicionais)?i.adicionais:[],observacao:i.observacao||''}));
-    reviewDraft={cliente:String(o.cliente||''),endereco:String(o.endereco||''),observacoes:String(o.observacoes||''),troco:String((o.troco_recebido??o.troco)||''),entrega:moneyInputValue(o.entrega),desconto:moneyInputValue(o.discount_amount)};
+    reviewDraft={cliente:String(o.cliente||''),telefone:String(o.telefone||''),endereco:String(o.endereco||''),observacoes:String(o.observacoes||''),troco:String((o.troco_recebido??o.troco)||''),entrega:moneyInputValue(o.entrega),desconto:moneyInputValue(o.discount_amount)};
     const main=byId('gmOverlay');main.classList.remove('gm-hidden');main.setAttribute('aria-hidden','false');document.body.classList.add('gm-lock');
     render();
   }

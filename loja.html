@@ -170,6 +170,7 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
     <button type="button" data-admin-tab="adicionais">✨ Adicionais</button>
     <button type="button" data-admin-tab="obrigatorios">☑️ Adicionais obrigatórios</button>
     <button type="button" data-admin-tab="bloqueios">🚫 Endereços sem entrega</button>
+    <button type="button" data-admin-tab="sorteio">🎟️ Sorteio</button>
    </nav>
   </aside>
   <main class="admin-v3171-content">
@@ -221,6 +222,29 @@ header{position:sticky;top:0;z-index:20;background:#050505;border-bottom:1px sol
      <p class="muted">Cadastro separado dos adicionais comuns. O preço pode ser R$ 0,00.</p>
      <div style="display:grid;grid-template-columns:minmax(180px,1fr) 180px 240px auto;gap:8px"><input id="reqAddonNome" placeholder="Nome do adicional obrigatório" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px"><input id="reqAddonPreco" type="number" step=".01" min="0" placeholder="Preço (0,00)" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px"><select id="reqAddonEstoqueProduto" style="padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px"><option value="">Produto do estoque para baixa</option></select><button id="criarReqAdicional" class="btn green">Cadastrar obrigatório</button></div><div id="reqAddonDestinosNovo" class="addon-destinos-v3188"></div>
      <div id="listaReqAdicionaisAdmin" style="margin-top:12px"></div>
+    </div>
+   </section>
+
+   <section class="admin-v3171-panel" data-admin-panel="sorteio">
+    <h2>🎟️ Sorteio</h2>
+    <div class="admin-v3171-card">
+      <h3>Configuração do sorteio</h3>
+      <p class="muted">A cada valor completo da compra, o cliente ganha 1 cupom. Ex.: R$ 25 = 1, R$ 50 = 2, R$ 75 = 3.</p>
+      <div style="display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:10px;align-items:end">
+        <label>Valor da compra para ganhar 1 cupom<input id="raffleValorCompra" type="number" step="0.01" min="0.01" value="25" style="display:block;width:100%;padding:10px;background:#080808;color:#fff;border:1px solid #444;border-radius:8px"></label>
+        <button id="raffleSalvarConfig" class="btn yellow" type="button">Salvar valor</button>
+      </div>
+      <button id="raffleToggle" class="btn dark" type="button" style="margin-top:12px">🎟️ Sorteio: DESATIVADO</button>
+    </div>
+    <div class="admin-v3171-card">
+      <h3>🏆 Sortear vencedor</h3>
+      <p class="muted">Somente cupons válidos e ainda não sorteados participam. Cupons cancelados nunca entram no sorteio.</p>
+      <button id="raffleSortear" class="btn green" type="button" style="font-size:18px;padding:13px 18px">🎉 SORTEAR CUPOM</button>
+      <div id="raffleVencedor" style="margin-top:14px"></div>
+    </div>
+    <div class="admin-v3171-card">
+      <h3>📜 Histórico dos sorteios</h3>
+      <div id="raffleHistorico"></div>
     </div>
    </section>
 
@@ -707,6 +731,7 @@ function renderEstoqueObrigatorioV3191(elId, selected){ const el=$(elId); if(!el
 function getEstoqueObrigatorioV3191(elId){ const v=$(elId)?.value||""; return v===""?null:Number(v); }
 async function carregarAdminV31(){
   const d=await apiAdminV31({action:"list_products"});
+  carregarSorteioV3194().catch(()=>{});
   adminCategoriasV31=d.categories||[]; adminProdutosV31=d.catalog||[]; adminAdicionaisV31=d.addons||[]; adminReqAdicionaisV31=d.required_addons||[]; adminBloqueiosEnderecoV3180=d.blocked_addresses||[];
   renderDestinosAdicionalV3188("addonDestinosNovo",[]); renderDestinosAdicionalV3188("reqAddonDestinosNovo",[],"Obrigatório disponível nos produtos"); renderEstoqueObrigatorioV3191("reqAddonEstoqueProduto",null);
   const sel=$("prodCategoria");
@@ -859,6 +884,12 @@ if(criarProdutoV31) criarProdutoV31.onclick=async()=>{try{
 }catch(e){alert(e.message)}};
 
 
+
+async function carregarSorteioV3194(){try{const d=await apiGestaoV3135({action:'settings'});const enabled=d.settings?.raffle_enabled===true;const amount=Number(d.settings?.raffle_purchase_amount||25);const v=$("raffleValorCompra");if(v)v.value=amount.toFixed(2);const b=$("raffleToggle");if(b){b.textContent=`🎟️ Sorteio: ${enabled?'ATIVADO':'DESATIVADO'}`;b.className=`btn ${enabled?'green':'red'}`;}await carregarHistoricoSorteioV3194()}catch(e){console.warn('Sorteio:',e)}}
+async function carregarHistoricoSorteioV3194(){try{const d=await apiGestaoV3135({action:'raffle_history'});const h=$("raffleHistorico");if(!h)return;h.innerHTML=(d.history||[]).length?(d.history||[]).map(x=>`<div style="border:1px solid #2d2d2d;border-radius:10px;padding:10px;margin:7px 0;background:#0d0d0d"><strong>🏆 Cupom #${escV31(x.coupon_number)}</strong> — ${escV31(x.customer_name)}<br><small>${x.phone?escV31(x.phone):'Telefone não informado'} • Pedido #${escV31(x.order_id)} • ${new Date(x.drawn_at).toLocaleString('pt-BR')}</small></div>`).join(''):'<div style="padding:12px;color:#888">Nenhum sorteio realizado ainda.</div>'}catch(e){const h=$("raffleHistorico");if(h)h.innerHTML='<div style="padding:12px;color:#888">Execute o SQL V31.94 no Supabase para habilitar o sorteio.</div>'}}
+$("raffleSalvarConfig")?.addEventListener('click',async()=>{try{const amount=Number($("raffleValorCompra").value||0);await apiGestaoV3135({action:'set_raffle',enabled:settingsV3135.raffle_enabled===true,purchase_amount:amount});await carregarSorteioV3194();alert('Valor do sorteio salvo.')}catch(e){alert(e.message)}});
+$("raffleToggle")?.addEventListener('click',async()=>{try{const novo=!settingsV3135.raffle_enabled;const amount=Number($("raffleValorCompra").value||25);await apiGestaoV3135({action:'set_raffle',enabled:novo,purchase_amount:amount});settingsV3135.raffle_enabled=novo;await carregarSorteioV3194()}catch(e){alert(e.message)}});
+$("raffleSortear")?.addEventListener('click',async()=>{if(!confirm('Sortear agora um cupom válido?'))return;try{const d=await apiGestaoV3135({action:'raffle_draw'});const w=d.winner;$("raffleVencedor").innerHTML=`<div style="border:2px solid #ffb700;border-radius:14px;padding:18px;background:#171205"><div style="font-size:15px;color:#ffcf55">🎉 CUPOM SORTEADO</div><div style="font-size:30px;font-weight:900;margin:4px 0">#${escV31(w.coupon_number)}</div><div style="font-size:22px;font-weight:900">🏆 ${escV31(w.customer_name)}</div><div style="margin-top:6px">📞 ${w.phone?escV31(w.phone):'Telefone não informado'}</div><div style="margin-top:4px;color:#aaa">Pedido #${escV31(w.order_id)}</div></div>`;await carregarHistoricoSorteioV3194()}catch(e){alert(e.message)}});
 </script>
 
   
