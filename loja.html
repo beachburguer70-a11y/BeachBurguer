@@ -892,9 +892,21 @@ async function carregarHistoricoSorteioV3194(){try{const d=await apiGestaoV3135(
 $("raffleSalvarConfig")?.addEventListener('click',async()=>{try{const amount=Number($("raffleValorCompra").value||0);await apiGestaoV3135({action:'set_raffle',enabled:settingsV3135.raffle_enabled===true,purchase_amount:amount});await carregarSorteioV3194();alert('Valor do sorteio salvo.')}catch(e){alert(e.message)}});
 $("raffleToggle")?.addEventListener('click',async()=>{try{const novo=!settingsV3135.raffle_enabled;const amount=Number($("raffleValorCompra").value||25);await apiGestaoV3135({action:'set_raffle',enabled:novo,purchase_amount:amount});settingsV3135.raffle_enabled=novo;await carregarSorteioV3194()}catch(e){alert(e.message)}});
 $("raffleSortear")?.addEventListener('click',async()=>{if(!confirm('Sortear agora um cupom válido?'))return;try{const d=await apiGestaoV3135({action:'raffle_draw'});const w=d.winner;$("raffleVencedor").innerHTML=`<div style="border:2px solid #ffb700;border-radius:14px;padding:18px;background:#171205"><div style="font-size:15px;color:#ffcf55">🎉 CUPOM SORTEADO</div><div style="font-size:30px;font-weight:900;margin:4px 0">#${escV31(w.coupon_number)}</div><div style="font-size:22px;font-weight:900">🏆 ${escV31(w.customer_name)}</div><div style="margin-top:6px">📞 ${w.phone?escV31(w.phone):'Telefone não informado'}</div><div style="margin-top:4px;color:#aaa">Pedido #${escV31(w.order_id)}</div></div>`;await carregarHistoricoSorteioV3194()}catch(e){alert(e.message)}});
-$("raffleZerar")?.addEventListener('click',async()=>{const confirma=prompt('ATENÇÃO: isso apagará todos os cupons e todo o histórico do sorteio. Pedidos, clientes e estoque NÃO serão apagados.
-
-Digite ZERAR SORTEIO para confirmar:');if(confirma!=="ZERAR SORTEIO")return;try{await apiGestaoV3135({action:'raffle_reset'});$("raffleVencedor").innerHTML='';await carregarHistoricoSorteioV3194();alert('Sorteio zerado com sucesso.');}catch(e){alert(e.message)}});
+$("raffleZerar")?.addEventListener('click',async()=>{
+  const confirma=prompt(
+    'ATENÇÃO: isso apagará todos os cupons e todo o histórico do sorteio. Pedidos, clientes e estoque NÃO serão apagados.\n\n' +
+    'Digite ZERAR SORTEIO para confirmar:'
+  );
+  if(confirma!=="ZERAR SORTEIO")return;
+  try{
+    await apiGestaoV3135({action:'raffle_reset'});
+    $("raffleVencedor").innerHTML='';
+    await carregarHistoricoSorteioV3194();
+    alert('Sorteio zerado com sucesso.');
+  }catch(e){
+    alert(e.message);
+  }
+});
 </script>
 
   
