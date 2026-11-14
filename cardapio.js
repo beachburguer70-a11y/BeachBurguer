@@ -212,12 +212,40 @@ async function carregarCatalogo(){
       ADICIONAIS=r.addons.filter(a=>a.active!==false).map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0),destinos:Array.isArray(a.target_product_ids)?a.target_product_ids.map(Number):[]})).filter(a=>a.nome);
     }
 
-    if(Array.isArray(r.required_addons)){
-      ADICIONAIS_OBRIGATORIOS=r.required_addons
-        .filter(a=>a.active!==false)
-        .map(a=>({nome:String(a.name||a.nome||""),preco:Number(a.price??a.preco??0),destinos:Array.isArray(a.target_product_ids)?a.target_product_ids.map(Number):[]}))
-        .filter(a=>a.nome);
-    }
+   
+if(Array.isArray(r.required_addons)){
+  ADICIONAIS_OBRIGATORIOS = r.required_addons
+    .filter(a => {
+      if (a.active === false) return false;
+
+      // Sem produto vinculado: não há controle de estoque.
+      if (!a.stock_product_id) return true;
+
+      // Produto vinculado, mas estoque não localizado:
+      // não exibir por segurança.
+      if (a.stock_available === undefined) return false;
+
+      // Estoque null significa estoque sem limite cadastrado.
+      return a.stock_available === null ||
+             Number(a.stock_available) > 0;
+    })
+    .map(a => ({
+      id: Number(a.id),
+      nome: String(a.name || a.nome || ""),
+      preco: Number(a.price ?? a.preco ?? 0),
+      destinos: Array.isArray(a.target_product_ids)
+        ? a.target_product_ids.map(Number)
+        : [],
+      stockProductId: a.stock_product_id
+        ? Number(a.stock_product_id)
+        : null,
+      stockAvailable: a.stock_available === null
+        ? null
+        : Number(a.stock_available)
+    }))
+    .filter(a => a.nome);
+}
+
 
     if(r.store){
       estadoLojaV16=r.store;
